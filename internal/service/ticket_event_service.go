@@ -151,8 +151,7 @@ func (s *ticketEventService) filterAndGroupEvents(parsedEvents []parsedEvent) ([
 			ticketIDs = append(ticketIDs, e.TicketID)
 		}
 		groupedEvents[e.TicketID] = append(groupedEvents[e.TicketID], e)
-		key := fmt.Sprintf("%d|%s|%s", e.TicketID, e.FromStatus, e.ToStatus)
-		eventKeys = append(eventKeys, key)
+		eventKeys = append(eventKeys, e.HashKey())
 	}
 
 	var workerJobs []ticketWorkerJob
@@ -195,16 +194,12 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 	ticketID := job.TicketID
 
 	if !meta.existingTickets[ticketID] {
-		res.RejectedError = fmt.Sprintf("ticket_id %d does not exist in DB", ticketID)
-		res.RejectedEvents = job.Events
-		return res
+		return rejectJob(job, fmt.Errorf("ticket_id %d does not exist in DB", ticketID))
 	}
 
 	currentStatus, ok := meta.existingTicketStatuses[ticketID]
 	if !ok {
-		res.RejectedError = fmt.Sprintf("ticket_id %d does not exist in DB", ticketID)
-		res.RejectedEvents = job.Events
-		return res
+		return rejectJob(job, fmt.Errorf("ticket_id %d does not exist in DB", ticketID))
 	}
 	ticketCreatedAt := meta.ticketCreatedAt[ticketID]
 
@@ -214,7 +209,7 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 	var cancelledAt *time.Time
 
 	for _, event := range job.Events {
-		key := fmt.Sprintf("%d|%s|%s", event.TicketID, event.FromStatus, event.ToStatus)
+		key := event.HashKey()
 
 		if meta.existingDBEvents[key] || localSeen[key] {
 			res.DuplicateCount++
@@ -222,22 +217,12 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 		}
 
 		if event.FromStatus != currentStatus {
-			res.RejectedError = errmsgs.ErrInvalidFlowTicket.Error()
-			res.RejectedEvents = job.Events
-			res.AcceptedEvents = nil
-			res.DuplicateCount = 0
-			res.FinalUpdateJob = nil
-			return res
+			return rejectJob(job, errmsgs.ErrInvalidFlowTicket)
 		}
 
 		if event.ToStatus == domain.StatusResolved || event.ToStatus == domain.StatusCancelled {
 			if event.CreatedAt.Before(ticketCreatedAt) {
-				res.RejectedError = fmt.Sprintf("%s: %s At cannot be before Created At", errmsgs.ErrInvalidInput.Error(), strings.Title(string(event.ToStatus)))
-				res.RejectedEvents = job.Events
-				res.AcceptedEvents = nil
-				res.DuplicateCount = 0
-				res.FinalUpdateJob = nil
-				return res
+				return rejectJob(job, fmt.Errorf("%s: %s At cannot be before Created At", errmsgs.ErrInvalidInput.Error(), strings.Title(string(event.ToStatus))))
 			}
 		}
 
@@ -264,6 +249,13 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 	}
 	res.FinalUpdateJob = finalJob
 	return res
+}
+
+func rejectJob(job ticketWorkerJob, err error) ticketJobResult {
+	return ticketJobResult{
+		RejectedError:  err.Error(),
+		RejectedEvents: job.Events,
+	}
 }
 
 func (s *ticketEventService) applyImportResults(ctx context.Context, results []ticketJobResult, finalResult *domain.BatchImportResult) error {

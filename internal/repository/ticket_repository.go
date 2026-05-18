@@ -147,7 +147,7 @@ func (r *ticketRepositoryImpl) GetTicketStatusAndCreatedAt(ctx context.Context, 
 }
 
 func (r *ticketRepositoryImpl) UpdateStatusAndAssignee(ctx context.Context, ticketID uint, status domain.TicketStatus, assigneeID string) error {
-	return r.db.WithContext(ctx).Model(&domain.Ticket{}).Where("id = ?", ticketID).Updates(map[string]interface{}{"status": status, "assignee_id": assigneeID}).Error
+	return r.updateStatusWithTimestamps(ctx, ticketID, status, assigneeID, nil, nil)
 }
 
 func (r *ticketRepositoryImpl) updateStatusWithTimestamps(ctx context.Context, ticketID uint, status domain.TicketStatus, assigneeID string, resolvedAt, cancelledAt *time.Time) error {
