@@ -225,7 +225,7 @@ func TestFindAll(t *testing.T) {
 		svc := NewTicketService(mockRepo, mockEventRepo)
 		tickets := []domain.Ticket{{ID: 1, Title: "Test"}}
 		filter := request.TicketFilter{}
-		paging := dto.PaginationQuery{Page: 1, Limit: 10}
+		paging := common.PaginationQuery{Page: 1, Limit: 10}
 
 		mockRepo.On("FindAll", ctx, filter, 0, 10).Return(tickets, int64(1), nil)
 
