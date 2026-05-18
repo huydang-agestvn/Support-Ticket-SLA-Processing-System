@@ -56,3 +56,8 @@ func (e *TicketEvent) Validate() error {
 	}
 	return nil
 }
+
+func (e *TicketEvent) HashKey() string {
+	return fmt.Sprintf("%d|%s|%s", e.TicketID, e.FromStatus, e.ToStatus)
+}
+

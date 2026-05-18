@@ -35,11 +35,7 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var input request.LoginRequest
 
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, common.APIResponse[interface{}]{
-			Success: false,
-			Error:   "invalid request body: " + err.Error(),
-		})
+	if !BindJSONOrAbort(c, &input) {
 		return
 	}
 

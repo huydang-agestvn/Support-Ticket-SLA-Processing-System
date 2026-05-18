@@ -74,11 +74,7 @@ func parseTicketID(c *gin.Context) (uint, error) {
 func (h *TicketHandler) HandleCreateTicket(c *gin.Context) {
 	var req request.CreateTicketReq
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, common.APIResponse[interface{}]{
-			Success: false,
-			Error:   "invalid request body: " + err.Error(),
-		})
+	if !BindJSONOrAbort(c, &req) {
 		return
 	}
 
@@ -130,11 +126,7 @@ func (h *TicketHandler) HandleListTickets(c *gin.Context) {
 		common.PaginationQuery
 	}
 
-	if err := c.ShouldBindQuery(&query); err != nil {
-		c.JSON(http.StatusBadRequest, common.APIResponse[interface{}]{
-			Success: false,
-			Error:   "invalid query parameters: " + err.Error(),
-		})
+	if !BindQueryOrAbort(c, &query) {
 		return
 	}
 
@@ -211,11 +203,7 @@ func (h *TicketHandler) HandleUpdateStatus(c *gin.Context) {
 	}
 
 	var req request.UpdateStatusReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, common.APIResponse[interface{}]{
-			Success: false,
-			Error:   errmsgs.ErrInvalidInput.Error() + ": " + err.Error(),
-		})
+	if !BindJSONOrAbort(c, &req) {
 		return
 	}
 
