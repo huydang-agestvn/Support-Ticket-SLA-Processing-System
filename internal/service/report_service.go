@@ -27,6 +27,10 @@ func (s *reportService) GenerateReport(date time.Time) (*domain.TicketReport, er
 		return nil, fmt.Errorf("aggregate report: %w", err)
 	}
 
+	if err := report.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid report data: %w", err)
+	}
+
 	if err := s.repo.Upsert(report); err != nil {
 		return nil, fmt.Errorf("save report: %w", err)
 	}

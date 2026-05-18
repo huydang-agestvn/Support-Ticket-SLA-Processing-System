@@ -107,4 +107,36 @@ func TestTicketEventImport(t *testing.T) {
 		assert.Contains(t, res.RejectedDetails[0].ErrorName, "does not exist in DB")
 	})
 
+	t.Run("ValidationError", func(t *testing.T) {
+		mockRepo := new(MockTicketRepository)
+		mockEventRepo := new(MockTicketEventRepository)
+		svc := NewTicketEventService(mockEventRepo, mockRepo)
+		now := time.Now()
+		events := []domain.TicketEvent{
+			{
+				TicketID:   1,
+				FromStatus: domain.StatusNew,
+				ToStatus:   domain.StatusNew, // Invalid transition (same status)
+				AssigneeID: "agent1",
+				CreatedAt:  now,
+			},
+		}
+		data, _ := json.Marshal(events)
+
+		mockRepo.On("GetExistingTicketIDs", ctx, mock.Anything).Return(map[uint]bool{1: true}, nil)
+		mockRepo.On("GetTicketStatusAndCreatedAt", ctx, mock.Anything).Return(
+			map[uint]domain.TicketStatus{1: domain.StatusNew},
+			map[uint]time.Time{1: now.Add(-1 * time.Hour)},
+			nil,
+		)
+		mockEventRepo.On("GetExistingEventKeys", ctx, mock.Anything).Return(map[string]bool{}, nil)
+
+		res, err := svc.Import(ctx, data)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 0, res.AcceptedCount)
+		assert.Equal(t, 1, res.RejectedCount)
+		assert.Contains(t, res.RejectedDetails[0].ErrorName, "From Status and To Status cannot be the same")
+	})
+
 }

@@ -82,6 +82,19 @@ func TestGenerateReport(t *testing.T) {
 			assert.Contains(t, err.Error(), "save report")
 		}
 	})
+
+	t.Run("ValidationError", func(t *testing.T) {
+		mockRepo := new(MockReportRepository)
+		svc := NewReportService(mockRepo)
+		report := &domain.TicketReport{ReportDate: now, NewCount: -1} // Invalid count
+		mockRepo.On("AggregateByDate", now).Return(report, nil)
+
+		res, err := svc.GenerateReport(now)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid report data")
+		assert.Nil(t, res)
+	})
 }
 
 func TestGetReport(t *testing.T) {

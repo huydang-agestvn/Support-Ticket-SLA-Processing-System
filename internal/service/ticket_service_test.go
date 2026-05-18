@@ -160,6 +160,26 @@ func TestTicketCreate(t *testing.T) {
 		assert.Error(t, err)
 		assert.Nil(t, res)
 	})
+
+	t.Run("ValidationError", func(t *testing.T) {
+		mockRepo := new(MockTicketRepository)
+		mockEventRepo := new(MockTicketEventRepository)
+		svc := NewTicketService(mockRepo, mockEventRepo)
+		dueAt := time.Now().Add(2 * time.Hour)
+		req := request.CreateTicketReq{
+			// Title missing
+			RequestorID: "user1",
+			Description: "Description",
+			Priority:    domain.PriorityHigh,
+			SlaDueAt:    &dueAt,
+		}
+
+		res, err := svc.Create(ctx, req)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "Title is required")
+		assert.Nil(t, res)
+	})
 }
 
 func TestFindById(t *testing.T) {
@@ -216,6 +236,28 @@ func TestUpdateTicketStatus(t *testing.T) {
 
 		assert.NoError(t, err)
 		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("ValidationError", func(t *testing.T) {
+		mockRepo := new(MockTicketRepository)
+		mockEventRepo := new(MockTicketEventRepository)
+		svc := NewTicketService(mockRepo, mockEventRepo)
+		ticket := &domain.Ticket{
+			ID:         1,
+			Status:     domain.StatusNew,
+			AssigneeID: "agent1",
+		}
+		req := request.UpdateStatusReq{
+			Status:     domain.StatusInProgress, // direct to in_progress from new
+			AssigneeID: "agent1",
+		}
+
+		mockRepo.On("FindById", ctx, uint(1)).Return(ticket, nil)
+
+		err := svc.UpdateTicketStatus(ctx, 1, req)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "Cannot transition from 'new' to 'in_progress'")
 	})
 
 }
