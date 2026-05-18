@@ -83,12 +83,12 @@ services:
       APP_PORT: ${APP_PORT}
       SERVER_PORT: ${SERVER_PORT}
 
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      DB_SSLMODE: ${DB_SSLMODE}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      DB_SSLMODE: disable
 
       WORKER_POOL_SIZE: ${WORKER_POOL_SIZE}
       MAX_BATCH_SIZE: ${MAX_BATCH_SIZE}

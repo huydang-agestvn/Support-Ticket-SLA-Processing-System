@@ -1,6 +1,87 @@
 basePath: /api/v1
 definitions:
-  domain.Priority:
+  support-ticket_com_internal_dto_common.APIResponse-any:
+    properties:
+      data: {}
+      error:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  ? support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_dto_common_PaginatedResult-support-ticket_com_internal_model_Ticket
+  : properties:
+      data:
+        $ref: '#/definitions/support-ticket_com_internal_dto_common.PaginatedResult-support-ticket_com_internal_model_Ticket'
+      error:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_model_Ticket:
+    properties:
+      data:
+        $ref: '#/definitions/support-ticket_com_internal_model.Ticket'
+      error:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  support-ticket_com_internal_dto_common.PaginatedResult-support-ticket_com_internal_model_Ticket:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/support-ticket_com_internal_model.Ticket'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  support-ticket_com_internal_dto_request.CreateTicketReq:
+    properties:
+      description:
+        maxLength: 5000
+        type: string
+      priority:
+        $ref: '#/definitions/support-ticket_com_internal_model.Priority'
+      sla_due_at:
+        type: string
+      title:
+        maxLength: 255
+        minLength: 5
+        type: string
+    required:
+    - priority
+    - sla_due_at
+    - title
+    type: object
+  support-ticket_com_internal_dto_request.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  support-ticket_com_internal_dto_request.UpdateStatusReq:
+    properties:
+      note:
+        type: string
+      status:
+        $ref: '#/definitions/support-ticket_com_internal_model.TicketStatus'
+    required:
+    - status
+    type: object
+  support-ticket_com_internal_model.Priority:
     enum:
     - low
     - medium
@@ -10,7 +91,54 @@ definitions:
     - PriorityLow
     - PriorityMedium
     - PriorityHigh
-  domain.TicketStatus:
+  support-ticket_com_internal_model.Ticket:
+    properties:
+      assignee_id:
+        type: string
+      cancelled_at:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      events:
+        description: TODO:Relations
+        items:
+          $ref: '#/definitions/support-ticket_com_internal_model.TicketEvent'
+        type: array
+      id:
+        type: integer
+      priority:
+        $ref: '#/definitions/support-ticket_com_internal_model.Priority'
+      requestor_id:
+        type: string
+      resolved_at:
+        type: string
+      sla_due_at:
+        type: string
+      status:
+        $ref: '#/definitions/support-ticket_com_internal_model.TicketStatus'
+      title:
+        type: string
+    type: object
+  support-ticket_com_internal_model.TicketEvent:
+    properties:
+      assignee_id:
+        type: string
+      created_at:
+        type: string
+      event_id:
+        type: integer
+      from_status:
+        $ref: '#/definitions/support-ticket_com_internal_model.TicketStatus'
+      note:
+        type: string
+      ticket_id:
+        type: integer
+      to_status:
+        $ref: '#/definitions/support-ticket_com_internal_model.TicketStatus'
+    type: object
+  support-ticket_com_internal_model.TicketStatus:
     enum:
     - new
     - assigned
@@ -26,40 +154,6 @@ definitions:
     - StatusResolved
     - StatusClosed
     - StatusCancelled
-  request.CreateTicketReq:
-    properties:
-      description:
-        maxLength: 5000
-        type: string
-      priority:
-        $ref: '#/definitions/domain.Priority'
-      sla_due_at:
-        type: string
-      title:
-        maxLength: 255
-        minLength: 5
-        type: string
-    required:
-    - priority
-    - sla_due_at
-    - title
-    type: object
-  request.LoginRequest:
-    properties:
-      password:
-        type: string
-      username:
-        type: string
-    type: object
-  request.UpdateStatusReq:
-    properties:
-      note:
-        type: string
-      status:
-        $ref: '#/definitions/domain.TicketStatus'
-    required:
-    - status
-    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -78,7 +172,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.LoginRequest'
+          $ref: '#/definitions/support-ticket_com_internal_dto_request.LoginRequest'
       produces:
       - application/json
       responses:
@@ -207,18 +301,15 @@ paths:
         "200":
           description: Get tickets successfully
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_dto_common_PaginatedResult-support-ticket_com_internal_model_Ticket'
         "400":
           description: Invalid query parameters
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
         "500":
           description: Internal server error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
       security:
       - BearerAuth: []
       summary: List tickets
@@ -234,25 +325,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.CreateTicketReq'
+          $ref: '#/definitions/support-ticket_com_internal_dto_request.CreateTicketReq'
       produces:
       - application/json
       responses:
         "201":
           description: Ticket created successfully
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_model_Ticket'
         "400":
           description: Invalid request body or invalid priority
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
         "500":
           description: Internal server error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
       security:
       - BearerAuth: []
       summary: Create ticket
@@ -275,23 +363,19 @@ paths:
         "200":
           description: Get ticket successfully
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_model_Ticket'
         "400":
           description: Invalid ticket ID
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
         "404":
           description: Ticket not found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
         "500":
           description: Internal server error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
       security:
       - BearerAuth: []
       summary: Get ticket detail
@@ -313,30 +397,26 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.UpdateStatusReq'
+          $ref: '#/definitions/support-ticket_com_internal_dto_request.UpdateStatusReq'
       produces:
       - application/json
       responses:
         "200":
           description: Ticket status updated successfully
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
         "400":
           description: Invalid request body or invalid status transition
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
         "404":
           description: Ticket not found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
         "500":
           description: Internal server error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
       security:
       - BearerAuth: []
       summary: Update ticket status

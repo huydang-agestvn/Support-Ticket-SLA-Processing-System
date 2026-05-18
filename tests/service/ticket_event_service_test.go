@@ -62,6 +62,7 @@ func TestTicketEventService_Import(t *testing.T) {
 				m.On("GetTicketStatusAndCreatedAt", ctx, []uint{1}).Return(
 					map[uint]domain.TicketStatus{1: domain.StatusNew},
 					map[uint]time.Time{1: now.Add(-1 * time.Hour)},
+					map[uint]string{1: ""},
 					nil,
 				)
 				m.On("UpdateStatusAndAssignee", ctx, uint(1), domain.StatusAssigned, "agent1").Return(nil)
@@ -106,6 +107,7 @@ func TestTicketEventService_Import(t *testing.T) {
 				m.On("GetTicketStatusAndCreatedAt", ctx, []uint{999}).Return(
 					map[uint]domain.TicketStatus{},
 					map[uint]time.Time{},
+					map[uint]string{},
 					nil,
 				)
 			},
@@ -127,6 +129,7 @@ func TestTicketEventService_Import(t *testing.T) {
 				m.On("GetTicketStatusAndCreatedAt", ctx, []uint(nil)).Return(
 					map[uint]domain.TicketStatus{},
 					map[uint]time.Time{},
+					map[uint]string{},
 					nil,
 				)
 			},

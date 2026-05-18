@@ -48,12 +48,12 @@ func (m *MockTicketRepository) GetExistingTicketIDs(ctx context.Context, ticketI
 	return args.Get(0).(map[uint]bool), args.Error(1)
 }
 
-func (m *MockTicketRepository) GetTicketStatusAndCreatedAt(ctx context.Context, ticketIDs []uint) (map[uint]domain.TicketStatus, map[uint]time.Time, error) {
+func (m *MockTicketRepository) GetTicketStatusAndCreatedAt(ctx context.Context, ticketIDs []uint) (map[uint]domain.TicketStatus, map[uint]time.Time, map[uint]string, error) {
 	args := m.Called(ctx, ticketIDs)
 	if args.Get(0) == nil {
-		return nil, nil, args.Error(2)
+		return nil, nil, nil, args.Error(3)
 	}
-	return args.Get(0).(map[uint]domain.TicketStatus), args.Get(1).(map[uint]time.Time), args.Error(2)
+	return args.Get(0).(map[uint]domain.TicketStatus), args.Get(1).(map[uint]time.Time), args.Get(2).(map[uint]string), args.Error(3)
 }
 
 func (m *MockTicketRepository) UpdateStatusAndAssignee(ctx context.Context, ticketID uint, status domain.TicketStatus, assigneeID string) error {

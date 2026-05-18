@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"support-ticket.com/internal/config"
-	"support-ticket.com/internal/model"
 	"support-ticket.com/internal/errmsgs"
+	domain "support-ticket.com/internal/model"
 	"support-ticket.com/internal/repository"
 	"support-ticket.com/internal/worker"
 )
@@ -89,10 +89,11 @@ type ticketJobResult struct {
 }
 
 type importMetadata struct {
-	existingTickets        map[uint]bool
-	existingTicketStatuses map[uint]domain.TicketStatus
-	ticketCreatedAt        map[uint]time.Time
-	existingDBEvents       map[string]bool
+	existingTickets         map[uint]bool
+	existingTicketStatuses  map[uint]domain.TicketStatus
+	ticketCreatedAt         map[uint]time.Time
+	existingDBEvents        map[string]bool
+	existingTicketAssignees map[uint]string
 }
 
 func (s *ticketEventService) Import(ctx context.Context, data []byte) (domain.BatchImportResult, error) {
@@ -171,7 +172,7 @@ func (s *ticketEventService) fetchMetadata(ctx context.Context, ticketIDs []uint
 		return importMetadata{}, fmt.Errorf("failed to fetch tickets: %w", err)
 	}
 
-	existingTicketStatuses, ticketCreatedAtByTicket, err := s.ticketRepo.GetTicketStatusAndCreatedAt(ctx, ticketIDs)
+	existingTicketStatuses, ticketCreatedAtByTicket, existingTicketAssignees, err := s.ticketRepo.GetTicketStatusAndCreatedAt(ctx, ticketIDs)
 	if err != nil {
 		return importMetadata{}, fmt.Errorf("failed to fetch ticket metadata: %w", err)
 	}
@@ -182,10 +183,11 @@ func (s *ticketEventService) fetchMetadata(ctx context.Context, ticketIDs []uint
 	}
 
 	return importMetadata{
-		existingTickets:        existingTickets,
-		existingTicketStatuses: existingTicketStatuses,
-		ticketCreatedAt:        ticketCreatedAtByTicket,
-		existingDBEvents:       existingDBEvents,
+		existingTickets:         existingTickets,
+		existingTicketStatuses:  existingTicketStatuses,
+		ticketCreatedAt:         ticketCreatedAtByTicket,
+		existingDBEvents:        existingDBEvents,
+		existingTicketAssignees: existingTicketAssignees,
 	}, nil
 }
 
@@ -202,6 +204,7 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 		return rejectJob(job, fmt.Errorf("ticket_id %d does not exist in DB", ticketID))
 	}
 	ticketCreatedAt := meta.ticketCreatedAt[ticketID]
+	currentAssigneeID := meta.existingTicketAssignees[ticketID]
 
 	localSeen := make(map[string]bool)
 	var finalJob *updateJob
@@ -226,6 +229,17 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 			}
 		}
 
+		reqAssigneeId := strings.TrimSpace(event.AssigneeID)
+		if currentStatus == domain.StatusNew && event.ToStatus == domain.StatusAssigned {
+			if reqAssigneeId == "" {
+				return rejectJob(job, fmt.Errorf("%w: Assignee ID is required when assigning a ticket", errmsgs.ErrInvalidInput))
+			}
+			currentAssigneeID = reqAssigneeId
+		} else if reqAssigneeId != "" && reqAssigneeId != currentAssigneeID {
+			return rejectJob(job, fmt.Errorf("%w: Cannot change assignee to '%s' during status transition to '%s'. Current assignee is '%s'",
+				errmsgs.ErrInvalidInput, reqAssigneeId, event.ToStatus, currentAssigneeID))
+		}
+
 		localSeen[key] = true
 		currentStatus = event.ToStatus
 		res.AcceptedEvents = append(res.AcceptedEvents, event)
@@ -241,7 +255,7 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 		finalJob = &updateJob{
 			TicketID:    ticketID,
 			Status:      event.ToStatus,
-			AssigneeID:  event.AssigneeID,
+			AssigneeID:  currentAssigneeID,
 			CreatedAt:   event.CreatedAt,
 			ResolvedAt:  resolvedAt,
 			CancelledAt: cancelledAt,
