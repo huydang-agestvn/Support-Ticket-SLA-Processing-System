@@ -6,6 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"support-ticket.com/internal/auth"
+	"support-ticket.com/internal/dto/common"
+	"support-ticket.com/internal/handler"
 )
 
 type AuthMiddleware struct {
@@ -23,44 +25,31 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"code":    http.StatusUnauthorized,
-				"error":   "missing authorization header",
-			})
-			c.Abort()
+			c.AbortWithStatusJSON(http.StatusUnauthorized, common.ErrorResponse(
+				common.NewUnauthorized(common.ErrCodeUnauthorized, "authorization header is required"),
+			))
 			return
 		}
 
 		const bearerPrefix = "Bearer "
 		if !strings.HasPrefix(authHeader, bearerPrefix) {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"code":    http.StatusUnauthorized,
-				"error":   "invalid authorization header format",
-			})
-			c.Abort()
+			c.AbortWithStatusJSON(http.StatusUnauthorized, common.ErrorResponse(
+				common.NewUnauthorized(common.ErrCodeUnauthorized, "invalid authorization header format"),
+			))
 			return
 		}
 
 		tokenString := strings.TrimSpace(strings.TrimPrefix(authHeader, bearerPrefix))
 		if tokenString == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"code":    http.StatusUnauthorized,
-				"error":   "missing bearer token",
-			})
-			c.Abort()
+			c.AbortWithStatusJSON(http.StatusUnauthorized, common.ErrorResponse(
+				common.NewUnauthorized(common.ErrCodeUnauthorized, "missing bearer token"),
+			))
 			return
 		}
 
 		currentUser, err := m.authenticator.VerifyToken(tokenString)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"code":    http.StatusUnauthorized,
-				"error":   "invalid token: " + err.Error(),
-			})
+			handler.HandleError(c, err)
 			c.Abort()
 			return
 		}
@@ -77,22 +66,16 @@ func (m *AuthMiddleware) RequireRole(allowedRoles ...string) gin.HandlerFunc {
 		currentUser := auth.UserFromContext(c.Request.Context())
 
 		if currentUser.UserID == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"code":    http.StatusUnauthorized,
-				"error":   "unauthorized",
-			})
-			c.Abort()
+			c.AbortWithStatusJSON(http.StatusUnauthorized, common.ErrorResponse(
+				common.NewUnauthorized(common.ErrCodeUnauthorized, "unauthorized"),
+			))
 			return
 		}
 
 		if !currentUser.HasAnyRole(allowedRoles...) {
-			c.JSON(http.StatusForbidden, gin.H{
-				"success": false,
-				"code":    http.StatusForbidden,
-				"error":   "forbidden: insufficient role",
-			})
-			c.Abort()
+			c.AbortWithStatusJSON(http.StatusForbidden, common.ErrorResponse(
+				common.NewForbidden(common.ErrCodeForbidden, "forbidden: insufficient role"),
+			))
 			return
 		}
 

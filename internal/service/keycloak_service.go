@@ -2,12 +2,12 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
 
+	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/response"
 )
 
@@ -32,15 +32,13 @@ func NewClient(tokenURL, clientID, clientSecret string) *ClientRequest {
 
 func (c *ClientRequest) Login(username, password string) (*response.KeycloakTokenResponse, error) {
 	if c.tokenURL == "" {
-		return nil, fmt.Errorf("keycloak token url is required")
+		return nil, common.NewInternal("authentication service is misconfigured")
 	}
-
 	if c.clientID == "" {
-		return nil, fmt.Errorf("keycloak client id is required")
+		return nil, common.NewInternal("authentication service is misconfigured")
 	}
-
 	if c.clientSecret == "" {
-		return nil, fmt.Errorf("keycloak client secret is required")
+		return nil, common.NewInternal("authentication service is misconfigured")
 	}
 
 	form := url.Values{}
@@ -56,14 +54,15 @@ func (c *ClientRequest) Login(username, password string) (*response.KeycloakToke
 		strings.NewReader(form.Encode()),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create keycloak login request: %w", err)
+		return nil, common.NewInternal("authentication service is misconfigured")
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to call keycloak token endpoint: %w", err)
+		log.Printf("[ERROR] keycloak unreachable: %v", err)
+		return nil, newServiceUnavailable("authentication service is temporarily unavailable")
 	}
 	defer resp.Body.Close()
 
@@ -71,21 +70,31 @@ func (c *ClientRequest) Login(username, password string) (*response.KeycloakToke
 		var kcErr response.KeycloakErrorResponse
 		_ = json.NewDecoder(resp.Body).Decode(&kcErr)
 
-		if kcErr.Error != "" {
-			return nil, fmt.Errorf("keycloak login failed: %s - %s", kcErr.Error, kcErr.ErrorDescription)
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return nil, common.NewUnauthorized(common.ErrCodeUnauthorized, "invalid username or password")
 		}
-
-		return nil, fmt.Errorf("keycloak login failed with status code: %d", resp.StatusCode)
+		log.Printf("[ERROR] keycloak returned %d: %s - %s", resp.StatusCode, kcErr.Error, kcErr.ErrorDescription)
+		return nil, newServiceUnavailable("authentication service is temporarily unavailable")
 	}
 
 	var tokenResp response.KeycloakTokenResponse
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return nil, fmt.Errorf("failed to decode keycloak token response: %w", err)
+		return nil, common.NewInternal("failed to process authentication response")
 	}
 
 	if tokenResp.AccessToken == "" {
-		return nil, fmt.Errorf("keycloak response missing access_token")
+		return nil, common.NewInternal("authentication service returned an empty token")
 	}
 
 	return &tokenResp, nil
 }
+
+func newServiceUnavailable(message string) *common.Error {
+	return &common.Error{
+		Code:    "SERVICE_UNAVAILABLE",
+		Status:  http.StatusServiceUnavailable,
+		Message: message,
+	}
+}
+
+var _ error = (*common.Error)(nil)

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/service"
 )
 
@@ -24,29 +25,26 @@ func NewReportHandler(reportSvc service.ReportService) *ReportHandler {
 // @Produce json
 // @Security BearerAuth
 // @Param date query string false "Report date in YYYY-MM-DD format" example(2026-05-05)
-// @Success 200 {object} map[string]interface{} "Get daily report successfully"
-// @Failure 400 {object} map[string]interface{} "Invalid date format"
-// @Failure 404 {object} map[string]interface{} "Report not found"
+// @Success 200 {object} common.APIResponse[domain.TicketReport] "Get daily report successfully"
+// @Failure 400 {object} common.APIResponse[any] "Invalid date format"
+// @Failure 404 {object} common.APIResponse[any] "Report not found"
 // @Router /reports/daily [get]
 func (h *ReportHandler) GetDaily(c *gin.Context) {
-	// Parse date từ query param, default là hôm nay
 	dateStr := c.DefaultQuery("date", time.Now().Format("2006-01-02"))
 
 	date, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid date format, expected YYYY-MM-DD",
-		})
+		c.JSON(http.StatusBadRequest, common.ErrorResponse(
+			common.NewBadRequest(common.ErrCodeInvalidInput, "invalid date format, expected YYYY-MM-DD"),
+		))
 		return
 	}
 
 	report, err := h.reportSvc.GetReport(date)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": err.Error(),
-		})
+		HandleError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, report)
+	c.JSON(http.StatusOK, common.SuccessResponse(report))
 }

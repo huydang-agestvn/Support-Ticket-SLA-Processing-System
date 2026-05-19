@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 
@@ -23,31 +22,6 @@ func NewTicketHandler(s service.TicketService) *TicketHandler {
 	return &TicketHandler{
 		ticketService: s,
 	}
-}
-
-// respondWithError deduplicates error handling and hides raw internal errors
-func respondWithError(c *gin.Context, err error) {
-	if errors.Is(err, errmsgs.ErrTicketNotFound) {
-		c.JSON(http.StatusNotFound, common.APIResponse[interface{}]{
-			Success: false,
-			Error:   errmsgs.ErrTicketNotFound.Error(),
-		})
-		return
-	}
-	if errors.Is(err, errmsgs.ErrValidation) || errors.Is(err, errmsgs.ErrInvalidInput) || errors.Is(err, errmsgs.ErrInvalidStatusTransition) {
-		c.JSON(http.StatusBadRequest, common.APIResponse[interface{}]{
-			Success: false,
-			Error:   err.Error(),
-		})
-		return
-	}
-
-	// Never expose raw internal errors to the client
-	// In a real system, you would log the raw `err` here for debugging
-	c.JSON(http.StatusInternalServerError, common.APIResponse[interface{}]{
-		Success: false,
-		Error:   errmsgs.ErrInternal.Error(),
-	})
 }
 
 func parseTicketID(c *gin.Context) (uint, error) {
@@ -73,34 +47,20 @@ func parseTicketID(c *gin.Context) (uint, error) {
 // @Router /tickets [post]
 func (h *TicketHandler) HandleCreateTicket(c *gin.Context) {
 	var req request.CreateTicketReq
-
 	if !BindJSONOrAbort(c, &req) {
 		return
 	}
 
-	// Validate priority
-	if !req.Priority.IsValid() {
-		c.JSON(http.StatusBadRequest, common.APIResponse[interface{}]{
-			Success: false,
-			Error:   "invalid priority value",
-		})
-		return
-	}
-
 	currentUser := auth.UserFromContext(c.Request.Context())
-
 	req.RequestorID = currentUser.UserID
 
 	ticket, err := h.ticketService.Create(c.Request.Context(), req)
 	if err != nil {
-		respondWithError(c, err)
+		HandleError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, common.APIResponse[*domain.Ticket]{
-		Success: true,
-		Data:    ticket,
-	})
+	c.JSON(http.StatusCreated, common.SuccessResponse(ticket))
 }
 
 // HandleListTickets godoc
@@ -131,7 +91,7 @@ func (h *TicketHandler) HandleListTickets(c *gin.Context) {
 
 	tickets, err := h.ticketService.FindAll(c.Request.Context(), query.TicketFilter, query.PaginationQuery)
 	if err != nil {
-		respondWithError(c, err)
+		HandleError(c, err)
 		return
 	}
 
@@ -158,23 +118,17 @@ func (h *TicketHandler) HandleListTickets(c *gin.Context) {
 func (h *TicketHandler) HandleGetTicket(c *gin.Context) {
 	id, err := parseTicketID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, common.APIResponse[interface{}]{
-			Success: false,
-			Error:   err.Error(),
-		})
+		HandleError(c, err)
 		return
 	}
 
 	ticket, err := h.ticketService.FindById(c.Request.Context(), id)
 	if err != nil {
-		respondWithError(c, err)
+		HandleError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, common.APIResponse[*domain.Ticket]{
-		Success: true,
-		Data:    ticket,
-	})
+	c.JSON(http.StatusOK, common.SuccessResponse(ticket))
 }
 
 // HandleUpdateStatus godoc
@@ -194,10 +148,7 @@ func (h *TicketHandler) HandleGetTicket(c *gin.Context) {
 func (h *TicketHandler) HandleUpdateStatus(c *gin.Context) {
 	id, err := parseTicketID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, common.APIResponse[interface{}]{
-			Success: false,
-			Error:   err.Error(),
-		})
+		HandleError(c, err)
 		return
 	}
 
@@ -207,17 +158,13 @@ func (h *TicketHandler) HandleUpdateStatus(c *gin.Context) {
 	}
 
 	currentUser := auth.UserFromContext(c.Request.Context())
-
 	req.AssigneeID = currentUser.UserID
 
 	err = h.ticketService.UpdateTicketStatus(c.Request.Context(), id, req)
 	if err != nil {
-		respondWithError(c, err)
+		HandleError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, common.APIResponse[interface{}]{
-		Success: true,
-		Message: "ticket status updated successfully",
-	})
+	c.JSON(http.StatusOK, common.SuccessMessageResponse("ticket status updated successfully"))
 }

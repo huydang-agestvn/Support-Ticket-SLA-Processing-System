@@ -7,7 +7,7 @@ import (
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"support-ticket.com/internal/model"
+	domain "support-ticket.com/internal/model"
 )
 
 type ReportRepository interface {
@@ -65,8 +65,8 @@ func (r *reportRepository) AggregateByDate(date time.Time) (*domain.TicketReport
 
 func (r *reportRepository) Upsert(report *domain.TicketReport) error {
 	err := r.db.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "report_date"}}, // Cột bắt trùng lặp
-		UpdateAll: true,                                   // Nếu trùng ngày, cập nhật toàn bộ các chỉ số mới
+		Columns:   []clause.Column{{Name: "report_date"}}, 
+		UpdateAll: true,                                  
 	}).Create(report).Error
 
 	if err != nil {

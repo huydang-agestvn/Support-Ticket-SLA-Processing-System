@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/errmsgs"
 )
 
@@ -51,7 +52,6 @@ func (p Priority) IsValid() bool {
 	return false
 }
 
-
 func (s TicketStatus) IsValid() bool {
 	switch s {
 	case StatusNew, StatusAssigned, StatusInProgress, StatusResolved, StatusClosed, StatusCancelled:
@@ -87,48 +87,48 @@ func (s TicketStatus) CanTransitionTo(next TicketStatus) bool {
 
 func (t *Ticket) Validate() error {
 	if strings.TrimSpace(t.Title) == "" {
-		return fmt.Errorf("%w: Title is required", errmsgs.ErrInvalidInput)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, "title is required")
 	}
 	if strings.TrimSpace(t.Description) == "" {
-		return fmt.Errorf("%w: Description is required", errmsgs.ErrInvalidInput)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, "description is required")
 	}
 	if strings.TrimSpace(t.RequestorID) == "" {
-		return fmt.Errorf("%w: Requestor ID is required", errmsgs.ErrInvalidInput)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, "requestor_id is required")
 	}
 	if !t.Priority.IsValid() {
-		return fmt.Errorf("%w: Unknown priority '%s'", errmsgs.ErrInvalidInput, t.Priority)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("unknown priority '%s'", t.Priority))
 	}
 	if !t.Status.IsValid() {
-		return fmt.Errorf("%w: Unknown status '%s'", errmsgs.ErrInvalidInput, t.Status)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("unknown status '%s'", t.Status))
 	}
 	if t.CreatedAt.IsZero() {
-		return fmt.Errorf("%w: Created At is required", errmsgs.ErrInvalidInput)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, "created_at is required")
 	}
 	if t.SLADueAt == nil || t.SLADueAt.IsZero() {
-		return fmt.Errorf("%w: SLA Due At is required for SLA tracking", errmsgs.ErrInvalidInput)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, "sla_due_at is required for SLA tracking")
 	}
 	if t.SLADueAt.Before(t.CreatedAt) {
-		return fmt.Errorf("%w: SLA Due At cannot be before creation time", errmsgs.ErrInvalidInput)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, "sla_due_at cannot be before the ticket creation time")
 	}
 	if t.Status == StatusResolved {
-		if err := validateTimestampAfterCreation(t.ResolvedAt, "Resolved At", t.CreatedAt); err != nil {
+		if err := validateTimestampAfterCreation(t.ResolvedAt, "resolved_at", t.CreatedAt); err != nil {
 			return err
 		}
 	}
 	if t.Status == StatusCancelled {
-		if err := validateTimestampAfterCreation(t.CancelledAt, "Cancelled At", t.CreatedAt); err != nil {
+		if err := validateTimestampAfterCreation(t.CancelledAt, "cancelled_at", t.CreatedAt); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func validateTimestampAfterCreation(ts *time.Time, fieldName string, createdAt time.Time) error {
+func validateTimestampAfterCreation(ts *time.Time, field string, createdAt time.Time) error {
 	if ts == nil || ts.IsZero() {
-		return fmt.Errorf("%w: %s is required", errmsgs.ErrInvalidInput, fieldName)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("%s is required", field))
 	}
 	if ts.Before(createdAt) {
-		return fmt.Errorf("%w: %s cannot be before Created At", errmsgs.ErrInvalidInput, fieldName)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("%s cannot be before created_at", field))
 	}
 	return nil
 }
@@ -138,22 +138,26 @@ func (t *Ticket) ValidateStatusTransition(newStatus TicketStatus, reqAssigneeId 
 
 	if t.Status == StatusNew && newStatus == StatusAssigned {
 		if reqAssigneeId == "" {
-			return fmt.Errorf("%w: Assignee ID is required when assigning a ticket", errmsgs.ErrInvalidInput)
+			return common.NewBadRequest(common.ErrCodeInvalidInput, "assignee_id is required when assigning a ticket")
 		}
 		t.AssigneeID = reqAssigneeId
 	} else if reqAssigneeId != "" && reqAssigneeId != t.AssigneeID {
-		return fmt.Errorf("%w: Cannot change assignee to '%s' during status transition to '%s'. Current assignee is '%s'",
-			errmsgs.ErrInvalidInput, reqAssigneeId, newStatus, t.AssigneeID)
+		return common.NewBadRequest(common.ErrCodeInvalidInput,
+			fmt.Sprintf("cannot change assignee to '%s' during status transition to '%s', current assignee is '%s'",
+				reqAssigneeId, newStatus, t.AssigneeID))
 	}
 
 	if t.Status == newStatus {
-		return fmt.Errorf("%w: Status is already set to '%s'", errmsgs.ErrInvalidStatusTransition, newStatus)
+		return common.NewBadRequest(common.ErrCodeInvalidTransition,
+			fmt.Sprintf("status is already set to '%s'", newStatus))
 	}
 	if !newStatus.IsValid() {
-		return fmt.Errorf("%w: Cannot transition to unknown status '%s'", errmsgs.ErrInvalidStatusTransition, newStatus)
+		return common.NewBadRequest(common.ErrCodeInvalidTransition,
+			fmt.Sprintf("cannot transition to unknown status '%s'", newStatus))
 	}
 	if !t.Status.CanTransitionTo(newStatus) {
-		return fmt.Errorf("%w: Cannot transition from '%s' to '%s'", errmsgs.ErrInvalidStatusTransition, t.Status, newStatus)
+		return common.NewBadRequest(common.ErrCodeInvalidTransition,
+			fmt.Sprintf("cannot transition from '%s' to '%s'", t.Status, newStatus))
 	}
 
 	switch newStatus {
@@ -172,9 +176,11 @@ func (t *Ticket) ValidateStatusTransition(newStatus TicketStatus, reqAssigneeId 
 }
 
 func (t *Ticket) ValidateResolvedAt(createdAt time.Time) error {
-	return validateTimestampAfterCreation(t.ResolvedAt, "Resolved At", createdAt)
+	return validateTimestampAfterCreation(t.ResolvedAt, "resolved_at", createdAt)
 }
 
 func (t *Ticket) ValidateCancelledAt(createdAt time.Time) error {
-	return validateTimestampAfterCreation(t.CancelledAt, "Cancelled At", createdAt)
+	return validateTimestampAfterCreation(t.CancelledAt, "cancelled_at", createdAt)
 }
+
+var _ = errmsgs.ErrInvalidInput

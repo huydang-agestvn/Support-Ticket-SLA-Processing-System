@@ -4,13 +4,13 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
+	"support-ticket.com/internal/dto/common"
 )
 
 type KeycloakAuthenticator struct {
@@ -40,10 +40,13 @@ func NewKeycloakAuthenticator(issuer, clientID, jwksURL string) *KeycloakAuthent
 	}
 }
 
+// VerifyToken validates the JWT and returns the user principal.
+// All token-level failures are returned as 401 Unauthorized so that
+// HandleError correctly classifies them without falling back to 500.
 func (a *KeycloakAuthenticator) VerifyToken(tokenString string) (UserPrincipal, error) {
 	tokenString = strings.TrimSpace(tokenString)
 	if tokenString == "" {
-		return UserPrincipal{}, errors.New("token is empty")
+		return UserPrincipal{}, common.NewUnauthorized(common.ErrCodeUnauthorized, "token is required")
 	}
 
 	claims := &KeycloakClaims{}
@@ -55,35 +58,35 @@ func (a *KeycloakAuthenticator) VerifyToken(tokenString string) (UserPrincipal, 
 
 		kid, ok := token.Header["kid"].(string)
 		if !ok || kid == "" {
-			return nil, errors.New("missing kid in token header")
+			return nil, fmt.Errorf("missing kid in token header")
 		}
 
 		return a.getPublicKey(kid)
 	})
 
 	if err != nil {
-		return UserPrincipal{}, fmt.Errorf("invalid token: %w", err)
+		return UserPrincipal{}, common.NewUnauthorized(common.ErrCodeUnauthorized, "invalid or expired token")
 	}
 
 	if !token.Valid {
-		return UserPrincipal{}, errors.New("invalid token")
+		return UserPrincipal{}, common.NewUnauthorized(common.ErrCodeUnauthorized, "invalid token")
 	}
 
 	if claims.Issuer != a.Issuer {
-		return UserPrincipal{}, fmt.Errorf("invalid issuer: %s", claims.Issuer)
+		return UserPrincipal{}, common.NewUnauthorized(common.ErrCodeUnauthorized, "token issuer is not trusted")
 	}
 
 	if claims.AuthorizedParty != a.ClientID {
-		return UserPrincipal{}, fmt.Errorf("invalid authorized party: %s", claims.AuthorizedParty)
+		return UserPrincipal{}, common.NewUnauthorized(common.ErrCodeUnauthorized, "token was not issued for this client")
 	}
 
 	principal := claims.ToPrincipal()
 	if principal.UserID == "" {
-		return UserPrincipal{}, errors.New("missing user id in token")
+		return UserPrincipal{}, common.NewUnauthorized(common.ErrCodeUnauthorized, "token is missing user identity")
 	}
 
 	if !principal.HasBusinessRole() {
-		return UserPrincipal{}, errors.New("user has no valid business role")
+		return UserPrincipal{}, common.NewForbidden(common.ErrCodeForbidden, "user has no valid business role")
 	}
 
 	return principal, nil
