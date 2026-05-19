@@ -138,7 +138,7 @@ func TestTicketEventService_Import(t *testing.T) {
 			},
 			expectedAccepted:     0,
 			expectedRejected:     1,
-			expectedRejectDetail: "From Status and To Status cannot be the same",
+			expectedRejectDetail: "from_status and to_status cannot be the same",
 		},
 	}
 

@@ -61,7 +61,7 @@ func TestTicketService_Create(t *testing.T) {
 				SlaDueAt:    &dueAt,
 			},
 			mockRepo:      func(m *testmock.MockTicketRepository) {},
-			expectedError: "Title is required",
+			expectedError: "title is required",
 		},
 	}
 
@@ -185,7 +185,7 @@ func TestTicketService_UpdateTicketStatus(t *testing.T) {
 				}
 				m.On("FindById", ctx, uint(1)).Return(ticket, nil)
 			},
-			expectedError: "Cannot transition from 'new' to 'in_progress'",
+			expectedError: "cannot transition from 'new' to 'in_progress'",
 		},
 	}
 
