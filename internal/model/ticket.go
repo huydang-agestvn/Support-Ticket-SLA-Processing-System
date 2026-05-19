@@ -137,6 +137,16 @@ func (t *Ticket) ValidateStatusTransition(newStatus TicketStatus, reqAssigneeId 
 	fmt.Printf("ticket assignee id: %s\n", t.AssigneeID)
 	reqAssigneeId = strings.TrimSpace(reqAssigneeId)
 
+	if t.Status == StatusNew && newStatus == StatusAssigned {
+		if reqAssigneeId == "" {
+			return common.NewBadRequest(common.ErrCodeInvalidInput, "assignee_id is required when assigning a ticket")
+		}
+		t.AssigneeID = reqAssigneeId
+	} else if reqAssigneeId != "" && reqAssigneeId != t.AssigneeID {
+		return common.NewBadRequest(common.ErrCodeInvalidInput,
+			fmt.Sprintf("cannot change assignee during status transition to '%s'",newStatus))
+	}
+
 	if t.Status == newStatus {
 		return common.NewBadRequest(common.ErrCodeInvalidTransition,
 			fmt.Sprintf("status is already set to '%s'", newStatus))
