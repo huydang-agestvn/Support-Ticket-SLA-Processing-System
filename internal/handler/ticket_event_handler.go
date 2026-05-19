@@ -23,6 +23,7 @@ func NewTicketEventHandler(service service.TicketEventService) *TicketEventHandl
 	}
 }
 
+
 // readImportInput reads raw bytes and detects the file format from the request.
 // Supports multipart file upload (CSV/JSON) and raw JSON body (backward compatible).
 func readImportInput(c *gin.Context) (data []byte, format string, err error) {
@@ -47,9 +48,10 @@ func readImportInput(c *gin.Context) (data []byte, format string, err error) {
 
 // ImportEvents godoc
 // @Summary Import ticket events
-// @Description Import ticket events in batch from a CSV or JSON file. The file must be uploaded using the `file` field.
-// @Tags Ticket Events
+// @Description Import ticket events in batch. Accepts a multipart file upload (CSV or JSON) via the `file` field, or a raw JSON body.
+// @Tags ticket-events
 // @Accept multipart/form-data
+// @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Param file formData file true "CSV or JSON file to import"
@@ -72,7 +74,6 @@ func (h *TicketEventHandler) ImportEvents(c *gin.Context) {
 		HandleError(c, err)
 		return
 	}
-
 	result, err := h.service.Import(ctx, events)
 	if err != nil {
 		HandleError(c, err)
