@@ -160,6 +160,7 @@ func (h *TicketHandler) HandleUpdateStatus(c *gin.Context) {
 	currentUser := auth.UserFromContext(c.Request.Context())
 	req.AssigneeID = currentUser.UserID
 
+	
 	err = h.ticketService.UpdateTicketStatus(c.Request.Context(), id, req)
 	if err != nil {
 		HandleError(c, err)
