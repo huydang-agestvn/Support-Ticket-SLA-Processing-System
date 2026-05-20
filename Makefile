@@ -29,3 +29,6 @@ docker-down:
 # View API container logs
 docker-logs:
 	sudo docker logs ticket-sla-api
+	
+report:
+	go run ./cmd/report --date=$$(date +%Y-%m-%d)
