@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"support-ticket.com/internal/dto/request"
 	domain "support-ticket.com/internal/model"
 )
@@ -18,9 +19,8 @@ type TicketRepository interface {
 	UpdateStatusWithEvent(ctx context.Context, ticket *domain.Ticket, event *domain.TicketEvent) error
 	GetExistingTicketIDs(ctx context.Context, ticketIDs []uint) (map[uint]bool, error)
 	GetTicketStatusAndCreatedAt(ctx context.Context, ticketIDs []uint) (map[uint]domain.TicketStatus, map[uint]time.Time, map[uint]string, error)
-	UpdateStatusAndAssignee(ctx context.Context, ticketID uint, status domain.TicketStatus, assigneeID string) error
-	UpdateStatusAndResolvedAt(ctx context.Context, ticketID uint, status domain.TicketStatus, assigneeID string, resolvedAt time.Time) error
-	UpdateStatusAndCancelledAt(ctx context.Context, ticketID uint, status domain.TicketStatus, assigneeID string, cancelledAt time.Time) error
+	Transaction(ctx context.Context, fn func(ctx context.Context) error) error
+	UpdateStatusesBatch(ctx context.Context, tickets []domain.Ticket) error
 }
 
 type ticketRepositoryImpl struct {
@@ -31,14 +31,43 @@ func NewTicketRepository(db *gorm.DB) TicketRepository {
 	return &ticketRepositoryImpl{db: db}
 }
 
+// Package-private helper to handle context transaction propagation
+func getDB(ctx context.Context, fallback *gorm.DB) *gorm.DB {
+	if tx, ok := ctx.Value("tx").(*gorm.DB); ok {
+		return tx.WithContext(ctx)
+	}
+	return fallback.WithContext(ctx)
+}
+
+func (r *ticketRepositoryImpl) getDB(ctx context.Context) *gorm.DB {
+	return getDB(ctx, r.db)
+}
+
+func (r *ticketRepositoryImpl) Transaction(ctx context.Context, fn func(ctx context.Context) error) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		txCtx := context.WithValue(ctx, "tx", tx)
+		return fn(txCtx)
+	})
+}
+
+func (r *ticketRepositoryImpl) UpdateStatusesBatch(ctx context.Context, tickets []domain.Ticket) error {
+	if len(tickets) == 0 {
+		return nil
+	}
+	return r.getDB(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"status", "assignee_id", "resolved_at", "cancelled_at"}),
+	}).CreateInBatches(tickets, 100).Error
+}
+
 func (r *ticketRepositoryImpl) Create(ctx context.Context, ticket *domain.Ticket) error {
-	return r.db.WithContext(ctx).Create(ticket).Error
+	return r.getDB(ctx).Create(ticket).Error
 }
 
 func (r *ticketRepositoryImpl) FindById(ctx context.Context, id uint) (*domain.Ticket, error) {
 	var ticket domain.Ticket
 
-	err := r.db.WithContext(ctx).Preload("Events").First(&ticket, id).Error
+	err := r.getDB(ctx).Preload("Events").First(&ticket, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -53,7 +82,7 @@ func (r *ticketRepositoryImpl) FindAll(ctx context.Context, filter request.Ticke
 	var tickets []domain.Ticket
 	var total int64
 
-	query := r.db.WithContext(ctx).Model(&domain.Ticket{})
+	query := r.getDB(ctx).Model(&domain.Ticket{})
 
 	if filter.Status != "" {
 		query = query.Where("status = ?", filter.Status)
@@ -86,7 +115,7 @@ func (r *ticketRepositoryImpl) FindAll(ctx context.Context, filter request.Ticke
 }
 
 func (r *ticketRepositoryImpl) UpdateStatusWithEvent(ctx context.Context, ticket *domain.Ticket, event *domain.TicketEvent) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return r.getDB(ctx).Transaction(func(tx *gorm.DB) error {
 		// 1. Update ticket
 		if err := tx.Save(ticket).Error; err != nil {
 			return fmt.Errorf("update ticket status: %w", err)
@@ -103,7 +132,7 @@ func (r *ticketRepositoryImpl) UpdateStatusWithEvent(ctx context.Context, ticket
 
 func (r *ticketRepositoryImpl) GetExistingTicketIDs(ctx context.Context, ticketIDs []uint) (map[uint]bool, error) {
 	var existingIDs []uint
-	err := r.db.WithContext(ctx).Model(&domain.Ticket{}).Where("id IN ?", ticketIDs).Pluck("id", &existingIDs).Error
+	err := r.getDB(ctx).Model(&domain.Ticket{}).Where("id IN ?", ticketIDs).Pluck("id", &existingIDs).Error
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +158,7 @@ func (r *ticketRepositoryImpl) GetTicketStatusAndCreatedAt(ctx context.Context, 
 	}
 
 	var rows []ticketMetadataRow
-	err := r.db.WithContext(ctx).Model(&domain.Ticket{}).
+	err := r.getDB(ctx).Model(&domain.Ticket{}).
 		Select("id, status, created_at, assignee_id").
 		Where("id IN ?", ticketIDs).
 		Find(&rows).Error
@@ -149,26 +178,4 @@ func (r *ticketRepositoryImpl) GetTicketStatusAndCreatedAt(ctx context.Context, 
 	return statuses, createdAt, assignees, nil
 }
 
-func (r *ticketRepositoryImpl) UpdateStatusAndAssignee(ctx context.Context, ticketID uint, status domain.TicketStatus, assigneeID string) error {
-	return r.updateStatusWithTimestamps(ctx, ticketID, status, assigneeID, nil, nil)
-}
 
-func (r *ticketRepositoryImpl) updateStatusWithTimestamps(ctx context.Context, ticketID uint, status domain.TicketStatus, assigneeID string, resolvedAt, cancelledAt *time.Time) error {
-	updates := map[string]interface{}{"status": status, "assignee_id": assigneeID}
-	if resolvedAt != nil {
-		updates["resolved_at"] = *resolvedAt
-	}
-	if cancelledAt != nil {
-		updates["cancelled_at"] = *cancelledAt
-	}
-
-	return r.db.WithContext(ctx).Model(&domain.Ticket{}).Where("id = ?", ticketID).Updates(updates).Error
-}
-
-func (r *ticketRepositoryImpl) UpdateStatusAndResolvedAt(ctx context.Context, ticketID uint, status domain.TicketStatus, assigneeID string, resolvedAt time.Time) error {
-	return r.updateStatusWithTimestamps(ctx, ticketID, status, assigneeID, &resolvedAt, nil)
-}
-
-func (r *ticketRepositoryImpl) UpdateStatusAndCancelledAt(ctx context.Context, ticketID uint, status domain.TicketStatus, assigneeID string, cancelledAt time.Time) error {
-	return r.updateStatusWithTimestamps(ctx, ticketID, status, assigneeID, nil, &cancelledAt)
-}

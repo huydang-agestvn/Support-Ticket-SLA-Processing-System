@@ -61,11 +61,12 @@ func TestTicketEventService_Import(t *testing.T) {
 					map[uint]string{1: ""},
 					nil,
 				)
-				m.On("UpdateStatusAndAssignee", ctx, uint(1), domain.StatusAssigned, "agent1").Return(nil)
+				m.On("Transaction", ctx, mock.Anything).Return(nil)
+				m.On("UpdateStatusesBatch", mock.Anything, mock.Anything).Return(nil)
 			},
 			mockEventRepo: func(m *testmock.MockTicketEventRepository) {
 				m.On("GetExistingEventKeys", ctx, mock.Anything).Return(map[string]bool{}, nil)
-				m.On("CreateBatch", mock.Anything).Return(nil)
+				m.On("CreateBatch", mock.Anything, mock.Anything).Return(nil)
 			},
 			expectedAccepted: 1,
 			expectedRejected: 0,
@@ -90,6 +91,7 @@ func TestTicketEventService_Import(t *testing.T) {
 					map[uint]string{},
 					nil,
 				)
+				m.On("Transaction", ctx, mock.Anything).Return(nil)
 			},
 			mockEventRepo: func(m *testmock.MockTicketEventRepository) {
 				m.On("GetExistingEventKeys", ctx, mock.Anything).Return(map[string]bool{}, nil)
@@ -109,6 +111,7 @@ func TestTicketEventService_Import(t *testing.T) {
 					map[uint]string{},
 					nil,
 				)
+				m.On("Transaction", ctx, mock.Anything).Return(nil)
 			},
 			mockEventRepo: func(m *testmock.MockTicketEventRepository) {
 				m.On("GetExistingEventKeys", ctx, mock.Anything).Return(map[string]bool{}, nil)

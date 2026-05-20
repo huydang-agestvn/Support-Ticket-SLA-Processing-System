@@ -8,7 +8,7 @@ import (
 )
 
 type TicketEventRepository interface {
-	CreateBatch(events []domain.TicketEvent) error
+	CreateBatch(ctx context.Context, events []domain.TicketEvent) error
 	Create(ctx context.Context, event *domain.TicketEvent) error
 	GetExistingEventKeys(ctx context.Context, keys []string) (map[string]bool, error)
 	FetchLatestEventPerTicket(ctx context.Context, ticketIDs []int) ([]domain.TicketEvent, error)
@@ -23,6 +23,10 @@ func NewTicketEventRepository(db *gorm.DB) TicketEventRepository {
 	return &ticketEventRepository{db}
 }
 
+func (r *ticketEventRepository) getDB(ctx context.Context) *gorm.DB {
+	return getDB(ctx, r.db)
+}
+
 // FetchLatestEventPerTicket implements [TicketEventRepository].
 func (r *ticketEventRepository) FetchLatestEventPerTicket(ctx context.Context, ticketIDs []int) ([]domain.TicketEvent, error) {
 	if len(ticketIDs) == 0 {
@@ -30,7 +34,7 @@ func (r *ticketEventRepository) FetchLatestEventPerTicket(ctx context.Context, t
 	}
 
 	var results []domain.TicketEvent
-	err := r.db.WithContext(ctx).
+	err := r.getDB(ctx).
 		Model(&domain.TicketEvent{}).
 		Select("DISTINCT ON (ticket_id) ticket_id, to_status, assignee_id, created_at").
 		Where("ticket_id IN ?", ticketIDs).
@@ -49,7 +53,7 @@ func (r *ticketEventRepository) FetchLatestResolvedEventPerTicket(ctx context.Co
 	}
 
 	var results []domain.TicketEvent
-	err := r.db.WithContext(ctx).
+	err := r.getDB(ctx).
 		Model(&domain.TicketEvent{}).
 		Select("DISTINCT ON (ticket_id) ticket_id, created_at").
 		Where("ticket_id IN ? AND to_status = ?", ticketIDs, domain.StatusResolved).
@@ -62,17 +66,17 @@ func (r *ticketEventRepository) FetchLatestResolvedEventPerTicket(ctx context.Co
 	return results, nil
 }
 
-func (r *ticketEventRepository) CreateBatch(events []domain.TicketEvent) error {
-	return r.db.CreateInBatches(events, 100).Error
+func (r *ticketEventRepository) CreateBatch(ctx context.Context, events []domain.TicketEvent) error {
+	return r.getDB(ctx).CreateInBatches(events, 100).Error
 }
 
 func (r *ticketEventRepository) Create(ctx context.Context, event *domain.TicketEvent) error {
-	return r.db.WithContext(ctx).Create(event).Error
+	return r.getDB(ctx).Create(event).Error
 }
 
 func (r *ticketEventRepository) GetExistingEventKeys(ctx context.Context, keys []string) (map[string]bool, error) {
 	var existingKeys []string
-	err := r.db.WithContext(ctx).Raw("SELECT CONCAT(ticket_id, '|', from_status, '|', to_status) as key FROM ticket_events WHERE CONCAT(ticket_id, '|', from_status, '|', to_status) IN (?)", keys).Scan(&existingKeys).Error
+	err := r.getDB(ctx).Raw("SELECT CONCAT(ticket_id, '|', from_status, '|', to_status) as key FROM ticket_events WHERE CONCAT(ticket_id, '|', from_status, '|', to_status) IN (?)", keys).Scan(&existingKeys).Error
 	if err != nil {
 		return nil, err
 	}
