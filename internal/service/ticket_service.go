@@ -102,9 +102,13 @@ func (s *ticketServiceImpl) UpdateTicketStatus(ctx context.Context, id uint, req
 		return fmt.Errorf("failed to get ticket: %w", err)
 	}
 
+
+	
 	if err := ticket.ValidateStatusTransition(req.Status, req.AssigneeID, time.Now()); err != nil {
 		return fmt.Errorf("%w", err)
 	}
+
+
 
 	// Build event
 	event := &domain.TicketEvent{
