@@ -1,16 +1,3 @@
-<div align="center">
-  <h1>Support Ticket SLA Processing System</h1>
-  <p>A robust backend project focusing on High-Performance Concurrency, RESTful APIs, Clean Architecture, and ETL Pipelines.</p>
-
-  ![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=for-the-badge&logo=go)
-  ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-174169E1?style=for-the-badge&logo=postgresql)
-  ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker)
-  ![GitHub Actions](https://img.shields.io/badge/CI/CD-GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions)
-</div>
-
-## 📖 Description
-
-This project is a comprehensive backend system designed to manage support tickets and calculate Service Level Agreements (SLA). Built primarily for training purposes, it emphasizes the practical application of Golang's concurrency model (worker pools), robust REST API design, complex database interactions, test-driven development (TDD), and data pipelines (ETL).
 
 <div align="center">
   <h1>Support Ticket SLA Processing System</h1>
