@@ -295,66 +295,64 @@ func (s *ticketEventService) applyImportResults(ctx context.Context, results []t
 		})
 	}
 
-	if len(eventsToInsert) > 0 {
-		if err := s.eventRepo.CreateBatch(eventsToInsert); err != nil {
-			return err
-		}
-	}
-
-	if len(finalUpdates) > 0 {
-		return s.updateTicketStatuses(ctx, finalUpdates)
-	}
-
-	return nil
-}
-
-func (s *ticketEventService) updateTicketStatuses(ctx context.Context, finalUpdates []updateJob) error {
-	var closedTicketIDs []int
-	for _, u := range finalUpdates {
-		if u.Status == domain.StatusClosed && u.ResolvedAt == nil {
-			closedTicketIDs = append(closedTicketIDs, int(u.TicketID))
-		}
-	}
-
-	resolvedAtByTicket := make(map[uint]time.Time)
-	if len(closedTicketIDs) > 0 {
-		resolvedEvents, err := s.eventRepo.FetchLatestResolvedEventPerTicket(ctx, closedTicketIDs)
-		if err == nil {
-			for _, ev := range resolvedEvents {
-				resolvedAtByTicket[ev.TicketID] = ev.CreatedAt
+	// Wrap DB operations inside a Database Transaction
+	return s.ticketRepo.Transaction(ctx, func(txCtx context.Context) error {
+		if len(eventsToInsert) > 0 {
+			if err := s.eventRepo.CreateBatch(txCtx, eventsToInsert); err != nil {
+				return err
 			}
 		}
-	}
 
-	updateResults := worker.Run(finalUpdates, func(job updateJob) error {
-		switch job.Status {
-		case domain.StatusResolved:
-			if job.ResolvedAt != nil {
-				return s.ticketRepo.UpdateStatusAndResolvedAt(ctx, job.TicketID, job.Status, job.AssigneeID, *job.ResolvedAt)
+		if len(finalUpdates) > 0 {
+			var closedTicketIDs []int
+			for _, u := range finalUpdates {
+				if u.Status == domain.StatusClosed && u.ResolvedAt == nil {
+					closedTicketIDs = append(closedTicketIDs, int(u.TicketID))
+				}
 			}
-			return s.ticketRepo.UpdateStatusAndResolvedAt(ctx, job.TicketID, job.Status, job.AssigneeID, job.CreatedAt)
-		case domain.StatusCancelled:
-			if job.CancelledAt != nil {
-				return s.ticketRepo.UpdateStatusAndCancelledAt(ctx, job.TicketID, job.Status, job.AssigneeID, *job.CancelledAt)
+
+			resolvedAtByTicket := make(map[uint]time.Time)
+			if len(closedTicketIDs) > 0 {
+				resolvedEvents, err := s.eventRepo.FetchLatestResolvedEventPerTicket(txCtx, closedTicketIDs)
+				if err == nil {
+					for _, ev := range resolvedEvents {
+						resolvedAtByTicket[ev.TicketID] = ev.CreatedAt
+					}
+				}
 			}
-			return s.ticketRepo.UpdateStatusAndCancelledAt(ctx, job.TicketID, job.Status, job.AssigneeID, job.CreatedAt)
-		case domain.StatusClosed:
-			if job.ResolvedAt != nil {
-				return s.ticketRepo.UpdateStatusAndResolvedAt(ctx, job.TicketID, job.Status, job.AssigneeID, *job.ResolvedAt)
+
+			tickets := make([]domain.Ticket, len(finalUpdates))
+			for i, u := range finalUpdates {
+				var resolvedAt *time.Time = u.ResolvedAt
+				if u.Status == domain.StatusClosed && resolvedAt == nil {
+					if rTime, ok := resolvedAtByTicket[u.TicketID]; ok {
+						resolvedAt = &rTime
+					}
+				} else if u.Status == domain.StatusResolved && resolvedAt == nil {
+					t := u.CreatedAt
+					resolvedAt = &t
+				}
+
+				var cancelledAt *time.Time = u.CancelledAt
+				if u.Status == domain.StatusCancelled && cancelledAt == nil {
+					t := u.CreatedAt
+					cancelledAt = &t
+				}
+
+				tickets[i] = domain.Ticket{
+					ID:          u.TicketID,
+					Status:      u.Status,
+					AssigneeID:  u.AssigneeID,
+					ResolvedAt:  resolvedAt,
+					CancelledAt: cancelledAt,
+				}
 			}
-			if resolvedAt, ok := resolvedAtByTicket[job.TicketID]; ok {
-				return s.ticketRepo.UpdateStatusAndResolvedAt(ctx, job.TicketID, job.Status, job.AssigneeID, resolvedAt)
+
+			if err := s.ticketRepo.UpdateStatusesBatch(txCtx, tickets); err != nil {
+				return fmt.Errorf("failed to update ticket statuses in batch: %w", err)
 			}
-			fallthrough
-		default:
-			return s.ticketRepo.UpdateStatusAndAssignee(ctx, job.TicketID, job.Status, job.AssigneeID)
 		}
+
+		return nil
 	})
-
-	for _, err := range updateResults {
-		if err != nil {
-			return fmt.Errorf("failed to update ticket status: %w", err)
-		}
-	}
-	return nil
 }

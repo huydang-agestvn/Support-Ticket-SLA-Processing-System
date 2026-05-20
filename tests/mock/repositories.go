@@ -56,18 +56,18 @@ func (m *MockTicketRepository) GetTicketStatusAndCreatedAt(ctx context.Context, 
 	return args.Get(0).(map[uint]domain.TicketStatus), args.Get(1).(map[uint]time.Time), args.Get(2).(map[uint]string), args.Error(3)
 }
 
-func (m *MockTicketRepository) UpdateStatusAndAssignee(ctx context.Context, ticketID uint, status domain.TicketStatus, assigneeID string) error {
-	args := m.Called(ctx, ticketID, status, assigneeID)
-	return args.Error(0)
+
+
+func (m *MockTicketRepository) Transaction(ctx context.Context, fn func(ctx context.Context) error) error {
+	args := m.Called(ctx, fn)
+	if err := args.Error(0); err != nil {
+		return err
+	}
+	return fn(ctx)
 }
 
-func (m *MockTicketRepository) UpdateStatusAndResolvedAt(ctx context.Context, ticketID uint, status domain.TicketStatus, assigneeID string, resolvedAt time.Time) error {
-	args := m.Called(ctx, ticketID, status, assigneeID, resolvedAt)
-	return args.Error(0)
-}
-
-func (m *MockTicketRepository) UpdateStatusAndCancelledAt(ctx context.Context, ticketID uint, status domain.TicketStatus, assigneeID string, cancelledAt time.Time) error {
-	args := m.Called(ctx, ticketID, status, assigneeID, cancelledAt)
+func (m *MockTicketRepository) UpdateStatusesBatch(ctx context.Context, tickets []domain.Ticket) error {
+	args := m.Called(ctx, tickets)
 	return args.Error(0)
 }
 
@@ -76,8 +76,8 @@ type MockTicketEventRepository struct {
 	mock.Mock
 }
 
-func (m *MockTicketEventRepository) CreateBatch(events []domain.TicketEvent) error {
-	args := m.Called(events)
+func (m *MockTicketEventRepository) CreateBatch(ctx context.Context, events []domain.TicketEvent) error {
+	args := m.Called(ctx, events)
 	return args.Error(0)
 }
 
