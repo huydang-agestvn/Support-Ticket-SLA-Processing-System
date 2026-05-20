@@ -28,9 +28,9 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 // @Accept json
 // @Produce json
 // @Param request body request.LoginRequest true "Login request"
-// @Success 200 {object} map[string]interface{} "Login successfully"
-// @Failure 400 {object} map[string]interface{} "Invalid request body"
-// @Failure 401 {object} map[string]interface{} "Invalid username or password"
+// @Success 200 {object} common.SuccessResponseDoc "Login successfully"
+// @Failure 400 {object} common.ErrorResponseDoc "Invalid request body"
+// @Failure 401 {object} common.ErrorResponseDoc "Invalid username or password"
 // @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var input request.LoginRequest
@@ -41,7 +41,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	result, err := h.authService.Login(input)
 	if err != nil {
-		HandleError(c,err)
+		HandleError(c, err)
 		return
 	}
 

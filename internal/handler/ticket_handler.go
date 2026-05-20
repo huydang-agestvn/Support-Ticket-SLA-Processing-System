@@ -41,9 +41,10 @@ func parseTicketID(c *gin.Context) (uint, error) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body request.CreateTicketReq true "Create ticket request"
-// @Success 201 {object} common.APIResponse[domain.Ticket] "Ticket created successfully"
-// @Failure 400 {object} common.APIResponse[any] "Invalid request body or invalid priority"
-// @Failure 500 {object} common.APIResponse[any] "Internal server error"
+// @Success 201 {object} common.SuccessResponseDoc "Create ticket successfully"
+// @Failure 400 {object} common.ErrorResponseDoc "Invalid request body or invalid priority"
+// @Failure 401 {object} common.ErrorResponseDoc "Unauthorized"
+// @Failure 500 {object} common.ErrorResponseDoc "Internal server error"
 // @Router /tickets [post]
 func (h *TicketHandler) HandleCreateTicket(c *gin.Context) {
 	var req request.CreateTicketReq
@@ -75,9 +76,11 @@ func (h *TicketHandler) HandleCreateTicket(c *gin.Context) {
 // @Param assignee_id query string false "Filter by assignee ID"
 // @Param page query int false "Page number"
 // @Param limit query int false "Number of items per page"
-// @Success 200 {object} common.APIResponse[common.PaginatedResult[domain.Ticket]] "Get tickets successfully"
-// @Failure 400 {object} common.APIResponse[any] "Invalid query parameters"
-// @Failure 500 {object} common.APIResponse[any] "Internal server error"
+// @Success 200 {object} common.SuccessResponseDoc "Get tickets successfully"
+// @Failure 400 {object} common.ErrorResponseDoc "Invalid query parameters"
+// @Failure 401 {object} common.ErrorResponseDoc "Unauthorized"
+// @Failure 500 {object} common.ErrorResponseDoc "Internal server error"
+// @Router /tickets [get]
 // @Router /tickets [get]
 func (h *TicketHandler) HandleListTickets(c *gin.Context) {
 	var query struct {
@@ -110,10 +113,11 @@ func (h *TicketHandler) HandleListTickets(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "Ticket ID"
-// @Success 200 {object} common.APIResponse[domain.Ticket] "Get ticket successfully"
-// @Failure 400 {object} common.APIResponse[any] "Invalid ticket ID"
-// @Failure 404 {object} common.APIResponse[any] "Ticket not found"
-// @Failure 500 {object} common.APIResponse[any] "Internal server error"
+// @Success 200 {object} common.SuccessResponseDoc "Get ticket successfully"
+// @Failure 400 {object} common.ErrorResponseDoc "Invalid ticket ID"
+// @Failure 401 {object} common.ErrorResponseDoc "Unauthorized"
+// @Failure 404 {object} common.ErrorResponseDoc "Ticket not found"
+// @Failure 500 {object} common.ErrorResponseDoc "Internal server error"
 // @Router /tickets/{id} [get]
 func (h *TicketHandler) HandleGetTicket(c *gin.Context) {
 	id, err := parseTicketID(c)
@@ -140,10 +144,11 @@ func (h *TicketHandler) HandleGetTicket(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path int true "Ticket ID"
 // @Param request body request.UpdateStatusReq true "Update status request"
-// @Success 200 {object} common.APIResponse[any] "Ticket status updated successfully"
-// @Failure 400 {object} common.APIResponse[any] "Invalid request body or invalid status transition"
-// @Failure 404 {object} common.APIResponse[any] "Ticket not found"
-// @Failure 500 {object} common.APIResponse[any] "Internal server error"
+// @Success 200 {object} common.SuccessMessageResponseDoc "Ticket status updated successfully"
+// @Failure 400 {object} common.ErrorResponseDoc "Invalid request body or invalid status transition"
+// @Failure 401 {object} common.ErrorResponseDoc "Unauthorized"
+// @Failure 404 {object} common.ErrorResponseDoc "Ticket not found"
+// @Failure 500 {object} common.ErrorResponseDoc "Internal server error"
 // @Router /tickets/{id}/status [patch]
 func (h *TicketHandler) HandleUpdateStatus(c *gin.Context) {
 	id, err := parseTicketID(c)
@@ -157,10 +162,6 @@ func (h *TicketHandler) HandleUpdateStatus(c *gin.Context) {
 		return
 	}
 
-	currentUser := auth.UserFromContext(c.Request.Context())
-	req.AssigneeID = currentUser.UserID
-
-	
 	err = h.ticketService.UpdateTicketStatus(c.Request.Context(), id, req)
 	if err != nil {
 		HandleError(c, err)

@@ -5,11 +5,10 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	_ "support-ticket.com/docs"
 	"support-ticket.com/internal/auth"
 	"support-ticket.com/internal/handler"
 	"support-ticket.com/internal/middleware"
-
-	_ "support-ticket.com/docs"
 )
 
 func InitRouter(
@@ -38,7 +37,10 @@ func InitRouter(
 			eventGroup.POST(
 				"/import",
 				authMiddleware.RequireAuth(),
-				authMiddleware.RequireRole(auth.RoleAgent),
+				authMiddleware.RequireRole(
+					auth.RoleAgent,
+					auth.RoleManager,
+				),
 				eventHandler.ImportEvents,
 			)
 		}
@@ -49,7 +51,10 @@ func InitRouter(
 			ticketGroup.POST(
 				"",
 				authMiddleware.RequireAuth(),
-				authMiddleware.RequireRole(auth.RoleRequestor),
+				authMiddleware.RequireRole(
+					auth.RoleRequestor,
+					auth.RoleManager,
+				),
 				ticketHandler.HandleCreateTicket,
 			)
 
@@ -81,7 +86,10 @@ func InitRouter(
 			ticketGroup.PATCH(
 				"/:id/status",
 				authMiddleware.RequireAuth(),
-				authMiddleware.RequireRole(auth.RoleAgent),
+				authMiddleware.RequireRole(
+					auth.RoleAgent,
+					auth.RoleManager,
+				),
 				ticketHandler.HandleUpdateStatus,
 			)
 		}

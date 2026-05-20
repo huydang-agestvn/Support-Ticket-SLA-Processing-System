@@ -54,9 +54,10 @@ func readImportInput(c *gin.Context) (data []byte, format string, err error) {
 // @Security BearerAuth
 // @Param file formData file false "CSV or JSON file to import"
 // @Param request body []map[string]interface{} false "Raw JSON array (when not using file upload)"
-// @Success 200 {object} common.APIResponse[response.TicketImportResponse]
-// @Failure 400 {object} common.APIResponse[any]
-// @Failure 500 {object} common.APIResponse[any]
+// @Success 200 {object} common.SuccessResponseDoc "Import ticket events successfully"
+// @Failure 400 {object} common.ErrorResponseDoc "Invalid import input"
+// @Failure 401 {object} common.ErrorResponseDoc "Unauthorized"
+// @Failure 500 {object} common.ErrorResponseDoc "Internal server error"
 // @Router /ticket-events/import [post]
 func (h *TicketEventHandler) ImportEvents(c *gin.Context) {
 	ctx := c.Request.Context()

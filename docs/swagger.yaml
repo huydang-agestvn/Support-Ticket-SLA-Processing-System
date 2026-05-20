@@ -1,87 +1,58 @@
 basePath: /api/v1
 definitions:
-  support-ticket_com_internal_dto_common.APIResponse-any:
+  common.ErrorDetailDoc:
     properties:
-      data: {}
-      error:
+      field:
+        example: field_name
         type: string
       message:
+        example: validation error message
         type: string
-      success:
-        type: boolean
     type: object
-  ? support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_dto_common_PaginatedResult-support-ticket_com_internal_model_Ticket
-  : properties:
-      data:
-        $ref: '#/definitions/support-ticket_com_internal_dto_common.PaginatedResult-support-ticket_com_internal_model_Ticket'
-      error:
-        type: string
-      message:
-        type: string
-      success:
-        type: boolean
-    type: object
-  support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_model_Ticket:
+  common.ErrorDoc:
     properties:
-      data:
-        $ref: '#/definitions/support-ticket_com_internal_model.Ticket'
-      error:
+      code:
+        example: ERROR_CODE
         type: string
-      message:
-        type: string
-      success:
-        type: boolean
-    type: object
-  support-ticket_com_internal_dto_common.PaginatedResult-support-ticket_com_internal_model_Ticket:
-    properties:
-      items:
+      details:
         items:
-          $ref: '#/definitions/support-ticket_com_internal_model.Ticket'
+          $ref: '#/definitions/common.ErrorDetailDoc'
         type: array
-      limit:
-        type: integer
-      page:
-        type: integer
-      total:
-        type: integer
-      total_pages:
-        type: integer
-    type: object
-  support-ticket_com_internal_dto_request.CreateTicketReq:
-    properties:
-      description:
-        maxLength: 5000
-        type: string
-      priority:
-        $ref: '#/definitions/support-ticket_com_internal_model.Priority'
-      sla_due_at:
-        type: string
-      title:
-        maxLength: 255
-        minLength: 5
-        type: string
-    required:
-    - priority
-    - sla_due_at
-    - title
-    type: object
-  support-ticket_com_internal_dto_request.LoginRequest:
-    properties:
-      password:
-        type: string
-      username:
-        type: string
-    type: object
-  support-ticket_com_internal_dto_request.UpdateStatusReq:
-    properties:
-      note:
+      message:
+        example: error message
         type: string
       status:
-        $ref: '#/definitions/support-ticket_com_internal_model.TicketStatus'
-    required:
-    - status
+        example: 400
+        type: integer
     type: object
-  support-ticket_com_internal_model.Priority:
+  common.ErrorResponseDoc:
+    properties:
+      error:
+        $ref: '#/definitions/common.ErrorDoc'
+      success:
+        example: false
+        type: boolean
+    type: object
+  common.SuccessMessageResponseDoc:
+    properties:
+      message:
+        example: operation completed successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  common.SuccessResponseDoc:
+    properties:
+      data: {}
+      message:
+        example: success
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  domain.Priority:
     enum:
     - low
     - medium
@@ -91,54 +62,7 @@ definitions:
     - PriorityLow
     - PriorityMedium
     - PriorityHigh
-  support-ticket_com_internal_model.Ticket:
-    properties:
-      assignee_id:
-        type: string
-      cancelled_at:
-        type: string
-      created_at:
-        type: string
-      description:
-        type: string
-      events:
-        description: TODO:Relations
-        items:
-          $ref: '#/definitions/support-ticket_com_internal_model.TicketEvent'
-        type: array
-      id:
-        type: integer
-      priority:
-        $ref: '#/definitions/support-ticket_com_internal_model.Priority'
-      requestor_id:
-        type: string
-      resolved_at:
-        type: string
-      sla_due_at:
-        type: string
-      status:
-        $ref: '#/definitions/support-ticket_com_internal_model.TicketStatus'
-      title:
-        type: string
-    type: object
-  support-ticket_com_internal_model.TicketEvent:
-    properties:
-      assignee_id:
-        type: string
-      created_at:
-        type: string
-      event_id:
-        type: integer
-      from_status:
-        $ref: '#/definitions/support-ticket_com_internal_model.TicketStatus'
-      note:
-        type: string
-      ticket_id:
-        type: integer
-      to_status:
-        $ref: '#/definitions/support-ticket_com_internal_model.TicketStatus'
-    type: object
-  support-ticket_com_internal_model.TicketStatus:
+  domain.TicketStatus:
     enum:
     - new
     - assigned
@@ -154,6 +78,34 @@ definitions:
     - StatusResolved
     - StatusClosed
     - StatusCancelled
+  request.CreateTicketReq:
+    properties:
+      description:
+        type: string
+      priority:
+        $ref: '#/definitions/domain.Priority'
+      sla_due_at:
+        type: string
+      title:
+        type: string
+    type: object
+  request.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  request.UpdateStatusReq:
+    properties:
+      note:
+        type: string
+      status:
+        $ref: '#/definitions/domain.TicketStatus'
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -172,25 +124,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/support-ticket_com_internal_dto_request.LoginRequest'
+          $ref: '#/definitions/request.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Login successfully
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/common.SuccessResponseDoc'
         "400":
           description: Invalid request body
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/common.ErrorResponseDoc'
         "401":
           description: Invalid username or password
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/common.ErrorResponseDoc'
       summary: Login
       tags:
       - Auth
@@ -198,11 +147,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get daily ticket SLA report by date. If date is not provided, today
-        will be used.
+      description: Get daily ticket report by date
       parameters:
       - description: Report date in YYYY-MM-DD format
-        example: "2026-05-05"
         in: query
         name: date
         type: string
@@ -212,18 +159,23 @@ paths:
         "200":
           description: Get daily report successfully
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/common.SuccessResponseDoc'
         "400":
           description: Invalid date format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/common.ErrorResponseDoc'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ErrorResponseDoc'
         "404":
           description: Report not found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/common.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/common.ErrorResponseDoc'
       security:
       - BearerAuth: []
       summary: Get daily report
@@ -232,34 +184,42 @@ paths:
   /ticket-events/import:
     post:
       consumes:
+      - multipart/form-data
       - application/json
-      description: Import ticket events in batch using worker pool
+      description: Import ticket events in batch. Accepts a multipart file upload
+        (CSV or JSON) via the `file` field, or a raw JSON body.
       parameters:
-      - description: Import ticket events request
+      - description: CSV or JSON file to import
+        in: formData
+        name: file
+        type: file
+      - description: Raw JSON array (when not using file upload)
         in: body
         name: request
-        required: true
         schema:
-          additionalProperties: true
-          type: object
+          items:
+            additionalProperties: true
+            type: object
+          type: array
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Import ticket events successfully
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/common.SuccessResponseDoc'
         "400":
-          description: Bad Request
+          description: Invalid import input
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/common.ErrorResponseDoc'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ErrorResponseDoc'
         "500":
-          description: Internal Server Error
+          description: Internal server error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/common.ErrorResponseDoc'
       security:
       - BearerAuth: []
       summary: Import ticket events
@@ -279,21 +239,17 @@ paths:
         in: query
         name: priority
         type: string
-      - description: Filter by requestor ID
-        in: query
-        name: requestor_id
-        type: integer
       - description: Filter by assignee ID
         in: query
         name: assignee_id
-        type: integer
+        type: string
       - description: Page number
         in: query
         name: page
         type: integer
-      - description: Page size
+      - description: Number of items per page
         in: query
-        name: page_size
+        name: limit
         type: integer
       produces:
       - application/json
@@ -301,15 +257,19 @@ paths:
         "200":
           description: Get tickets successfully
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_dto_common_PaginatedResult-support-ticket_com_internal_model_Ticket'
+            $ref: '#/definitions/common.SuccessResponseDoc'
         "400":
           description: Invalid query parameters
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
+            $ref: '#/definitions/common.ErrorResponseDoc'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ErrorResponseDoc'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
+            $ref: '#/definitions/common.ErrorResponseDoc'
       security:
       - BearerAuth: []
       summary: List tickets
@@ -325,22 +285,26 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/support-ticket_com_internal_dto_request.CreateTicketReq'
+          $ref: '#/definitions/request.CreateTicketReq'
       produces:
       - application/json
       responses:
         "201":
-          description: Ticket created successfully
+          description: Create ticket successfully
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_model_Ticket'
+            $ref: '#/definitions/common.SuccessResponseDoc'
         "400":
           description: Invalid request body or invalid priority
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
+            $ref: '#/definitions/common.ErrorResponseDoc'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ErrorResponseDoc'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
+            $ref: '#/definitions/common.ErrorResponseDoc'
       security:
       - BearerAuth: []
       summary: Create ticket
@@ -363,19 +327,23 @@ paths:
         "200":
           description: Get ticket successfully
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_model_Ticket'
+            $ref: '#/definitions/common.SuccessResponseDoc'
         "400":
           description: Invalid ticket ID
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
+            $ref: '#/definitions/common.ErrorResponseDoc'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ErrorResponseDoc'
         "404":
           description: Ticket not found
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
+            $ref: '#/definitions/common.ErrorResponseDoc'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
+            $ref: '#/definitions/common.ErrorResponseDoc'
       security:
       - BearerAuth: []
       summary: Get ticket detail
@@ -397,26 +365,30 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/support-ticket_com_internal_dto_request.UpdateStatusReq'
+          $ref: '#/definitions/request.UpdateStatusReq'
       produces:
       - application/json
       responses:
         "200":
           description: Ticket status updated successfully
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
+            $ref: '#/definitions/common.SuccessMessageResponseDoc'
         "400":
           description: Invalid request body or invalid status transition
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
+            $ref: '#/definitions/common.ErrorResponseDoc'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ErrorResponseDoc'
         "404":
           description: Ticket not found
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
+            $ref: '#/definitions/common.ErrorResponseDoc'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/support-ticket_com_internal_dto_common.APIResponse-any'
+            $ref: '#/definitions/common.ErrorResponseDoc'
       security:
       - BearerAuth: []
       summary: Update ticket status
