@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"support-ticket.com/internal/config"
@@ -218,8 +219,26 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 			return rejectJob(job, errmsgs.ErrInvalidFlowTicket)
 		}
 
-		if err := ticket.ValidateStatusTransition(event.ToStatus, event.AssigneeID, event.CreatedAt); err != nil {
-			return rejectJob(job, err)
+		if event.ToStatus == domain.StatusResolved || event.ToStatus == domain.StatusCancelled {
+			if event.CreatedAt.Before(ticketCreatedAt) {
+				status := string(event.ToStatus)
+				if len(status) > 0 {
+					status = strings.ToUpper(status[:1]) + status[1:]
+				}
+				return rejectJob(job, fmt.Errorf("%s: %s At cannot be before Created At", errmsgs.ErrInvalidInput.Error(), status))
+			}
+		}
+
+		reqAssigneeId := strings.TrimSpace(event.AssigneeID)
+		if currentStatus == domain.StatusNew && event.ToStatus == domain.StatusAssigned {
+			if reqAssigneeId == "" {
+				return rejectJob(job, fmt.Errorf("%w: Assignee ID is required when assigning a ticket", errmsgs.ErrInvalidInput))
+			}
+			currentAssigneeID = reqAssigneeId
+		} else if reqAssigneeId != "" && reqAssigneeId != currentAssigneeID {
+			return rejectJob(job, fmt.Errorf("%w: Cannot change assignee to '%s' during status transition to '%s'. Current assignee is '%s'",
+				errmsgs.ErrInvalidInput, reqAssigneeId, event.ToStatus, currentAssigneeID))
+
 		}
 
 		localSeen[key] = true
