@@ -36,9 +36,6 @@ func (e *TicketEvent) Validate() error {
 	if e.TicketID == 0 {
 		return common.NewBadRequest(common.ErrCodeInvalidInput, "ticket_id is required")
 	}
-	if e.AssigneeID == "" {
-		return common.NewBadRequest(common.ErrCodeInvalidInput, "assignee_id is required")
-	}
 	if !e.FromStatus.IsValid() {
 		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("unknown from_status '%s'", e.FromStatus))
 	}

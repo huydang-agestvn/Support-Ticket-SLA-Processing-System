@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
+	"support-ticket.com/internal/auth"
 	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/request"
 	"support-ticket.com/internal/errmsgs"
@@ -102,31 +104,28 @@ func (s *ticketServiceImpl) UpdateTicketStatus(ctx context.Context, id uint, req
 		return fmt.Errorf("failed to get ticket: %w", err)
 	}
 
-
-	
-	if err := ticket.ValidateStatusTransition(req.Status, req.AssigneeID, time.Now()); err != nil {
-		return fmt.Errorf("%w", err)
+	if ticket.Status == domain.StatusNew && req.Status == domain.StatusAssigned {
+		currentUser := auth.UserFromContext(ctx)
+		req.AssigneeID = strings.TrimSpace(currentUser.UserID)
 	}
 
+	if err := ticket.ValidateStatusTransition(req.Status, req.AssigneeID, time.Now()); err != nil {
+		return err
+	}
 
-
-	// Build event
 	event := &domain.TicketEvent{
 		TicketID:   ticket.ID,
-		AssigneeID: req.AssigneeID,
+		AssigneeID: ticket.AssigneeID,
 		FromStatus: ticket.Status,
 		ToStatus:   req.Status,
 		CreatedAt:  time.Now(),
 	}
-	if req.Note != "" {
-		event.Note = &req.Note
-	}
 	event.Validate()
-	
 
 	ticket.Status = req.Status
+
 	if err := s.repo.UpdateStatusWithEvent(ctx, ticket, event); err != nil {
-		return fmt.Errorf("failed to update ticket status with event: %w", err)
+		return fmt.Errorf("failed to update ticket status: %w", err)
 	}
 
 	return nil
