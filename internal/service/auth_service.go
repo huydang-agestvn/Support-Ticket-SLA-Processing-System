@@ -37,7 +37,6 @@ func (s *AuthService) Login(input request.LoginRequest) (*response.LoginResponse
 
 	return &response.LoginResponse{
 		AccessToken:      tokenResp.AccessToken,
-		RefreshToken:     tokenResp.RefreshToken,
 		TokenType:        tokenResp.TokenType,
 		ExpiresIn:        tokenResp.ExpiresIn,
 		RefreshExpiresIn: tokenResp.RefreshExpiresIn,

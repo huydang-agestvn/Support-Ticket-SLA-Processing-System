@@ -33,15 +33,6 @@ definitions:
         example: false
         type: boolean
     type: object
-  common.SuccessMessageResponseDoc:
-    properties:
-      message:
-        example: operation completed successfully
-        type: string
-      success:
-        example: true
-        type: boolean
-    type: object
   common.SuccessResponseDoc:
     properties:
       data: {}
@@ -89,22 +80,332 @@ definitions:
       title:
         type: string
     type: object
-  request.LoginRequest:
-    properties:
-      password:
-        type: string
-      username:
-        type: string
-    required:
-    - password
-    - username
-    type: object
   request.UpdateStatusReq:
     properties:
       note:
         type: string
       status:
         $ref: '#/definitions/domain.TicketStatus'
+    type: object
+  swagger_response.BadRequestErrorDoc:
+    properties:
+      code:
+        example: INVALID_REQUEST_BODY
+        type: string
+      message:
+        example: invalid request body
+        type: string
+      status:
+        example: 400
+        type: integer
+    type: object
+  swagger_response.BadRequestResponseDoc:
+    properties:
+      error:
+        $ref: '#/definitions/swagger_response.BadRequestErrorDoc'
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger_response.CreateTicketSuccessResponseDoc:
+    properties:
+      data:
+        $ref: '#/definitions/swagger_response.TicketDoc'
+      success:
+        example: true
+        type: boolean
+    type: object
+  swagger_response.ErrorDoc:
+    properties:
+      code:
+        example: ERROR_CODE
+        type: string
+      message:
+        example: error message
+        type: string
+      status:
+        example: 400
+        type: integer
+    type: object
+  swagger_response.ErrorResponseDoc:
+    properties:
+      error:
+        $ref: '#/definitions/swagger_response.ErrorDoc'
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger_response.ForbiddenErrorDoc:
+    properties:
+      code:
+        example: FORBIDDEN
+        type: string
+      message:
+        example: you do not have permission to access this resource
+        type: string
+      status:
+        example: 403
+        type: integer
+    type: object
+  swagger_response.ForbiddenResponseDoc:
+    properties:
+      error:
+        $ref: '#/definitions/swagger_response.ForbiddenErrorDoc'
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger_response.GetTicketDetailSuccessResponseDoc:
+    properties:
+      data:
+        $ref: '#/definitions/swagger_response.TicketEventDoc'
+      success:
+        example: true
+        type: boolean
+    type: object
+  swagger_response.ImportTicketEventsSuccessResponseDoc:
+    properties:
+      data:
+        $ref: '#/definitions/swagger_response.TicketEventImportResultDoc'
+      message:
+        example: import completed
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  swagger_response.InternalServerErrorDoc:
+    properties:
+      code:
+        example: INTERNAL_SERVER_ERROR
+        type: string
+      message:
+        example: internal server error
+        type: string
+      status:
+        example: 500
+        type: integer
+    type: object
+  swagger_response.InternalServerErrorResponseDoc:
+    properties:
+      error:
+        $ref: '#/definitions/swagger_response.InternalServerErrorDoc'
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger_response.ListTicketsDataDoc:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/swagger_response.TicketEventDoc'
+        type: array
+      limit:
+        example: 10
+        type: integer
+      page:
+        example: 1
+        type: integer
+      total:
+        example: 10
+        type: integer
+      total_pages:
+        example: 1
+        type: integer
+    type: object
+  swagger_response.ListTicketsSuccessResponseDoc:
+    properties:
+      data:
+        $ref: '#/definitions/swagger_response.ListTicketsDataDoc'
+      message:
+        example: Get tickets successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  swagger_response.LoginDataDoc:
+    properties:
+      access_token:
+        example: eyJhbGciOiJSUzI1NiIsInR5cCI...
+        type: string
+      expires_in:
+        example: 300
+        type: integer
+      refresh_expires_in:
+        example: 1800
+        type: integer
+      scope:
+        example: profile email
+        type: string
+      token_type:
+        example: Bearer
+        type: string
+    type: object
+  swagger_response.LoginSuccessResponseDoc:
+    properties:
+      data:
+        $ref: '#/definitions/swagger_response.LoginDataDoc'
+      success:
+        example: true
+        type: boolean
+    type: object
+  swagger_response.ServiceUnavailableErrorDoc:
+    properties:
+      code:
+        example: AUTH_PROVIDER_UNAVAILABLE
+        type: string
+      message:
+        example: authentication provider is unavailable
+        type: string
+      status:
+        example: 503
+        type: integer
+    type: object
+  swagger_response.ServiceUnavailableResponseDoc:
+    properties:
+      error:
+        $ref: '#/definitions/swagger_response.ServiceUnavailableErrorDoc'
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger_response.TicketDoc:
+    properties:
+      assignee_id:
+        example: 9ee00625-0436-4f11-8bb1-b9e4f3f7bf88
+        type: string
+      cancelled_at:
+        example: ""
+        type: string
+      created_at:
+        example: "2026-05-15T15:19:55.169302+07:00"
+        type: string
+      description:
+        example: User cannot access internal support system
+        type: string
+      id:
+        example: 1
+        type: integer
+      priority:
+        example: low
+        type: string
+      requestor_id:
+        example: 0a5389df-ba3a-4494-a095-126d05c7c2e7
+        type: string
+      resolved_at:
+        example: ""
+        type: string
+      sla_due_at:
+        example: "2026-05-17T15:19:55.169302+07:00"
+        type: string
+      status:
+        example: assigned
+        type: string
+      title:
+        example: Cannot access internal system
+        type: string
+    type: object
+  swagger_response.TicketEventDoc:
+    properties:
+      assignee_id:
+        example: 9ee00625-0436-4f11-8bb1-b9e4f3f7bf88
+        type: string
+      cancelled_at:
+        example: ""
+        type: string
+      created_at:
+        example: "2026-05-15T15:19:55.169302+07:00"
+        type: string
+      description:
+        example: User cannot access internal support system
+        type: string
+      events:
+        items:
+          $ref: '#/definitions/swagger_response.TicketEventDoc'
+        type: array
+      id:
+        example: 1
+        type: integer
+      priority:
+        example: low
+        type: string
+      requestor_id:
+        example: 0a5389df-ba3a-4494-a095-126d05c7c2e7
+        type: string
+      resolved_at:
+        example: ""
+        type: string
+      sla_due_at:
+        example: "2026-05-17T15:19:55.169302+07:00"
+        type: string
+      status:
+        example: assigned
+        type: string
+      title:
+        example: Cannot access internal system
+        type: string
+    type: object
+  swagger_response.TicketEventImportResultDoc:
+    properties:
+      accepted_count:
+        example: 95
+        type: integer
+      duplicate_count:
+        example: 2
+        type: integer
+      rejected_count:
+        example: 3
+        type: integer
+    type: object
+  swagger_response.TicketNotFoundErrorDoc:
+    properties:
+      code:
+        example: TICKET_NOT_FOUND
+        type: string
+      message:
+        example: ticket not found
+        type: string
+      status:
+        example: 404
+        type: integer
+    type: object
+  swagger_response.TicketNotFoundResponseDoc:
+    properties:
+      error:
+        $ref: '#/definitions/swagger_response.TicketNotFoundErrorDoc'
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger_response.UnauthorizedErrorDoc:
+    properties:
+      code:
+        example: UNAUTHORIZED
+        type: string
+      message:
+        example: authorization header is required
+        type: string
+      status:
+        example: 401
+        type: integer
+    type: object
+  swagger_response.UnauthorizedResponseDoc:
+    properties:
+      error:
+        $ref: '#/definitions/swagger_response.UnauthorizedErrorDoc'
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger_response.UpdateTicketStatusSuccessResponseDoc:
+    properties:
+      message:
+        example: ticket status updated successfully
+        type: string
+      success:
+        example: true
+        type: boolean
     type: object
 host: localhost:8080
 info:
@@ -116,30 +417,43 @@ paths:
   /auth/login:
     post:
       consumes:
-      - application/json
+      - application/x-www-form-urlencoded
       description: Login with username and password through Keycloak
       parameters:
-      - description: Login request
-        in: body
-        name: request
+      - description: Username
+        in: formData
+        name: username
         required: true
-        schema:
-          $ref: '#/definitions/request.LoginRequest'
+        type: string
+      - description: Password
+        format: password
+        in: formData
+        name: password
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: Login successfully
           schema:
-            $ref: '#/definitions/common.SuccessResponseDoc'
+            $ref: '#/definitions/swagger_response.LoginSuccessResponseDoc'
         "400":
           description: Invalid request body
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.BadRequestResponseDoc'
         "401":
           description: Invalid username or password
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.UnauthorizedResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/swagger_response.InternalServerErrorResponseDoc'
+        "503":
+          description: Authentication provider unavailable
+          schema:
+            $ref: '#/definitions/swagger_response.ServiceUnavailableResponseDoc'
       summary: Login
       tags:
       - Auth
@@ -185,57 +499,60 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      - application/json
-      description: Import ticket events in batch. Accepts a multipart file upload
-        (CSV or JSON) via the `file` field, or a raw JSON body.
+      description: Import ticket events in batch from a CSV or JSON file. The file
+        must be uploaded using the `file` field.
       parameters:
       - description: CSV or JSON file to import
         in: formData
         name: file
+        required: true
         type: file
-      - description: Raw JSON array (when not using file upload)
-        in: body
-        name: request
-        schema:
-          items:
-            additionalProperties: true
-            type: object
-          type: array
       produces:
       - application/json
       responses:
         "200":
           description: Import ticket events successfully
           schema:
-            $ref: '#/definitions/common.SuccessResponseDoc'
+            $ref: '#/definitions/swagger_response.ImportTicketEventsSuccessResponseDoc'
         "400":
           description: Invalid import input
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.BadRequestResponseDoc'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.UnauthorizedResponseDoc'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.InternalServerErrorResponseDoc'
       security:
       - BearerAuth: []
       summary: Import ticket events
       tags:
-      - ticket-events
+      - Ticket Events
   /tickets:
     get:
       consumes:
       - application/json
-      description: Get tickets with filters and pagination
+      description: Get list of tickets with optional filters and pagination
       parameters:
       - description: Filter by ticket status
+        enum:
+        - new
+        - assigned
+        - in_progress
+        - resolved
+        - closed
+        - cancelled
         in: query
         name: status
         type: string
-      - description: Filter by priority
+      - description: Filter by ticket priority
+        enum:
+        - low
+        - medium
+        - high
         in: query
         name: priority
         type: string
@@ -243,11 +560,13 @@ paths:
         in: query
         name: assignee_id
         type: string
-      - description: Page number
+      - default: 1
+        description: Page number
         in: query
         name: page
         type: integer
-      - description: Number of items per page
+      - default: 10
+        description: Number of items per page
         in: query
         name: limit
         type: integer
@@ -257,19 +576,19 @@ paths:
         "200":
           description: Get tickets successfully
           schema:
-            $ref: '#/definitions/common.SuccessResponseDoc'
+            $ref: '#/definitions/swagger_response.ListTicketsSuccessResponseDoc'
         "400":
           description: Invalid query parameters
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.BadRequestResponseDoc'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.UnauthorizedResponseDoc'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.InternalServerErrorResponseDoc'
       security:
       - BearerAuth: []
       summary: List tickets
@@ -290,21 +609,21 @@ paths:
       - application/json
       responses:
         "201":
-          description: Create ticket successfully
+          description: Ticket created successfully
           schema:
-            $ref: '#/definitions/common.SuccessResponseDoc'
+            $ref: '#/definitions/swagger_response.CreateTicketSuccessResponseDoc'
         "400":
-          description: Invalid request body or invalid priority
+          description: Invalid request body or validation error
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.BadRequestResponseDoc'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.UnauthorizedResponseDoc'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.InternalServerErrorResponseDoc'
       security:
       - BearerAuth: []
       summary: Create ticket
@@ -327,23 +646,23 @@ paths:
         "200":
           description: Get ticket successfully
           schema:
-            $ref: '#/definitions/common.SuccessResponseDoc'
+            $ref: '#/definitions/swagger_response.GetTicketDetailSuccessResponseDoc'
         "400":
           description: Invalid ticket ID
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.ErrorResponseDoc'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.UnauthorizedResponseDoc'
         "404":
           description: Ticket not found
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.TicketNotFoundResponseDoc'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.InternalServerErrorResponseDoc'
       security:
       - BearerAuth: []
       summary: Get ticket detail
@@ -372,23 +691,27 @@ paths:
         "200":
           description: Ticket status updated successfully
           schema:
-            $ref: '#/definitions/common.SuccessMessageResponseDoc'
+            $ref: '#/definitions/swagger_response.UpdateTicketStatusSuccessResponseDoc'
         "400":
           description: Invalid request body or invalid status transition
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.BadRequestResponseDoc'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.UnauthorizedResponseDoc'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/swagger_response.ForbiddenResponseDoc'
         "404":
           description: Ticket not found
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.TicketNotFoundResponseDoc'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/common.ErrorResponseDoc'
+            $ref: '#/definitions/swagger_response.InternalServerErrorResponseDoc'
       security:
       - BearerAuth: []
       summary: Update ticket status

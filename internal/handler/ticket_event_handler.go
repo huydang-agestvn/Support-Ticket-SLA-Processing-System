@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+
 	dto "support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/response"
 	"support-ticket.com/internal/service"
@@ -46,18 +47,16 @@ func readImportInput(c *gin.Context) (data []byte, format string, err error) {
 
 // ImportEvents godoc
 // @Summary Import ticket events
-// @Description Import ticket events in batch. Accepts a multipart file upload (CSV or JSON) via the `file` field, or a raw JSON body.
-// @Tags ticket-events
+// @Description Import ticket events in batch from a CSV or JSON file. The file must be uploaded using the `file` field.
+// @Tags Ticket Events
 // @Accept multipart/form-data
-// @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param file formData file false "CSV or JSON file to import"
-// @Param request body []map[string]interface{} false "Raw JSON array (when not using file upload)"
-// @Success 200 {object} common.SuccessResponseDoc "Import ticket events successfully"
-// @Failure 400 {object} common.ErrorResponseDoc "Invalid import input"
-// @Failure 401 {object} common.ErrorResponseDoc "Unauthorized"
-// @Failure 500 {object} common.ErrorResponseDoc "Internal server error"
+// @Param file formData file true "CSV or JSON file to import"
+// @Success 200 {object} swagger_response.ImportTicketEventsSuccessResponseDoc "Import ticket events successfully"
+// @Failure 400 {object} swagger_response.BadRequestResponseDoc "Invalid import input"
+// @Failure 401 {object} swagger_response.UnauthorizedResponseDoc "Unauthorized"
+// @Failure 500 {object} swagger_response.InternalServerErrorResponseDoc "Internal server error"
 // @Router /ticket-events/import [post]
 func (h *TicketEventHandler) ImportEvents(c *gin.Context) {
 	ctx := c.Request.Context()
