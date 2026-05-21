@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -16,7 +15,6 @@ func HandleError(c *gin.Context, err error) {
 		return
 	}
 
-	log.Printf("[ERROR] unhandled internal error: %v", err)
 	c.JSON(http.StatusInternalServerError, common.ErrorResponse(
 		common.NewInternal("internal server error"),
 	))
