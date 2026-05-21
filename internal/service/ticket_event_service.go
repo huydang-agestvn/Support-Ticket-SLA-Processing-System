@@ -230,15 +230,13 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 		}
 
 		reqAssigneeId := strings.TrimSpace(event.AssigneeID)
-		if currentStatus == domain.StatusNew && event.ToStatus == domain.StatusAssigned {
+		if ticket.Status == domain.StatusNew && event.ToStatus == domain.StatusAssigned {
 			if reqAssigneeId == "" {
 				return rejectJob(job, fmt.Errorf("%w: Assignee ID is required when assigning a ticket", errmsgs.ErrInvalidInput))
 			}
-			currentAssigneeID = reqAssigneeId
-		} else if reqAssigneeId != "" && reqAssigneeId != currentAssigneeID {
-			return rejectJob(job, fmt.Errorf("%w: Cannot change assignee to '%s' during status transition to '%s'. Current assignee is '%s'",
-				errmsgs.ErrInvalidInput, reqAssigneeId, event.ToStatus, currentAssigneeID))
-
+			ticket.AssigneeID = reqAssigneeId
+		} else if reqAssigneeId != "" && reqAssigneeId != ticket.AssigneeID {
+			return rejectJob(job, fmt.Errorf("%w: Cannot change assignee during status transition to '%s'", errmsgs.ErrInvalidInput, event.ToStatus))
 		}
 
 		localSeen[key] = true

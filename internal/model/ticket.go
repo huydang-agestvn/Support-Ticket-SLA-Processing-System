@@ -134,8 +134,6 @@ func validateTimestampAfterCreation(ts *time.Time, field string, createdAt time.
 }
 
 func (t *Ticket) ValidateStatusTransition(newStatus TicketStatus, reqAssigneeId string, timestamp time.Time) error {
-	fmt.Printf("reqAssigneeId: %s\n", reqAssigneeId)
-	fmt.Printf("ticket assignee id: %s\n", t.AssigneeID)
 	reqAssigneeId = strings.TrimSpace(reqAssigneeId)
 
 	if t.Status == StatusNew && newStatus == StatusAssigned {
