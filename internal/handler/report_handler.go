@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"support-ticket.com/internal/dto/common"
+	_ "support-ticket.com/internal/dto/response/swagger_response"
 	"support-ticket.com/internal/service"
 )
 
