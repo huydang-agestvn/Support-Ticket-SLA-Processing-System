@@ -103,6 +103,9 @@ func (s *ticketServiceImpl) UpdateTicketStatus(ctx context.Context, id uint, req
 	if err != nil {
 		return fmt.Errorf("failed to get ticket: %w", err)
 	}
+	if ticket == nil {
+		return errmsgs.ErrTicketNotFound
+	}
 
 	if ticket.Status == domain.StatusNew && req.Status == domain.StatusAssigned {
 		currentUser := auth.UserFromContext(ctx)

@@ -41,7 +41,12 @@ func (s *reportService) GenerateReport(date time.Time) (*domain.TicketReport, er
 func (s *reportService) GetReport(date time.Time) (*domain.TicketReport, error) {
 	report, err := s.repo.GetByDate(date)
 	if err != nil {
-		return nil, err
+		// Auto-generate report real-time if not cached in DB
+		generatedReport, genErr := s.GenerateReport(date)
+		if genErr != nil {
+			return nil, fmt.Errorf("auto-generate report: %w", genErr)
+		}
+		return generatedReport, nil
 	}
 	return report, nil
 }
