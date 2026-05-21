@@ -62,7 +62,9 @@ func TestTicketEventService_Import(t *testing.T) {
 					nil,
 				)
 				m.On("Transaction", ctx, mock.Anything).Return(nil)
-				m.On("UpdateStatusesBatch", mock.Anything, mock.Anything).Return(nil)
+				m.On("UpdateStatusesBatch", mock.Anything, mock.MatchedBy(func(tickets []domain.Ticket) bool {
+					return len(tickets) == 1 && tickets[0].AssigneeID == "agent1" && tickets[0].Status == domain.StatusAssigned
+				})).Return(nil)
 			},
 			mockEventRepo: func(m *testmock.MockTicketEventRepository) {
 				m.On("GetExistingEventKeys", ctx, mock.Anything).Return(map[string]bool{}, nil)
