@@ -21,7 +21,7 @@ func InitRouter(
 	reportHandler *handler.ReportHandler,
 ) *gin.Engine {
 	r.Use(gin.Logger(), gin.Recovery())
-
+	r.Use(middleware.CORSMiddleware())
 	// Swagger API documentation
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
