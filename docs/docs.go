@@ -19,7 +19,7 @@ const docTemplate = `{
             "post": {
                 "description": "Login with username and password through Keycloak",
                 "consumes": [
-                    "application/json"
+                    "application/x-www-form-urlencoded"
                 ],
                 "produces": [
                     "application/json"
@@ -30,35 +30,50 @@ const docTemplate = `{
                 "summary": "Login",
                 "parameters": [
                     {
-                        "description": "Login request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_request.LoginRequest"
-                        }
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "password",
+                        "description": "Password",
+                        "name": "password",
+                        "in": "formData",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "Login successfully",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/swagger_response.LoginSuccessResponseDoc"
                         }
                     },
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/swagger_response.BadRequestResponseDoc"
                         }
                     },
                     "401": {
                         "description": "Invalid username or password",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/swagger_response.UnauthorizedResponseDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/swagger_response.InternalServerErrorResponseDoc"
+                        }
+                    },
+                    "503": {
+                        "description": "Authentication provider unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/swagger_response.ServiceUnavailableResponseDoc"
                         }
                     }
                 }
@@ -71,7 +86,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get daily ticket SLA report by date. If date is not provided, today will be used.",
+                "description": "Get daily ticket report by date",
                 "consumes": [
                     "application/json"
                 ],
@@ -85,7 +100,6 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "example": "2026-05-05",
                         "description": "Report date in YYYY-MM-DD format",
                         "name": "date",
                         "in": "query"
@@ -95,22 +109,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Get daily report successfully",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/common.SuccessResponseDoc"
                         }
                     },
                     "400": {
                         "description": "Invalid date format",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/common.ErrorResponseDoc"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponseDoc"
                         }
                     },
                     "404": {
                         "description": "Report not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/common.ErrorResponseDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponseDoc"
                         }
                     }
                 }
@@ -123,49 +146,49 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Import ticket events in batch using worker pool",
+                "description": "Import ticket events in batch from a CSV or JSON file. The file must be uploaded using the ` + "`" + `file` + "`" + ` field.",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "ticket-events"
+                    "Ticket Events"
                 ],
                 "summary": "Import ticket events",
                 "parameters": [
                     {
-                        "description": "Import ticket events request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
+                        "type": "file",
+                        "description": "CSV or JSON file to import",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Import ticket events successfully",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/swagger_response.ImportTicketEventsSuccessResponseDoc"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid import input",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/swagger_response.BadRequestResponseDoc"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/swagger_response.UnauthorizedResponseDoc"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/swagger_response.InternalServerErrorResponseDoc"
                         }
                     }
                 }
@@ -178,7 +201,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get tickets with filters and pagination",
+                "description": "Get list of tickets with optional filters and pagination",
                 "consumes": [
                     "application/json"
                 ],
@@ -191,39 +214,48 @@ const docTemplate = `{
                 "summary": "List tickets",
                 "parameters": [
                     {
+                        "enum": [
+                            "new",
+                            "assigned",
+                            "in_progress",
+                            "resolved",
+                            "closed",
+                            "cancelled"
+                        ],
                         "type": "string",
                         "description": "Filter by ticket status",
                         "name": "status",
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "low",
+                            "medium",
+                            "high"
+                        ],
                         "type": "string",
-                        "description": "Filter by priority",
+                        "description": "Filter by ticket priority",
                         "name": "priority",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Filter by requestor ID",
-                        "name": "requestor_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Filter by assignee ID",
                         "name": "assignee_id",
                         "in": "query"
                     },
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Page number",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Page size",
-                        "name": "page_size",
+                        "default": 10,
+                        "description": "Number of items per page",
+                        "name": "limit",
                         "in": "query"
                     }
                 ],
@@ -231,19 +263,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Get tickets successfully",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_dto_common_PaginatedResult-support-ticket_com_internal_model_Ticket"
+                            "$ref": "#/definitions/swagger_response.ListTicketsSuccessResponseDoc"
                         }
                     },
                     "400": {
                         "description": "Invalid query parameters",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-any"
+                            "$ref": "#/definitions/swagger_response.BadRequestResponseDoc"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/swagger_response.UnauthorizedResponseDoc"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-any"
+                            "$ref": "#/definitions/swagger_response.InternalServerErrorResponseDoc"
                         }
                     }
                 }
@@ -272,7 +310,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_request.CreateTicketReq"
+                            "$ref": "#/definitions/request.CreateTicketReq"
                         }
                     }
                 ],
@@ -280,19 +318,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Ticket created successfully",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_model_Ticket"
+                            "$ref": "#/definitions/swagger_response.CreateTicketSuccessResponseDoc"
                         }
                     },
                     "400": {
-                        "description": "Invalid request body or invalid priority",
+                        "description": "Invalid request body or validation error",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-any"
+                            "$ref": "#/definitions/swagger_response.BadRequestResponseDoc"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/swagger_response.UnauthorizedResponseDoc"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-any"
+                            "$ref": "#/definitions/swagger_response.InternalServerErrorResponseDoc"
                         }
                     }
                 }
@@ -329,25 +373,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Get ticket successfully",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_model_Ticket"
+                            "$ref": "#/definitions/swagger_response.GetTicketDetailSuccessResponseDoc"
                         }
                     },
                     "400": {
                         "description": "Invalid ticket ID",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-any"
+                            "$ref": "#/definitions/swagger_response.ErrorResponseDoc"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/swagger_response.UnauthorizedResponseDoc"
                         }
                     },
                     "404": {
                         "description": "Ticket not found",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-any"
+                            "$ref": "#/definitions/swagger_response.TicketNotFoundResponseDoc"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-any"
+                            "$ref": "#/definitions/swagger_response.InternalServerErrorResponseDoc"
                         }
                     }
                 }
@@ -385,7 +435,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_request.UpdateStatusReq"
+                            "$ref": "#/definitions/request.UpdateStatusReq"
                         }
                     }
                 ],
@@ -393,25 +443,37 @@ const docTemplate = `{
                     "200": {
                         "description": "Ticket status updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-any"
+                            "$ref": "#/definitions/swagger_response.UpdateTicketStatusSuccessResponseDoc"
                         }
                     },
                     "400": {
                         "description": "Invalid request body or invalid status transition",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-any"
+                            "$ref": "#/definitions/swagger_response.BadRequestResponseDoc"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/swagger_response.UnauthorizedResponseDoc"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/swagger_response.ForbiddenResponseDoc"
                         }
                     },
                     "404": {
                         "description": "Ticket not found",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-any"
+                            "$ref": "#/definitions/swagger_response.TicketNotFoundResponseDoc"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/support-ticket_com_internal_dto_common.APIResponse-any"
+                            "$ref": "#/definitions/swagger_response.InternalServerErrorResponseDoc"
                         }
                     }
                 }
@@ -419,129 +481,69 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "support-ticket_com_internal_dto_common.APIResponse-any": {
+        "common.ErrorDetailDoc": {
+            "type": "object",
+            "properties": {
+                "field": {
+                    "type": "string",
+                    "example": "field_name"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "validation error message"
+                }
+            }
+        },
+        "common.ErrorDoc": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "ERROR_CODE"
+                },
+                "details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/common.ErrorDetailDoc"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "error message"
+                },
+                "status": {
+                    "type": "integer",
+                    "example": 400
+                }
+            }
+        },
+        "common.ErrorResponseDoc": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/common.ErrorDoc"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "common.SuccessResponseDoc": {
             "type": "object",
             "properties": {
                 "data": {},
-                "error": {
-                    "type": "string"
-                },
                 "message": {
-                    "type": "string"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_dto_common_PaginatedResult-support-ticket_com_internal_model_Ticket": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/support-ticket_com_internal_dto_common.PaginatedResult-support-ticket_com_internal_model_Ticket"
-                },
-                "error": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "support-ticket_com_internal_dto_common.APIResponse-support-ticket_com_internal_model_Ticket": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/support-ticket_com_internal_model.Ticket"
-                },
-                "error": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "support-ticket_com_internal_dto_common.PaginatedResult-support-ticket_com_internal_model_Ticket": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/support-ticket_com_internal_model.Ticket"
-                    }
-                },
-                "limit": {
-                    "type": "integer"
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                },
-                "total_pages": {
-                    "type": "integer"
-                }
-            }
-        },
-        "support-ticket_com_internal_dto_request.CreateTicketReq": {
-            "type": "object",
-            "required": [
-                "priority",
-                "sla_due_at",
-                "title"
-            ],
-            "properties": {
-                "description": {
                     "type": "string",
-                    "maxLength": 5000
+                    "example": "success"
                 },
-                "priority": {
-                    "$ref": "#/definitions/support-ticket_com_internal_model.Priority"
-                },
-                "sla_due_at": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 5
+                "success": {
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
-        "support-ticket_com_internal_dto_request.LoginRequest": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "support-ticket_com_internal_dto_request.UpdateStatusReq": {
-            "type": "object",
-            "required": [
-                "status"
-            ],
-            "properties": {
-                "note": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/support-ticket_com_internal_model.TicketStatus"
-                }
-            }
-        },
-        "support-ticket_com_internal_model.Priority": {
+        "domain.Priority": {
             "type": "string",
             "enum": [
                 "low",
@@ -554,78 +556,7 @@ const docTemplate = `{
                 "PriorityHigh"
             ]
         },
-        "support-ticket_com_internal_model.Ticket": {
-            "type": "object",
-            "properties": {
-                "assignee_id": {
-                    "type": "string"
-                },
-                "cancelled_at": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "events": {
-                    "description": "TODO:Relations",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/support-ticket_com_internal_model.TicketEvent"
-                    }
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "priority": {
-                    "$ref": "#/definitions/support-ticket_com_internal_model.Priority"
-                },
-                "requestor_id": {
-                    "type": "string"
-                },
-                "resolved_at": {
-                    "type": "string"
-                },
-                "sla_due_at": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/support-ticket_com_internal_model.TicketStatus"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "support-ticket_com_internal_model.TicketEvent": {
-            "type": "object",
-            "properties": {
-                "assignee_id": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "event_id": {
-                    "type": "integer"
-                },
-                "from_status": {
-                    "$ref": "#/definitions/support-ticket_com_internal_model.TicketStatus"
-                },
-                "note": {
-                    "type": "string"
-                },
-                "ticket_id": {
-                    "type": "integer"
-                },
-                "to_status": {
-                    "$ref": "#/definitions/support-ticket_com_internal_model.TicketStatus"
-                }
-            }
-        },
-        "support-ticket_com_internal_model.TicketStatus": {
+        "domain.TicketStatus": {
             "type": "string",
             "enum": [
                 "new",
@@ -643,6 +574,491 @@ const docTemplate = `{
                 "StatusClosed",
                 "StatusCancelled"
             ]
+        },
+        "request.CreateTicketReq": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "priority": {
+                    "$ref": "#/definitions/domain.Priority"
+                },
+                "sla_due_at": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.UpdateStatusReq": {
+            "type": "object",
+            "properties": {
+                "note": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/domain.TicketStatus"
+                }
+            }
+        },
+        "swagger_response.BadRequestErrorDoc": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "INVALID_REQUEST_BODY"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "invalid request body"
+                },
+                "status": {
+                    "type": "integer",
+                    "example": 400
+                }
+            }
+        },
+        "swagger_response.BadRequestResponseDoc": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/swagger_response.BadRequestErrorDoc"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger_response.CreateTicketSuccessResponseDoc": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/swagger_response.TicketDoc"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "swagger_response.ErrorDoc": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "ERROR_CODE"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "error message"
+                },
+                "status": {
+                    "type": "integer",
+                    "example": 400
+                }
+            }
+        },
+        "swagger_response.ErrorResponseDoc": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/swagger_response.ErrorDoc"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger_response.ForbiddenErrorDoc": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "FORBIDDEN"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "you do not have permission to access this resource"
+                },
+                "status": {
+                    "type": "integer",
+                    "example": 403
+                }
+            }
+        },
+        "swagger_response.ForbiddenResponseDoc": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/swagger_response.ForbiddenErrorDoc"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger_response.GetTicketDetailSuccessResponseDoc": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/swagger_response.TicketEventDoc"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "swagger_response.ImportTicketEventsSuccessResponseDoc": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/swagger_response.TicketEventImportResultDoc"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "import completed"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "swagger_response.InternalServerErrorDoc": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "INTERNAL_SERVER_ERROR"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "internal server error"
+                },
+                "status": {
+                    "type": "integer",
+                    "example": 500
+                }
+            }
+        },
+        "swagger_response.InternalServerErrorResponseDoc": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/swagger_response.InternalServerErrorDoc"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger_response.ListTicketsDataDoc": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/swagger_response.TicketEventDoc"
+                    }
+                },
+                "limit": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "page": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "total": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "total_pages": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "swagger_response.ListTicketsSuccessResponseDoc": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/swagger_response.ListTicketsDataDoc"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Get tickets successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "swagger_response.LoginDataDoc": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJSUzI1NiIsInR5cCI..."
+                },
+                "expires_in": {
+                    "type": "integer",
+                    "example": 300
+                },
+                "refresh_expires_in": {
+                    "type": "integer",
+                    "example": 1800
+                },
+                "scope": {
+                    "type": "string",
+                    "example": "profile email"
+                },
+                "token_type": {
+                    "type": "string",
+                    "example": "Bearer"
+                }
+            }
+        },
+        "swagger_response.LoginSuccessResponseDoc": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/swagger_response.LoginDataDoc"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "swagger_response.ServiceUnavailableErrorDoc": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "AUTH_PROVIDER_UNAVAILABLE"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "authentication provider is unavailable"
+                },
+                "status": {
+                    "type": "integer",
+                    "example": 503
+                }
+            }
+        },
+        "swagger_response.ServiceUnavailableResponseDoc": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/swagger_response.ServiceUnavailableErrorDoc"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger_response.TicketDoc": {
+            "type": "object",
+            "properties": {
+                "assignee_id": {
+                    "type": "string",
+                    "example": "9ee00625-0436-4f11-8bb1-b9e4f3f7bf88"
+                },
+                "cancelled_at": {
+                    "type": "string",
+                    "example": ""
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-05-15T15:19:55.169302+07:00"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "User cannot access internal support system"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "priority": {
+                    "type": "string",
+                    "example": "low"
+                },
+                "requestor_id": {
+                    "type": "string",
+                    "example": "0a5389df-ba3a-4494-a095-126d05c7c2e7"
+                },
+                "resolved_at": {
+                    "type": "string",
+                    "example": ""
+                },
+                "sla_due_at": {
+                    "type": "string",
+                    "example": "2026-05-17T15:19:55.169302+07:00"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "assigned"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Cannot access internal system"
+                }
+            }
+        },
+        "swagger_response.TicketEventDoc": {
+            "type": "object",
+            "properties": {
+                "assignee_id": {
+                    "type": "string",
+                    "example": "9ee00625-0436-4f11-8bb1-b9e4f3f7bf88"
+                },
+                "cancelled_at": {
+                    "type": "string",
+                    "example": ""
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-05-15T15:19:55.169302+07:00"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "User cannot access internal support system"
+                },
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/swagger_response.TicketEventDoc"
+                    }
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "priority": {
+                    "type": "string",
+                    "example": "low"
+                },
+                "requestor_id": {
+                    "type": "string",
+                    "example": "0a5389df-ba3a-4494-a095-126d05c7c2e7"
+                },
+                "resolved_at": {
+                    "type": "string",
+                    "example": ""
+                },
+                "sla_due_at": {
+                    "type": "string",
+                    "example": "2026-05-17T15:19:55.169302+07:00"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "assigned"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Cannot access internal system"
+                }
+            }
+        },
+        "swagger_response.TicketEventImportResultDoc": {
+            "type": "object",
+            "properties": {
+                "accepted_count": {
+                    "type": "integer",
+                    "example": 95
+                },
+                "duplicate_count": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "rejected_count": {
+                    "type": "integer",
+                    "example": 3
+                }
+            }
+        },
+        "swagger_response.TicketNotFoundErrorDoc": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "TICKET_NOT_FOUND"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ticket not found"
+                },
+                "status": {
+                    "type": "integer",
+                    "example": 404
+                }
+            }
+        },
+        "swagger_response.TicketNotFoundResponseDoc": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/swagger_response.TicketNotFoundErrorDoc"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger_response.UnauthorizedErrorDoc": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "UNAUTHORIZED"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "authorization header is required"
+                },
+                "status": {
+                    "type": "integer",
+                    "example": 401
+                }
+            }
+        },
+        "swagger_response.UnauthorizedResponseDoc": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/swagger_response.UnauthorizedErrorDoc"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger_response.UpdateTicketStatusSuccessResponseDoc": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "ticket status updated successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
         }
     },
     "securityDefinitions": {

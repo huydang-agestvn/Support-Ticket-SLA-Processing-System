@@ -91,7 +91,7 @@ func TestReportService_GetReport(t *testing.T) {
 		expectedRes   *domain.TicketReport
 	}{
 		{
-			name: "Success",
+			name: "Success_Cached",
 			mockRepo: func(m *testmock.MockReportRepository) {
 				m.On("GetByDate", now).Return(validReport, nil)
 			},
@@ -99,11 +99,22 @@ func TestReportService_GetReport(t *testing.T) {
 			expectedRes:   validReport,
 		},
 		{
-			name: "Error",
+			name: "Success_AutoGenerate",
 			mockRepo: func(m *testmock.MockReportRepository) {
 				m.On("GetByDate", now).Return((*domain.TicketReport)(nil), errors.New("not found"))
+				m.On("AggregateByDate", now).Return(validReport, nil)
+				m.On("Upsert", validReport).Return(nil)
 			},
-			expectedError: "not found",
+			expectedError: "",
+			expectedRes:   validReport,
+		},
+		{
+			name: "Error_AutoGenerateFail",
+			mockRepo: func(m *testmock.MockReportRepository) {
+				m.On("GetByDate", now).Return((*domain.TicketReport)(nil), errors.New("not found"))
+				m.On("AggregateByDate", now).Return((*domain.TicketReport)(nil), errors.New("db error"))
+			},
+			expectedError: "auto-generate report",
 			expectedRes:   nil,
 		},
 	}

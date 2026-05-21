@@ -1,24 +1,18 @@
-# Support Ticket SLA Processing System
 
-Backend project for **Phase 2 - Week 6: REST API & Database Integration**.
+<div align="center">
+  <h1>Support Ticket SLA Processing System</h1>
+  <p>A robust backend project focusing on High-Performance Concurrency, RESTful APIs, Clean Architecture, and ETL Pipelines.</p>
 
-This repository includes a robust Support Ticket SLA Processing System featuring Domain Models, Status Validation, High-Performance Concurrency, PostgreSQL integration, and REST API endpoints. You can run the entire stack (App + Database) using Docker Compose.
+  ![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=for-the-badge&logo=go)
+  ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-174169E1?style=for-the-badge&logo=postgresql)
+  ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker)
+  ![GitHub Actions](https://img.shields.io/badge/CI/CD-GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions)
+</div>
 
-## Week 6 Scope
+## 📖 Description
 
-Implemented:
+This project is a comprehensive backend system designed to manage support tickets and calculate Service Level Agreements (SLA). Built primarily for training purposes, it emphasizes the practical application of Golang's concurrency model (worker pools), robust REST API design, complex database interactions, test-driven development (TDD), and data pipelines (ETL).
 
-- **REST API Endpoints:** Complete API suite using Gin framework (`POST /api/v1/tickets`, `GET /api/v1/tickets`, `GET /api/v1/tickets/:id`, `PATCH /api/v1/tickets/:id/status`, `POST /api/v1/ticket-events/import`, `GET /api/v1/reports/daily`).
-- **Database Integration:** PostgreSQL schema, migrations, and data access using the Repository pattern with GORM.
-- **Core Domain Logic:** Ticket domain structs for `tickets`, `ticket_events`, and `ticket_reports`. Strict status validation and FSM transition rules.
-- **High-Performance Concurrency:** Lock-free batch event import service utilizing a worker pool. Efficiently groups events by `TicketID` to eliminate N+1 database queries and Mutex bottlenecks.
-- **Reporting System:** Daily SLA report generation logic (New, Resolved, Cancelled, Overdue, SLA Breaches).
-- **Clean Architecture:** Strict separation between Handlers, Services, Repositories, and Domain models.
-
-Not implemented yet:
-
-- Automated unit or integration test coverage.
-- Scheduled cron jobs for reports.
 
 ## Business Context
 
@@ -38,124 +32,387 @@ flowchart LR
   resolved --> closed
 ```
 
+## 🚀 Execution Plan
 
-Notes:
+- **Week 5: Core Logic & Concurrency (No Database Yet!)**
+  **Focus:** Think in Go. Set up your project structure, define your domain models (structs), and build the validation logic. Build your concurrent worker pool in-memory first.
+  **Goal:** By the end of the week, you should be able to run `go test ./...` or `go run ./cmd/import-sample` to process a mock batch of data and output a result like: `{"accepted_count": 80, "rejected_count": 15, "duplicate_count": 5}`.
 
-- Valid statuses: `new`, `assigned`, `in_progress`, `resolved`, `closed`, `cancelled`.
-- Valid priorities: `low`, `medium`, `high`.
-- Terminal statuses do not transition further because `closed` and `cancelled` have no outgoing transitions.
+- **Week 6: REST API & Database Integration**
+  **Focus:** Connect the plumbing. Write your PostgreSQL schema and migrations. Build the Repository layer to save/fetch data. Wrap your logic in REST endpoints.
+  **Goal:** By the end of the week, running `docker compose up` should start both your app and the database. You should be able to hit your POST endpoints using Postman or cURL.
 
-## Project Structure
+- **Week 7: Testing & Quality Assurance**
+  **Focus:** Break your code before the instructors do. Write comprehensive table-driven unit tests for all business rules. Standardize your error handling (e.g., clear 400 vs 500 error formats). Set up GitHub actions.
+  **Goal:** Your CI pipeline should run green automatically whenever someone pushes code to the repository.
+
+- **Week 8: Data Pipelines (ETL) & Final Demo**
+  **Focus:** Data aggregation and presentation. Build the daily reporting job that reads your raw tables and writes to a reporting table. Polish your README.
+  **Goal:** You can run `go run ./cmd/report --date=2026-05-04` and fetch the results via API. You are fully prepared to present your architecture and demonstrate the app live.
+
+## 🛠 Prerequisites
+
+- **Go**: 1.26
+- **Docker & Docker Compose**: For containerized deployment
+- **Make**: (Optional but recommended) For executing predefined build commands
+
+## ⚙️ Environment Variables
+
+Create a `.env` file in the root directory based on the following configurations:
+
+```env
+# PostgreSQL Container Configuration
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=<your_postgres_password>
+POSTGRES_DB=ticket_sla
+POSTGRES_HOST_PORT=5433
+POSTGRES_CONTAINER_PORT=5432
+
+# Database Configuration (Local Development)
+# Note: App runs locally and connects to DB via exposed host port (5433)
+DB_HOST=localhost
+DB_PORT=5433
+DB_USER=postgres
+DB_PASSWORD=<your_postgres_password>
+DB_NAME=ticket_sla
+DB_SSLMODE=disable
+
+# Server Configuration
+APP_PORT=8080
+
+# Keycloak Configuration
+KEYCLOAK_HOST_PORT=8180
+KEYCLOAK_ADMIN=admin
+KEYCLOAK_ADMIN_PASSWORD=<your_keycloak_password>
+KEYCLOAK_REALM=phase2
+KEYCLOAK_CLIENT_ID=support-ticket-api
+KEYCLOAK_CLIENT_SECRET=<your_client_secret>
+KEYCLOAK_BASE_URL=http://localhost:8180
+
+# Worker Pool Configuration
+WORKER_POOL_SIZE=20
+MAX_BATCH_SIZE=100000
+```
+
+## 💻 Installation & Run
+
+We use `Makefile` to simplify common operations.
+
+### Using Docker (Recommended)
+Our `docker-compose.yml` orchestrates three main services:
+- **`postgres`**: The primary database (Port 5433).
+- **`keycloak`** & **`keycloak-db`**: Authentication and Identity Provider (Port 8180).
+- **`app`**: The main Go backend application (Port 8080).
+
+```bash
+# Start all services (App, PostgreSQL, Keycloak)
+make docker-up
+
+# Rebuild images and start services
+make docker-up-build
+
+# View application logs
+make docker-logs
+
+# Stop all services
+make docker-down
+```
+
+### Running Locally
+
+```bash
+# Start the API server
+make run
+
+# Run all unit and integration tests
+make test
+
+# Generate Swagger documentation
+make swagger
+```
+
+## 🔌 API Documentation
+
+All API routes are prefixed with `/api/v1`. Authentication is handled via Bearer Tokens (JWT).
+
+| Method | Endpoint | Description | Required Role |
+|:---|:---|:---|:---|
+| `POST` | `/auth/login` | Authenticate and retrieve JWT token | *None* |
+| `POST` | `/tickets` | Create a new support ticket | `Requestor` |
+| `GET` | `/tickets` | List and paginate tickets | `Requestor`, `Agent`, `Manager` |
+| `GET` | `/tickets/:id` | Fetch specific ticket details | `Requestor`, `Agent`, `Manager` |
+| `PATCH`| `/tickets/:id/status` | Update a ticket's status | `Agent` |
+| `POST` | `/ticket-events/import` | Batch import historical ticket events | `Agent` |
+| `GET` | `/reports/daily` | Retrieve daily SLA performance report | `Manager` |
+
+*Swagger UI is available at `/swagger/index.html` when the server is running.*
+
+## ⚡ Concurrency Model
+
+The system efficiently handles massive batch imports of ticket events using an **In-Memory Worker Pool** pattern (`internal/worker/job.go`).
+
+Instead of processing items sequentially, it spins up multiple worker goroutines (configurable via `WORKER_POOL_SIZE`). It uses Go channels (`jobs` and `results`) and `sync.WaitGroup` to distribute the workload concurrently across available CPU cores. This guarantees high-throughput performance while preventing memory exhaustion.
+
+
+## 📂 Project Structure
+## 🚀 Execution Plan
+
+- **Week 5: Core Logic & Concurrency (No Database Yet!)**
+  **Focus:** Think in Go. Set up your project structure, define your domain models (structs), and build the validation logic. Build your concurrent worker pool in-memory first.
+  **Goal:** By the end of the week, you should be able to run `go test ./...` or `go run ./cmd/import-sample` to process a mock batch of data and output a result like: `{"accepted_count": 80, "rejected_count": 15, "duplicate_count": 5}`.
+
+- **Week 6: REST API & Database Integration**
+  **Focus:** Connect the plumbing. Write your PostgreSQL schema and migrations. Build the Repository layer to save/fetch data. Wrap your logic in REST endpoints.
+  **Goal:** By the end of the week, running `docker compose up` should start both your app and the database. You should be able to hit your POST endpoints using Postman or cURL.
+
+- **Week 7: Testing & Quality Assurance**
+  **Focus:** Break your code before the instructors do. Write comprehensive table-driven unit tests for all business rules. Standardize your error handling (e.g., clear 400 vs 500 error formats). Set up GitHub actions.
+  **Goal:** Your CI pipeline should run green automatically whenever someone pushes code to the repository.
+
+- **Week 8: Data Pipelines (ETL) & Final Demo**
+  **Focus:** Data aggregation and presentation. Build the daily reporting job that reads your raw tables and writes to a reporting table. Polish your README.
+  **Goal:** You can run `go run ./cmd/report --date=2026-05-04` and fetch the results via API. You are fully prepared to present your architecture and demonstrate the app live.
+
+## 🛠 Prerequisites
+
+- **Go**: 1.26
+- **Docker & Docker Compose**: For containerized deployment
+- **Make**: (Optional but recommended) For executing predefined build commands
+
+## ⚙️ Environment Variables
+
+Create a `.env` file in the root directory based on the following configurations:
+
+```env
+# PostgreSQL Container Configuration
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=<your_postgres_password>
+POSTGRES_DB=ticket_sla
+POSTGRES_HOST_PORT=5433
+POSTGRES_CONTAINER_PORT=5432
+
+# Database Configuration (Local Development)
+# Note: App runs locally and connects to DB via exposed host port (5433)
+DB_HOST=localhost
+DB_PORT=5433
+DB_USER=postgres
+DB_PASSWORD=<your_postgres_password>
+DB_NAME=ticket_sla
+DB_SSLMODE=disable
+
+# Server Configuration
+APP_PORT=8080
+
+# Keycloak Configuration
+KEYCLOAK_HOST_PORT=8180
+KEYCLOAK_ADMIN=admin
+KEYCLOAK_ADMIN_PASSWORD=<your_keycloak_password>
+KEYCLOAK_REALM=phase2
+KEYCLOAK_CLIENT_ID=support-ticket-api
+KEYCLOAK_CLIENT_SECRET=<your_client_secret>
+KEYCLOAK_BASE_URL=http://localhost:8180
+
+# Worker Pool Configuration
+WORKER_POOL_SIZE=20
+MAX_BATCH_SIZE=100000
+```
+
+## 💻 Installation & Run
+
+We use `Makefile` to simplify common operations.
+
+### Using Docker (Recommended)
+Our `docker-compose.yml` orchestrates three main services:
+- **`postgres`**: The primary database (Port 5433).
+- **`keycloak`** & **`keycloak-db`**: Authentication and Identity Provider (Port 8180).
+- **`app`**: The main Go backend application (Port 8080).
+
+```bash
+# Start all services (App, PostgreSQL, Keycloak)
+make docker-up
+
+# Rebuild images and start services
+make docker-up-build
+
+# View application logs
+make docker-logs
+
+# Stop all services
+make docker-down
+```
+
+### Running Locally
+
+```bash
+# Start the API server
+make run
+
+# Run all unit and integration tests
+make test
+
+# Generate Swagger documentation
+make swagger
+```
+
+## 🔌 API Documentation
+
+All API routes are prefixed with `/api/v1`. Authentication is handled via Bearer Tokens (JWT).
+
+| Method | Endpoint | Description | Required Role |
+|:---|:---|:---|:---|
+| `POST` | `/auth/login` | Authenticate and retrieve JWT token | *None* |
+| `POST` | `/tickets` | Create a new support ticket | `Requestor` |
+| `GET` | `/tickets` | List and paginate tickets | `Requestor`, `Agent`, `Manager` |
+| `GET` | `/tickets/:id` | Fetch specific ticket details | `Requestor`, `Agent`, `Manager` |
+| `PATCH`| `/tickets/:id/status` | Update a ticket's status | `Agent` |
+| `POST` | `/ticket-events/import` | Batch import historical ticket events | `Agent` |
+| `GET` | `/reports/daily` | Retrieve daily SLA performance report | `Manager` |
+
+*Swagger UI is available at `/swagger/index.html` when the server is running.*
+
+## ⚡ Concurrency Model
+
+The system efficiently handles massive batch imports of ticket events using an **In-Memory Worker Pool** pattern (`internal/worker/job.go`).
+
+Instead of processing items sequentially, it spins up multiple worker goroutines (configurable via `WORKER_POOL_SIZE`). It uses Go channels (`jobs` and `results`) and `sync.WaitGroup` to distribute the workload concurrently across available CPU cores. This guarantees high-throughput performance while preventing memory exhaustion.
+
+
+## 📂 Project Structure
 
 ```text
 support-ticket-sla/
 ├── cmd/
 │   ├── api/
-│   │   └── main.go                  # Starts Gin server: loads config, connects to DB, setups router
+│   │   ├── event-sample.json
+│   │   └── main.go
+│   │   ├── event-sample.json
+│   │   └── main.go
 │   ├── import-sample/
-│   │   └── main.go                  # Runs test batch import with sample data (Week 5)
+│   │   └── main.go
+│   │   └── main.go
 │   └── report/
-│       └── main.go                  # ETL job: go run ./cmd/report --date=2026-05-04 (Week 8)
+│       └── main.go
+│       └── main.go
 │
 ├── docs/
-│   └── swagger.yml                  # Swagger UI for API documentation
+│   ├── docs.go
+│   ├── swagger.json
+│   └── swagger.yaml
+│
+│   ├── docs.go
+│   ├── swagger.json
+│   └── swagger.yaml
+│
 ├── internal/
-|   ├── app/
-│   │   ├── app.go                       # main.go for the application
+│   ├── app/
+│   │   └── app.go
+│   ├── app/
+│   │   └── app.go
 │   ├── auth/
-│   │   ├── context.go                   # checks Authorization Bearer 
-│   │   ├── keycloak.go                  # Verifies JWT with Keycloak JWKS endpoint
-│   │   └── claims.go                    # Struct containing user info from JWT claims
-│   │
+│   │   ├── claims.go
+│   │   ├── context.go
+│   │   └── keycloak.go
+│   │   ├── claims.go
+│   │   ├── context.go
+│   │   └── keycloak.go
 │   ├── config/
-│   │   └── config.go                # Loads environment variables: DB URL, port
-│   │
-│   ├── domain/
-│   │   ├── ticket.go                # Ticket struct, TicketStatus enum, Priority enum, transition validator
-│   │   ├── ticket_event.go          # TicketEvent struct, BatchImportResult struct
-│   │   ├── ticket_report.go         # DailyTicketReport struct
-│   │   └── errors.go                # Sentinel errors: ErrInvalidTransition, ErrValidation
-│   │
-|   ├──dto/
-|   |   ├── api_response.go          # API response structure
-|   │   ├── pagination.go            # Pagination structure
-│   │   └── ticket_dto.go            # Ticket DTOs
-│   |   └── ticket_event_import_response.go # Ticket event import response structure
-|   |   
-|   ├── errmsgs/
-│   |   ├── errors.go                # Error messages
-|   |
-|   ├── handler/
-│   │   ├── ticket_handler.go        # POST /tickets, GET /tickets, GET /tickets/:id,... 
-│   │   ├── import_handler.go        # POST /ticket-events/import
-│   │   └── report_handler.go        # GET /reports/daily
-│   │
-|   ├── middleware/
-|   |
-|   ├── migration/
-|   |   └── migrate.go               # Uses GORM to initialize database schemas
-|   |
+│   │   ├── config.go
+│   │   └── database.go
+│   ├── dto/
+│   │   ├── common/
+│   │   ├── request/
+│   │   └── response/
+│   ├── errmsgs/
+│   │   └── errors.go
+│   ├── handler/
+│   │   ├── auth_handler.go
+│   │   ├── helper.go
+│   │   ├── report_handler.go
+│   │   ├── ticket_event_handler.go
+│   │   └── ticket_handler.go
+│   ├── middleware/
+│   │   └── auth_middleware.go
+│   ├── migration/
+│   │   └── migrate.go
+│   ├── model/
+│   │   ├── ticket.go
+│   │   ├── ticket_event.go
+│   │   └── ticket_report.go
+│   │   ├── config.go
+│   │   └── database.go
+│   ├── dto/
+│   │   ├── common/
+│   │   ├── request/
+│   │   └── response/
+│   ├── errmsgs/
+│   │   └── errors.go
+│   ├── handler/
+│   │   ├── auth_handler.go
+│   │   ├── helper.go
+│   │   ├── report_handler.go
+│   │   ├── ticket_event_handler.go
+│   │   └── ticket_handler.go
+│   ├── middleware/
+│   │   └── auth_middleware.go
+│   ├── migration/
+│   │   └── migrate.go
+│   ├── model/
+│   │   ├── ticket.go
+│   │   ├── ticket_event.go
+│   │   └── ticket_report.go
 │   ├── repository/
-│   │   ├── ticket_repository.go     # Interface + Postgres impl: Create, GetByID, List, UpdateStatus
-│   │   ├── event_repository.go      # Interface + Postgres impl: Save, ListByTicketID
-│   │   └── report_repository.go     # Interface + Postgres impl: Upsert, GetByDate
-│   │
-|   ├── router/
-|   |   └── router.go                # Initializes routes and groups
+│   │   ├── event_repository.go
+│   │   ├── report_repository.go
+│   │   └── ticket_repository.go
+│   ├── router/
+│   │   └── router.go
 │   ├── service/
-│   │   ├── ticket_service.go        # Interface + impl: Create, GetByID, List
-│   │   ├── import_service.go        # Interface + impl: Coordinates batch import, calls
-│   │   └── report_service.go        # Interface + impl: Generate daily report, GetByDate
-│   │
+│   │   ├── auth_service.go
+│   │   ├── keycloak_service.go
+│   │   ├── report_service.go
+│   │   ├── ticket_event_service.go
+│   │   └── ticket_service.go
 │   └── worker/
-│       ├── job.go                   # Worker processing pool  
+│       └── job.go
+│
+├── tests/
+│   ├── integration/
+│   ├── mock/
+│   │   ├── event_repository.go
+│   │   ├── report_repository.go
+│   │   └── ticket_repository.go
+│   ├── router/
+│   │   └── router.go
+│   ├── service/
+│   │   ├── auth_service.go
+│   │   ├── keycloak_service.go
+│   │   ├── report_service.go
+│   │   ├── ticket_event_service.go
+│   │   └── ticket_service.go
+│   └── worker/
+│       └── job.go
+│
+├── tests/
+│   ├── integration/
+│   ├── mock/
+│   ├── service/
+│   └── worker/
 │
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                   # on push: go fmt, go vet, go test -race ./...
+│       └── ci.yml
+│       └── ci.yml
 │
-├── docker-compose.yml               # Services: app + postgres + keycloak
-├── Dockerfile                       # Multi-stage build for Go API
-├── Makefile                         # make run, make test, make migrate, make docker
-├── .env.example                     # Environment variables template, do not commit real .env
+├── docker-compose.yml
+├── Dockerfile
+├── Makefile
+├── .env.example
+├── docker-compose.yml
+├── Dockerfile
+├── Makefile
+├── .env.example
 ├── .gitignore
 ├── go.mod
 ├── go.sum
 └── README.md
 ```
-
-
-### Running Locally
-
-Prerequisite:
-- Go `1.22+` installed.
-- A running PostgreSQL database.
-
-1. Create a `.env` file based on your local database credentials:
-   ```env
-   DB_HOST=localhost
-   DB_PORT=5432
-   DB_USER=postgres
-   DB_PASSWORD=secret
-   DB_NAME=ticket_sla
-   DB_SSLMODE=disable
-   SERVER_PORT=8080
-   WORKER_POOL_SIZE=20
-   MAX_BATCH_SIZE=5000
-   ```
-2. Run the API Server:
-   ```bash
-   go run ./cmd/api/main.go
-   ```
-
-### Running Reports
-
-You can generate a daily SLA report manually via the CLI tool:
-```bash
-go run ./cmd/report/main.go --date=2026-05-15
-```
-
-## Roadmap
-
-- **Week 7:** Add table-driven unit tests, integration tests, consistent error responses, and CI.
-- **Week 8:** Add scheduled daily report ETL job, report API, README polish, and final demo flow.

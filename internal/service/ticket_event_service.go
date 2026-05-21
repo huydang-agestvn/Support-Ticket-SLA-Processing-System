@@ -187,20 +187,25 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 	ticketID := job.TicketID
 
 	if !meta.existingTickets[ticketID] {
-		return rejectJob(job, fmt.Errorf("ticket_id %d does not exist in DB", ticketID))
+		return rejectJob(job, fmt.Errorf("ticket_id does not exist in DB"))
 	}
 
 	currentStatus, ok := meta.existingTicketStatuses[ticketID]
 	if !ok {
-		return rejectJob(job, fmt.Errorf("ticket_id %d does not exist in DB", ticketID))
+		return rejectJob(job, fmt.Errorf("ticket_id does not exist in DB"))
 	}
 	ticketCreatedAt := meta.ticketCreatedAt[ticketID]
 	currentAssigneeID := meta.existingTicketAssignees[ticketID]
 
 	localSeen := make(map[string]bool)
 	var finalJob *updateJob
-	var resolvedAt *time.Time
-	var cancelledAt *time.Time
+
+	ticket := &domain.Ticket{
+		ID:         ticketID,
+		Status:     currentStatus,
+		AssigneeID: currentAssigneeID,
+		CreatedAt:  ticketCreatedAt,
+	}
 
 	for _, event := range job.Events {
 		key := event.HashKey()
@@ -210,7 +215,7 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 			continue
 		}
 
-		if event.FromStatus != currentStatus {
+		if event.FromStatus != ticket.Status {
 			return rejectJob(job, errmsgs.ErrInvalidFlowTicket)
 		}
 
@@ -225,35 +230,27 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 		}
 
 		reqAssigneeId := strings.TrimSpace(event.AssigneeID)
-		if currentStatus == domain.StatusNew && event.ToStatus == domain.StatusAssigned {
+		if ticket.Status == domain.StatusNew && event.ToStatus == domain.StatusAssigned {
 			if reqAssigneeId == "" {
 				return rejectJob(job, fmt.Errorf("%w: Assignee ID is required when assigning a ticket", errmsgs.ErrInvalidInput))
 			}
-			currentAssigneeID = reqAssigneeId
-		} else if reqAssigneeId != "" && reqAssigneeId != currentAssigneeID {
-			return rejectJob(job, fmt.Errorf("%w: Cannot change assignee to '%s' during status transition to '%s'. Current assignee is '%s'",
-				errmsgs.ErrInvalidInput, reqAssigneeId, event.ToStatus, currentAssigneeID))
+			ticket.AssigneeID = reqAssigneeId
+		} else if reqAssigneeId != "" && reqAssigneeId != ticket.AssigneeID {
+			return rejectJob(job, fmt.Errorf("%w: Cannot change assignee during status transition to '%s'", errmsgs.ErrInvalidInput, event.ToStatus))
 		}
 
 		localSeen[key] = true
-		currentStatus = event.ToStatus
+		ticket.Status = event.ToStatus
+		ticket.Status = event.ToStatus
 		res.AcceptedEvents = append(res.AcceptedEvents, event)
-
-		if event.ToStatus == domain.StatusResolved {
-			t := event.CreatedAt
-			resolvedAt = &t
-		} else if event.ToStatus == domain.StatusCancelled {
-			t := event.CreatedAt
-			cancelledAt = &t
-		}
 
 		finalJob = &updateJob{
 			TicketID:    ticketID,
-			Status:      event.ToStatus,
-			AssigneeID:  currentAssigneeID,
+			Status:      ticket.Status,
+			AssigneeID:  ticket.AssigneeID,
 			CreatedAt:   event.CreatedAt,
-			ResolvedAt:  resolvedAt,
-			CancelledAt: cancelledAt,
+			ResolvedAt:  ticket.ResolvedAt,
+			CancelledAt: ticket.CancelledAt,
 		}
 	}
 	res.FinalUpdateJob = finalJob

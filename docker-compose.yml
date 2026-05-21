@@ -2,11 +2,12 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: ticket-sla-postgres
-
+    command: postgres -c timezone=Asia/Ho_Chi_Minh -c log_timezone=Asia/Ho_Chi_Minh
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      TZ: Asia/Ho_Chi_Minh
 
     ports:
       - "${POSTGRES_HOST_PORT}:${POSTGRES_CONTAINER_PORT}"
@@ -15,7 +16,7 @@ services:
       - ticket_sla_postgres_data:/var/lib/postgresql/data
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,11 +24,12 @@ services:
   keycloak-db:
     image: postgres:16-alpine
     container_name: keycloak-postgres
-
+    command: postgres -c timezone=Asia/Ho_Chi_Minh -c log_timezone=Asia/Ho_Chi_Minh
     environment:
       POSTGRES_DB: ${KEYCLOAK_DB_NAME}
       POSTGRES_USER: ${KEYCLOAK_DB_USER}
       POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      TZ: Asia/Ho_Chi_Minh
 
     ports:
       - "${KEYCLOAK_DB_HOST_PORT}:5432"
@@ -36,11 +38,7 @@ services:
       - keycloak_postgres_data:/var/lib/postgresql/data
 
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${KEYCLOAK_DB_USER} -d ${KEYCLOAK_DB_NAME}"
-        ]
+      test: [ "CMD-SHELL", "pg_isready -U ${KEYCLOAK_DB_USER} -d ${KEYCLOAK_DB_NAME}" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -104,7 +102,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-
 
 volumes:
   ticket_sla_postgres_data:
