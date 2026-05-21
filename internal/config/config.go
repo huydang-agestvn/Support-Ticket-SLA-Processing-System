@@ -22,12 +22,20 @@ type Config struct {
 	ServerPort     int
 	WorkerPoolSize int
 	DB             *gorm.DB
-	MaxBatchSize   int
+
+	// Keycloak config
+	KeycloakBaseURL      string
+	KeycloakRealm        string
+	KeycloakClientID     string
+	KeycloakClientSecret string
+	KeycloakIssuer       string
+	KeycloakTokenURL     string
+	KeycloakJWKSURL      string
 }
 
 // LoadConfig
 func LoadConfig() *Config {
-	err := godotenv.Load()
+	err := loadEnv()
 	if err != nil {
 		log.Println("Warning: No .env file found, using system environment variables")
 	}
@@ -43,7 +51,14 @@ func LoadConfig() *Config {
 
 		ServerPort:     getEnvInt("SERVER_PORT"),
 		WorkerPoolSize: getEnvInt("WORKER_POOL_SIZE"),
-		MaxBatchSize:   getEnvInt("MAX_BATCH_SIZE"),
+
+		KeycloakBaseURL:      getEnv("KEYCLOAK_BASE_URL"),
+		KeycloakRealm:        getEnv("KEYCLOAK_REALM"),
+		KeycloakClientID:     getEnv("KEYCLOAK_CLIENT_ID"),
+		KeycloakClientSecret: getEnv("KEYCLOAK_CLIENT_SECRET"),
+		KeycloakIssuer:       getEnv("KEYCLOAK_ISSUER"),
+		KeycloakTokenURL:     getEnv("KEYCLOAK_TOKEN_URL"),
+		KeycloakJWKSURL:      getEnv("KEYCLOAK_JWKS_URL"),
 	}
 
 	return cfg
@@ -88,7 +103,7 @@ func getEnv(key string) string {
 }
 
 func GetPoolSize(key string) int {
-	err := godotenv.Load()
+	err := loadEnv()
 	if err != nil {
 		log.Println("Warning: No .env file found in GetPoolSize, using system environment variables")
 	}
@@ -101,7 +116,7 @@ func GetPoolSize(key string) int {
 	return intVal
 }
 func GetBatchSize(key string) int {
-	err := godotenv.Load()
+	err := loadEnv()
 	if err != nil {
 		log.Println("Warning: No .env file found in GetBatchSize, using system environment variables")
 	}
@@ -121,4 +136,16 @@ func getEnvInt(key string) int {
 		log.Fatalf("Error converting %s to integer: %v", key, err)
 	}
 	return intVal
+}
+
+// loadEnv tries to load .env from the current and parent directories
+// Useful when running tests from subdirectories like internal/service/
+func loadEnv() error {
+	paths := []string{".env", "../.env", "../../.env", "../../../.env"}
+	for _, p := range paths {
+		if err := godotenv.Load(p); err == nil {
+			return nil
+		}
+	}
+	return fmt.Errorf("no .env file found")
 }

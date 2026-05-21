@@ -1,13 +1,15 @@
 package handler
 
 import (
-	"errors"
 	"io"
 	"net/http"
+	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
-	"support-ticket.com/internal/dto"
-	"support-ticket.com/internal/errmsgs"
+
+	dto "support-ticket.com/internal/dto/common"
+	"support-ticket.com/internal/dto/response"
 	"support-ticket.com/internal/service"
 )
 
@@ -21,40 +23,66 @@ func NewTicketEventHandler(service service.TicketEventService) *TicketEventHandl
 	}
 }
 
-func (h *TicketEventHandler) ImportEvents(c *gin.Context) {
-	ctx := c.Request.Context()
-	data, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, dto.APIResponse[interface{}]{
-			Success: false,
-			Error:   "invalid input",
-		})
-		return
-	}
-	defer c.Request.Body.Close()
-	
-	result, err := h.service.Import(ctx, data)
-	if err != nil {
-		if errors.Is(err, errmsgs.ErrEmptyBatch) || errors.Is(err, errmsgs.ErrBatchTooLarge) || errors.Is(err, errmsgs.ErrEmptyBody) {
-			c.JSON(http.StatusBadRequest, dto.APIResponse[interface{}]{
-				Success: false,
-				Error:   err.Error(),
-			})
-			return
+
+// readImportInput reads raw bytes and detects the file format from the request.
+// Supports multipart file upload (CSV/JSON) and raw JSON body (backward compatible).
+func readImportInput(c *gin.Context) (data []byte, format string, err error) {
+	if strings.Contains(c.GetHeader("Content-Type"), "multipart/form-data") {
+		file, header, ferr := c.Request.FormFile("file")
+		if ferr != nil {
+			return nil, "", dto.NewBadRequest(dto.ErrCodeInvalidBody, "missing or invalid 'file' field in multipart form")
 		}
-		
-		// Hide internal errors from client
-		c.JSON(http.StatusInternalServerError, dto.APIResponse[interface{}]{
-			Success: false,
-			Error:   errmsgs.ErrInternal.Error(),
-		})
+		defer file.Close()
+
+		format = strings.ToLower(strings.TrimPrefix(filepath.Ext(header.Filename), "."))
+		data, err = io.ReadAll(file)
 		return
 	}
 
-	response := dto.NewTicketImportResponse(result)
+	// Raw JSON body (backward compatible)
+	defer c.Request.Body.Close()
+	data, err = io.ReadAll(c.Request.Body)
+	format = "json"
+	return
+}
+
+// ImportEvents godoc
+// @Summary Import ticket events
+// @Description Import ticket events in batch. Accepts a multipart file upload (CSV or JSON) via the `file` field, or a raw JSON body.
+// @Tags ticket-events
+// @Accept multipart/form-data
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param file formData file true "CSV or JSON file to import"
+// @Success 200 {object} swagger_response.ImportTicketEventsSuccessResponseDoc "Import ticket events successfully"
+// @Failure 400 {object} swagger_response.BadRequestResponseDoc "Invalid import input"
+// @Failure 401 {object} swagger_response.UnauthorizedResponseDoc "Unauthorized"
+// @Failure 500 {object} swagger_response.InternalServerErrorResponseDoc "Internal server error"
+// @Router /ticket-events/import [post]
+func (h *TicketEventHandler) ImportEvents(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	data, format, err := readImportInput(c)
+	if err != nil {
+		HandleError(c, err)
+		return
+	}
+
+	events, err := parseEvents(data, format)
+	if err != nil {
+		HandleError(c, err)
+		return
+	}
+	result, err := h.service.Import(ctx, events)
+	if err != nil {
+		HandleError(c, err)
+		return
+	}
+
 	c.JSON(http.StatusOK, dto.APIResponse[interface{}]{
 		Success: true,
-		Data:    response,
+		Data:    response.NewTicketImportResponse(result),
 		Message: "import completed",
 	})
 }

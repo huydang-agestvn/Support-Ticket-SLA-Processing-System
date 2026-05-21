@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"support-ticket.com/internal/errmsgs"
+	"support-ticket.com/internal/dto/common"
 )
 
 type TicketEvent struct {
@@ -19,6 +19,7 @@ type TicketEvent struct {
 	// Relations
 	Ticket *Ticket `json:"-" gorm:"foreignKey:TicketID;constraint:OnDelete:CASCADE"`
 }
+
 type BatchImportResult struct {
 	AcceptedCount   int              `json:"accepted_count"`
 	RejectedCount   int              `json:"rejected_count"`
@@ -33,26 +34,28 @@ type RejectedDetail struct {
 
 func (e *TicketEvent) Validate() error {
 	if e.TicketID == 0 {
-		return fmt.Errorf("%w: Ticket ID is required", errmsgs.ErrInvalidInput)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, "ticket_id is required")
 	}
-	if e.AssigneeID == "" {
-		return fmt.Errorf("%w: Assignee ID is required", errmsgs.ErrInvalidInput)
-	}
-
 	if !e.FromStatus.IsValid() {
-		return fmt.Errorf("%w: Unknown From Status '%s'", errmsgs.ErrInvalidInput, e.FromStatus)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("unknown from_status '%s'", e.FromStatus))
 	}
 	if !e.ToStatus.IsValid() {
-		return fmt.Errorf("%w: Unknown To Status '%s'", errmsgs.ErrInvalidInput, e.ToStatus)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("unknown to_status '%s'", e.ToStatus))
 	}
 	if e.FromStatus == e.ToStatus {
-		return fmt.Errorf("%w: From Status and To Status cannot be the same ('%s')", errmsgs.ErrInvalidStatusTransition, e.FromStatus)
+		return common.NewBadRequest(common.ErrCodeInvalidTransition,
+			fmt.Sprintf("from_status and to_status cannot be the same ('%s')", e.FromStatus))
 	}
 	if !e.FromStatus.CanTransitionTo(e.ToStatus) {
-		return fmt.Errorf("%w: Illegal event transition intent from '%s' to '%s'", errmsgs.ErrInvalidStatusTransition, e.FromStatus, e.ToStatus)
+		return common.NewBadRequest(common.ErrCodeInvalidTransition,
+			fmt.Sprintf("illegal event transition from '%s' to '%s'", e.FromStatus, e.ToStatus))
 	}
 	if e.CreatedAt.IsZero() {
-		return fmt.Errorf("%w: Event created_at is required", errmsgs.ErrInvalidInput)
+		return common.NewBadRequest(common.ErrCodeInvalidInput, "event created_at is required")
 	}
 	return nil
+}
+
+func (e *TicketEvent) HashKey() string {
+	return fmt.Sprintf("%d|%s|%s", e.TicketID, e.FromStatus, e.ToStatus)
 }

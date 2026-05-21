@@ -4,19 +4,22 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
-	"support-ticket.com/internal/domain"
-	"support-ticket.com/internal/dto"
+	"support-ticket.com/internal/auth"
+	"support-ticket.com/internal/dto/common"
+	"support-ticket.com/internal/dto/request"
 	"support-ticket.com/internal/errmsgs"
+	domain "support-ticket.com/internal/model"
 	"support-ticket.com/internal/repository"
 )
 
 type TicketService interface {
-	Create(ctx context.Context, req dto.CreateTicketReq) (*domain.Ticket, error)
+	Create(ctx context.Context, req request.CreateTicketReq) (*domain.Ticket, error)
 	FindById(ctx context.Context, id uint) (*domain.Ticket, error)
-	FindAll(ctx context.Context, filter dto.TicketFilter, paging dto.PaginationQuery) (*dto.PaginatedResult[domain.Ticket], error)
-	UpdateTicketStatus(ctx context.Context, id uint, req dto.UpdateStatusReq) error
+	FindAll(ctx context.Context, filter request.TicketFilter, paging common.PaginationQuery) (*common.PaginatedResult[domain.Ticket], error)
+	UpdateTicketStatus(ctx context.Context, id uint, req request.UpdateStatusReq) error
 }
 
 type ticketServiceImpl struct {
@@ -31,7 +34,7 @@ func NewTicketService(repo repository.TicketRepository, eventRepo repository.Tic
 	}
 }
 
-func (s *ticketServiceImpl) Create(ctx context.Context, req dto.CreateTicketReq) (*domain.Ticket, error) {
+func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicketReq) (*domain.Ticket, error) {
 	now := time.Now()
 
 	ticket := &domain.Ticket{
@@ -39,15 +42,10 @@ func (s *ticketServiceImpl) Create(ctx context.Context, req dto.CreateTicketReq)
 		Title:       req.Title,
 		Description: req.Description,
 		Priority:    req.Priority,
+		SLADueAt:    req.SlaDueAt,
 		Status:      domain.StatusNew,
 		CreatedAt:   now,
 	}
-
-	// SLA duration calculation is now encapsulated in the Priority domain type
-	slaDuration := req.Priority.SLADuration()
-
-	slaDueAt := now.Add(slaDuration)
-	ticket.SLADueAt = &slaDueAt
 
 	if err := ticket.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid ticket data: %w", err)
@@ -74,7 +72,7 @@ func (s *ticketServiceImpl) FindById(ctx context.Context, id uint) (*domain.Tick
 	return ticket, nil
 }
 
-func (s *ticketServiceImpl) FindAll(ctx context.Context, filter dto.TicketFilter, paging dto.PaginationQuery) (*dto.PaginatedResult[domain.Ticket], error) {
+func (s *ticketServiceImpl) FindAll(ctx context.Context, filter request.TicketFilter, paging common.PaginationQuery) (*common.PaginatedResult[domain.Ticket], error) {
 	limit := paging.GetLimit()
 	offset := paging.GetOffset()
 	page := paging.GetPage()
@@ -86,10 +84,10 @@ func (s *ticketServiceImpl) FindAll(ctx context.Context, filter dto.TicketFilter
 	if tickets == nil {
 		tickets = []domain.Ticket{}
 	}
-	
+
 	totalPages := int(math.Ceil(float64(total) / float64(limit)))
 
-	result := &dto.PaginatedResult[domain.Ticket]{
+	result := &common.PaginatedResult[domain.Ticket]{
 		Items:      tickets,
 		Total:      total,
 		Page:       page,
@@ -100,17 +98,24 @@ func (s *ticketServiceImpl) FindAll(ctx context.Context, filter dto.TicketFilter
 	return result, nil
 }
 
-func (s *ticketServiceImpl) UpdateTicketStatus(ctx context.Context, id uint, req dto.UpdateStatusReq) error {
+func (s *ticketServiceImpl) UpdateTicketStatus(ctx context.Context, id uint, req request.UpdateStatusReq) error {
 	ticket, err := s.repo.FindById(ctx, id)
 	if err != nil {
-		return fmt.Errorf("Failed to get ticket: %w", err)
+		return fmt.Errorf("failed to get ticket: %w", err)
+	}
+	if ticket == nil {
+		return errmsgs.ErrTicketNotFound
+	}
+
+	if ticket.Status == domain.StatusNew && req.Status == domain.StatusAssigned {
+		currentUser := auth.UserFromContext(ctx)
+		req.AssigneeID = strings.TrimSpace(currentUser.UserID)
 	}
 
 	if err := ticket.ValidateStatusTransition(req.Status, req.AssigneeID, time.Now()); err != nil {
-		return fmt.Errorf("%w", err)
+		return err
 	}
 
-	// Build event
 	event := &domain.TicketEvent{
 		TicketID:   ticket.ID,
 		AssigneeID: ticket.AssigneeID,
@@ -118,17 +123,12 @@ func (s *ticketServiceImpl) UpdateTicketStatus(ctx context.Context, id uint, req
 		ToStatus:   req.Status,
 		CreatedAt:  time.Now(),
 	}
-	if req.Note != "" {
-		event.Note = &req.Note
-	}
-	if err := event.Validate(); err != nil {
-		return fmt.Errorf("Failed to validate event: %w", err)
-	}
+	event.Validate()
 
 	ticket.Status = req.Status
-	// 8. Update ticket + insert event trong transaction
+
 	if err := s.repo.UpdateStatusWithEvent(ctx, ticket, event); err != nil {
-		return fmt.Errorf("Failed to update ticket status with event: %w", err)
+		return fmt.Errorf("failed to update ticket status: %w", err)
 	}
 
 	return nil

@@ -2,21 +2,21 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
 	"support-ticket.com/internal/config"
-	"support-ticket.com/internal/domain"
+	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/errmsgs"
+	domain "support-ticket.com/internal/model"
 	"support-ticket.com/internal/repository"
 	"support-ticket.com/internal/worker"
 )
 
 type TicketEventService interface {
-	Import(ctx context.Context, data []byte) (domain.BatchImportResult, error)
+	Import(ctx context.Context, events []domain.TicketEvent) (domain.BatchImportResult, error)
 }
 
 type ticketEventService struct {
@@ -47,34 +47,6 @@ type parsedEvent struct {
 	Err   error // nil = valid
 }
 
-func (s *ticketEventService) parseEvents(data []byte) ([]parsedEvent, error) {
-	if len(data) == 0 {
-		return nil, errmsgs.ErrEmptyBody
-	}
-
-	var events []domain.TicketEvent
-	if err := json.Unmarshal(data, &events); err != nil {
-		return nil, fmt.Errorf("invalid JSON: %w", err)
-	}
-
-	if len(events) == 0 {
-		return nil, errmsgs.ErrEmptyBatch
-	}
-
-	if len(events) > maxBatchSize {
-		return nil, fmt.Errorf("%w: got %d, max %d", errmsgs.ErrBatchTooLarge, len(events), maxBatchSize)
-	}
-
-	parsed := make([]parsedEvent, len(events))
-	for i, e := range events {
-		parsed[i] = parsedEvent{
-			Event: e,
-			Err:   e.Validate(),
-		}
-	}
-	return parsed, nil
-}
-
 type ticketWorkerJob struct {
 	TicketID uint
 	Events   []domain.TicketEvent
@@ -89,14 +61,34 @@ type ticketJobResult struct {
 }
 
 type importMetadata struct {
-	existingTickets        map[uint]bool
-	existingTicketStatuses map[uint]domain.TicketStatus
-	ticketCreatedAt        map[uint]time.Time
-	existingDBEvents       map[string]bool
+	existingTickets         map[uint]bool
+	existingTicketStatuses  map[uint]domain.TicketStatus
+	ticketCreatedAt         map[uint]time.Time
+	existingDBEvents        map[string]bool
+	existingTicketAssignees map[uint]string
 }
 
-func (s *ticketEventService) Import(ctx context.Context, data []byte) (domain.BatchImportResult, error) {
-	parsedEvents, err := s.parseEvents(data)
+// buildParsedEvents validates each event and enforces batch size limits.
+// This is business logic: the service owns validation rules and size constraints.
+func (s *ticketEventService) buildParsedEvents(events []domain.TicketEvent) ([]parsedEvent, error) {
+	if len(events) == 0 {
+		return nil, errmsgs.ErrEmptyBatch
+	}
+	if len(events) > maxBatchSize {
+		return nil, common.NewBadRequest(
+			common.ErrCodeBatchTooLarge,
+			fmt.Sprintf("batch size exceeds maximum allowed (limit: %d, got: %d)", maxBatchSize, len(events)),
+		)
+	}
+	parsed := make([]parsedEvent, len(events))
+	for i, e := range events {
+		parsed[i] = parsedEvent{Event: e, Err: e.Validate()}
+	}
+	return parsed, nil
+}
+
+func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketEvent) (domain.BatchImportResult, error) {
+	parsedEvents, err := s.buildParsedEvents(events)
 	if err != nil {
 		return domain.BatchImportResult{}, err
 	}
@@ -151,8 +143,7 @@ func (s *ticketEventService) filterAndGroupEvents(parsedEvents []parsedEvent) ([
 			ticketIDs = append(ticketIDs, e.TicketID)
 		}
 		groupedEvents[e.TicketID] = append(groupedEvents[e.TicketID], e)
-		key := fmt.Sprintf("%d|%s|%s", e.TicketID, e.FromStatus, e.ToStatus)
-		eventKeys = append(eventKeys, key)
+		eventKeys = append(eventKeys, e.HashKey())
 	}
 
 	var workerJobs []ticketWorkerJob
@@ -172,7 +163,7 @@ func (s *ticketEventService) fetchMetadata(ctx context.Context, ticketIDs []uint
 		return importMetadata{}, fmt.Errorf("failed to fetch tickets: %w", err)
 	}
 
-	existingTicketStatuses, ticketCreatedAtByTicket, err := s.ticketRepo.GetTicketStatusAndCreatedAt(ctx, ticketIDs)
+	existingTicketStatuses, ticketCreatedAtByTicket, existingTicketAssignees, err := s.ticketRepo.GetTicketStatusAndCreatedAt(ctx, ticketIDs)
 	if err != nil {
 		return importMetadata{}, fmt.Errorf("failed to fetch ticket metadata: %w", err)
 	}
@@ -183,10 +174,11 @@ func (s *ticketEventService) fetchMetadata(ctx context.Context, ticketIDs []uint
 	}
 
 	return importMetadata{
-		existingTickets:        existingTickets,
-		existingTicketStatuses: existingTicketStatuses,
-		ticketCreatedAt:        ticketCreatedAtByTicket,
-		existingDBEvents:       existingDBEvents,
+		existingTickets:         existingTickets,
+		existingTicketStatuses:  existingTicketStatuses,
+		ticketCreatedAt:         ticketCreatedAtByTicket,
+		existingDBEvents:        existingDBEvents,
+		existingTicketAssignees: existingTicketAssignees,
 	}, nil
 }
 
@@ -195,75 +187,81 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 	ticketID := job.TicketID
 
 	if !meta.existingTickets[ticketID] {
-		res.RejectedError = fmt.Sprintf("ticket_id %d does not exist in DB", ticketID)
-		res.RejectedEvents = job.Events
-		return res
+		return rejectJob(job, fmt.Errorf("ticket_id does not exist in DB"))
 	}
 
 	currentStatus, ok := meta.existingTicketStatuses[ticketID]
 	if !ok {
-		res.RejectedError = fmt.Sprintf("ticket_id %d does not exist in DB", ticketID)
-		res.RejectedEvents = job.Events
-		return res
+		return rejectJob(job, fmt.Errorf("ticket_id does not exist in DB"))
 	}
 	ticketCreatedAt := meta.ticketCreatedAt[ticketID]
+	currentAssigneeID := meta.existingTicketAssignees[ticketID]
 
 	localSeen := make(map[string]bool)
 	var finalJob *updateJob
-	var resolvedAt *time.Time
-	var cancelledAt *time.Time
+
+	ticket := &domain.Ticket{
+		ID:         ticketID,
+		Status:     currentStatus,
+		AssigneeID: currentAssigneeID,
+		CreatedAt:  ticketCreatedAt,
+	}
 
 	for _, event := range job.Events {
-		key := fmt.Sprintf("%d|%s|%s", event.TicketID, event.FromStatus, event.ToStatus)
+		key := event.HashKey()
 
 		if meta.existingDBEvents[key] || localSeen[key] {
 			res.DuplicateCount++
 			continue
 		}
 
-		if event.FromStatus != currentStatus {
-			res.RejectedError = errmsgs.ErrInvalidFlowTicket.Error()
-			res.RejectedEvents = job.Events
-			res.AcceptedEvents = nil
-			res.DuplicateCount = 0
-			res.FinalUpdateJob = nil
-			return res
+		if event.FromStatus != ticket.Status {
+			return rejectJob(job, errmsgs.ErrInvalidFlowTicket)
 		}
 
 		if event.ToStatus == domain.StatusResolved || event.ToStatus == domain.StatusCancelled {
 			if event.CreatedAt.Before(ticketCreatedAt) {
-				res.RejectedError = fmt.Sprintf("%s: %s At cannot be before Created At", errmsgs.ErrInvalidInput.Error(), strings.Title(string(event.ToStatus)))
-				res.RejectedEvents = job.Events
-				res.AcceptedEvents = nil
-				res.DuplicateCount = 0
-				res.FinalUpdateJob = nil
-				return res
+				status := string(event.ToStatus)
+				if len(status) > 0 {
+					status = strings.ToUpper(status[:1]) + status[1:]
+				}
+				return rejectJob(job, fmt.Errorf("%s: %s At cannot be before Created At", errmsgs.ErrInvalidInput.Error(), status))
 			}
 		}
 
-		localSeen[key] = true
-		currentStatus = event.ToStatus
-		res.AcceptedEvents = append(res.AcceptedEvents, event)
-
-		if event.ToStatus == domain.StatusResolved {
-			t := event.CreatedAt
-			resolvedAt = &t
-		} else if event.ToStatus == domain.StatusCancelled {
-			t := event.CreatedAt
-			cancelledAt = &t
+		reqAssigneeId := strings.TrimSpace(event.AssigneeID)
+		if ticket.Status == domain.StatusNew && event.ToStatus == domain.StatusAssigned {
+			if reqAssigneeId == "" {
+				return rejectJob(job, fmt.Errorf("%w: Assignee ID is required when assigning a ticket", errmsgs.ErrInvalidInput))
+			}
+			ticket.AssigneeID = reqAssigneeId
+		} else if reqAssigneeId != "" && reqAssigneeId != ticket.AssigneeID {
+			return rejectJob(job, fmt.Errorf("%w: Cannot change assignee during status transition to '%s'", errmsgs.ErrInvalidInput, event.ToStatus))
 		}
+
+		localSeen[key] = true
+		ticket.Status = event.ToStatus
+		ticket.Status = event.ToStatus
+		res.AcceptedEvents = append(res.AcceptedEvents, event)
 
 		finalJob = &updateJob{
 			TicketID:    ticketID,
-			Status:      event.ToStatus,
-			AssigneeID:  event.AssigneeID,
+			Status:      ticket.Status,
+			AssigneeID:  ticket.AssigneeID,
 			CreatedAt:   event.CreatedAt,
-			ResolvedAt:  resolvedAt,
-			CancelledAt: cancelledAt,
+			ResolvedAt:  ticket.ResolvedAt,
+			CancelledAt: ticket.CancelledAt,
 		}
 	}
 	res.FinalUpdateJob = finalJob
 	return res
+}
+
+func rejectJob(job ticketWorkerJob, err error) ticketJobResult {
+	return ticketJobResult{
+		RejectedError:  err.Error(),
+		RejectedEvents: job.Events,
+	}
 }
 
 func (s *ticketEventService) applyImportResults(ctx context.Context, results []ticketJobResult, finalResult *domain.BatchImportResult) error {
@@ -296,66 +294,64 @@ func (s *ticketEventService) applyImportResults(ctx context.Context, results []t
 		})
 	}
 
-	if len(eventsToInsert) > 0 {
-		if err := s.eventRepo.CreateBatch(eventsToInsert); err != nil {
-			return err
-		}
-	}
-
-	if len(finalUpdates) > 0 {
-		return s.updateTicketStatuses(ctx, finalUpdates)
-	}
-
-	return nil
-}
-
-func (s *ticketEventService) updateTicketStatuses(ctx context.Context, finalUpdates []updateJob) error {
-	var closedTicketIDs []int
-	for _, u := range finalUpdates {
-		if u.Status == domain.StatusClosed && u.ResolvedAt == nil {
-			closedTicketIDs = append(closedTicketIDs, int(u.TicketID))
-		}
-	}
-
-	resolvedAtByTicket := make(map[uint]time.Time)
-	if len(closedTicketIDs) > 0 {
-		resolvedEvents, err := s.eventRepo.FetchLatestResolvedEventPerTicket(ctx, closedTicketIDs)
-		if err == nil {
-			for _, ev := range resolvedEvents {
-				resolvedAtByTicket[ev.TicketID] = ev.CreatedAt
+	// Wrap DB operations inside a Database Transaction
+	return s.ticketRepo.Transaction(ctx, func(txCtx context.Context) error {
+		if len(eventsToInsert) > 0 {
+			if err := s.eventRepo.CreateBatch(txCtx, eventsToInsert); err != nil {
+				return err
 			}
 		}
-	}
 
-	updateResults := worker.Run(finalUpdates, func(job updateJob) error {
-		switch job.Status {
-		case domain.StatusResolved:
-			if job.ResolvedAt != nil {
-				return s.ticketRepo.UpdateStatusAndResolvedAt(ctx, job.TicketID, job.Status, job.AssigneeID, *job.ResolvedAt)
+		if len(finalUpdates) > 0 {
+			var closedTicketIDs []int
+			for _, u := range finalUpdates {
+				if u.Status == domain.StatusClosed && u.ResolvedAt == nil {
+					closedTicketIDs = append(closedTicketIDs, int(u.TicketID))
+				}
 			}
-			return s.ticketRepo.UpdateStatusAndResolvedAt(ctx, job.TicketID, job.Status, job.AssigneeID, job.CreatedAt)
-		case domain.StatusCancelled:
-			if job.CancelledAt != nil {
-				return s.ticketRepo.UpdateStatusAndCancelledAt(ctx, job.TicketID, job.Status, job.AssigneeID, *job.CancelledAt)
+
+			resolvedAtByTicket := make(map[uint]time.Time)
+			if len(closedTicketIDs) > 0 {
+				resolvedEvents, err := s.eventRepo.FetchLatestResolvedEventPerTicket(txCtx, closedTicketIDs)
+				if err == nil {
+					for _, ev := range resolvedEvents {
+						resolvedAtByTicket[ev.TicketID] = ev.CreatedAt
+					}
+				}
 			}
-			return s.ticketRepo.UpdateStatusAndCancelledAt(ctx, job.TicketID, job.Status, job.AssigneeID, job.CreatedAt)
-		case domain.StatusClosed:
-			if job.ResolvedAt != nil {
-				return s.ticketRepo.UpdateStatusAndResolvedAt(ctx, job.TicketID, job.Status, job.AssigneeID, *job.ResolvedAt)
+
+			tickets := make([]domain.Ticket, len(finalUpdates))
+			for i, u := range finalUpdates {
+				var resolvedAt *time.Time = u.ResolvedAt
+				if u.Status == domain.StatusClosed && resolvedAt == nil {
+					if rTime, ok := resolvedAtByTicket[u.TicketID]; ok {
+						resolvedAt = &rTime
+					}
+				} else if u.Status == domain.StatusResolved && resolvedAt == nil {
+					t := u.CreatedAt
+					resolvedAt = &t
+				}
+
+				var cancelledAt *time.Time = u.CancelledAt
+				if u.Status == domain.StatusCancelled && cancelledAt == nil {
+					t := u.CreatedAt
+					cancelledAt = &t
+				}
+
+				tickets[i] = domain.Ticket{
+					ID:          u.TicketID,
+					Status:      u.Status,
+					AssigneeID:  u.AssigneeID,
+					ResolvedAt:  resolvedAt,
+					CancelledAt: cancelledAt,
+				}
 			}
-			if resolvedAt, ok := resolvedAtByTicket[job.TicketID]; ok {
-				return s.ticketRepo.UpdateStatusAndResolvedAt(ctx, job.TicketID, job.Status, job.AssigneeID, resolvedAt)
+
+			if err := s.ticketRepo.UpdateStatusesBatch(txCtx, tickets); err != nil {
+				return fmt.Errorf("failed to update ticket statuses in batch: %w", err)
 			}
-			fallthrough
-		default:
-			return s.ticketRepo.UpdateStatusAndAssignee(ctx, job.TicketID, job.Status, job.AssigneeID)
 		}
+
+		return nil
 	})
-
-	for _, err := range updateResults {
-		if err != nil {
-			return fmt.Errorf("failed to update ticket status: %w", err)
-		}
-	}
-	return nil
 }
