@@ -9,7 +9,6 @@ import (
 	"support-ticket.com/internal/auth"
 	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/request"
-	_ "support-ticket.com/internal/dto/response/swagger_response"
 	"support-ticket.com/internal/errmsgs"
 	domain "support-ticket.com/internal/model"
 	"support-ticket.com/internal/service"
@@ -34,19 +33,6 @@ func parseTicketID(c *gin.Context) (uint, error) {
 	return uint(id), nil
 }
 
-// HandleCreateTicket godoc
-// @Summary Create ticket
-// @Description Create a new support ticket
-// @Tags Tickets
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param request body request.CreateTicketReq true "Create ticket request"
-// @Success 201 {object} swagger_response.CreateTicketSuccessResponseDoc "Ticket created successfully"
-// @Failure 400 {object} swagger_response.BadRequestResponseDoc "Invalid request body or validation error"
-// @Failure 401 {object} swagger_response.UnauthorizedResponseDoc "Unauthorized"
-// @Failure 500 {object} swagger_response.InternalServerErrorResponseDoc "Internal server error"
-// @Router /tickets [post]
 func (h *TicketHandler) HandleCreateTicket(c *gin.Context) {
 	var req request.CreateTicketReq
 	if !BindJSONOrAbort(c, &req) {
@@ -65,23 +51,6 @@ func (h *TicketHandler) HandleCreateTicket(c *gin.Context) {
 	c.JSON(http.StatusCreated, common.SuccessResponse(ticket))
 }
 
-// HandleGetTickets godoc
-// @Summary List tickets
-// @Description Get list of tickets with optional filters and pagination
-// @Tags Tickets
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param status query string false "Filter by ticket status" Enums(new, assigned, in_progress, resolved, closed, cancelled)
-// @Param priority query string false "Filter by ticket priority" Enums(low, medium, high)
-// @Param assignee_id query string false "Filter by assignee ID"
-// @Param page query int false "Page number" default(1)
-// @Param limit query int false "Number of items per page" default(10)
-// @Success 200 {object} swagger_response.ListTicketsSuccessResponseDoc "Get tickets successfully"
-// @Failure 400 {object} swagger_response.BadRequestResponseDoc "Invalid query parameters"
-// @Failure 401 {object} swagger_response.UnauthorizedResponseDoc "Unauthorized"
-// @Failure 500 {object} swagger_response.InternalServerErrorResponseDoc "Internal server error"
-// @Router /tickets [get]
 func (h *TicketHandler) HandleListTickets(c *gin.Context) {
 	var query struct {
 		request.TicketFilter
@@ -105,20 +74,6 @@ func (h *TicketHandler) HandleListTickets(c *gin.Context) {
 	})
 }
 
-// HandleGetTicket godoc
-// @Summary Get ticket detail
-// @Description Get ticket detail by ID
-// @Tags Tickets
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "Ticket ID"
-// @Success 200 {object} swagger_response.GetTicketDetailSuccessResponseDoc "Get ticket successfully"
-// @Failure 400 {object} swagger_response.ErrorResponseDoc "Invalid ticket ID"
-// @Failure 401 {object} swagger_response.UnauthorizedResponseDoc "Unauthorized"
-// @Failure 404 {object} swagger_response.TicketNotFoundResponseDoc "Ticket not found"
-// @Failure 500 {object} swagger_response.InternalServerErrorResponseDoc "Internal server error"
-// @Router /tickets/{id} [get]
 func (h *TicketHandler) HandleGetTicket(c *gin.Context) {
 	id, err := parseTicketID(c)
 	if err != nil {
@@ -135,22 +90,6 @@ func (h *TicketHandler) HandleGetTicket(c *gin.Context) {
 	c.JSON(http.StatusOK, common.SuccessResponse(ticket))
 }
 
-// HandleUpdateStatus godoc
-// @Summary Update ticket status
-// @Description Update status of a ticket by ID
-// @Tags Tickets
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "Ticket ID"
-// @Param request body request.UpdateStatusReq true "Update status request"
-// @Success 200 {object} swagger_response.UpdateTicketStatusSuccessResponseDoc "Ticket status updated successfully"
-// @Failure 400 {object} swagger_response.BadRequestResponseDoc "Invalid request body or invalid status transition"
-// @Failure 401 {object} swagger_response.UnauthorizedResponseDoc "Unauthorized"
-// @Failure 403 {object} swagger_response.ForbiddenResponseDoc "Forbidden"
-// @Failure 404 {object} swagger_response.TicketNotFoundResponseDoc "Ticket not found"
-// @Failure 500 {object} swagger_response.InternalServerErrorResponseDoc "Internal server error"
-// @Router /tickets/{id}/status [patch]
 func (h *TicketHandler) HandleUpdateStatus(c *gin.Context) {
 	id, err := parseTicketID(c)
 	if err != nil {
@@ -169,5 +108,5 @@ func (h *TicketHandler) HandleUpdateStatus(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, common.SuccessMessageResponse("ticket status updated successfully"))
+	c.JSON(http.StatusOK, common.SuccessMessageResponse("Ticket status updated successfully"))
 }
