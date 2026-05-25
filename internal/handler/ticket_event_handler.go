@@ -23,7 +23,6 @@ func NewTicketEventHandler(service service.TicketEventService) *TicketEventHandl
 	}
 }
 
-
 // readImportInput reads raw bytes and detects the file format from the request.
 // Supports multipart file upload (CSV/JSON) and raw JSON body (backward compatible).
 func readImportInput(c *gin.Context) (data []byte, format string, err error) {
@@ -46,20 +45,6 @@ func readImportInput(c *gin.Context) (data []byte, format string, err error) {
 	return
 }
 
-// ImportEvents godoc
-// @Summary Import ticket events
-// @Description Import ticket events in batch. Accepts a multipart file upload (CSV or JSON) via the `file` field, or a raw JSON body.
-// @Tags ticket-events
-// @Accept multipart/form-data
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param file formData file true "CSV or JSON file to import"
-// @Success 200 {object} swagger_response.ImportTicketEventsSuccessResponseDoc "Import ticket events successfully"
-// @Failure 400 {object} swagger_response.BadRequestResponseDoc "Invalid import input"
-// @Failure 401 {object} swagger_response.UnauthorizedResponseDoc "Unauthorized"
-// @Failure 500 {object} swagger_response.InternalServerErrorResponseDoc "Internal server error"
-// @Router /ticket-events/import [post]
 func (h *TicketEventHandler) ImportEvents(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -82,7 +67,7 @@ func (h *TicketEventHandler) ImportEvents(c *gin.Context) {
 
 	c.JSON(http.StatusOK, dto.APIResponse[interface{}]{
 		Success: true,
+		Message: "import ticket events successfully",
 		Data:    response.NewTicketImportResponse(result),
-		Message: "import completed",
 	})
 }

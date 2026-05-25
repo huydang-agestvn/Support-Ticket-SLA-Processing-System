@@ -1,0 +1,880 @@
+openapi: 3.0.0
+info:
+  title: Support Ticket SLA Processing System API
+  version: 1.0.0
+  description: API contract for Support Ticket SLA Processing System.
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+
+tags:
+  - name: Auth
+    description: Authentication APIs
+  - name: Tickets
+    description: Ticket management APIs
+  - name: Ticket Events
+    description: Batch ticket event import APIs
+  - name: Reports
+    description: Reporting APIs
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Login
+      description: Login with username and password through Keycloak.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            example:
+              username: requestor-1
+              password: "123123"
+      responses:
+        "200":
+          description: Login successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginSuccessResponse"
+              example:
+                success: true
+                message: Login successfully
+                data:
+                  access_token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+                  token_type: Bearer
+                  expires_in: 300
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: UNAUTHORIZED
+                  status: 401
+                  message: invalid username or password
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        "503":
+          description: Authentication provider unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: AUTH_PROVIDER_UNAVAILABLE
+                  status: 503
+                  message: authentication provider unavailable
+
+  /tickets:
+    post:
+      tags:
+        - Tickets
+      summary: Create ticket
+      description: Create a new support ticket.
+      operationId: createTicket
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTicketRequest"
+            example:
+              requestor_id: 0a5389df-ba3a-4494-a095-126d05c7c2e7
+              title: Cannot access internal system
+              description: User cannot access internal support system
+              priority: low
+              sla_due_at: "2026-05-25T15:57:38.248399+07:00"
+      responses:
+        "201":
+          description: Ticket created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateTicketResponse"
+              # example:
+              #   success: true
+              #   message: Ticket created successfully
+              #   data:
+              #     id: 1
+              #     requestor_id: 0a5389df-ba3...........
+              #     assignee_id: ""
+              #     title: Cannot access internal system
+              #     description: User cannot access internal support system
+              #     priority: low
+              #     status: new
+              #     created_at: "2026-05-22T15:19:55.169302+07:00"
+              #     resolved_at: null
+              #     sla_due_at: "2026-05-25T15:57:38.248399+07:00"
+              #     cancelled_at: null,
+              #     events: null
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    get:
+      tags:
+        - Tickets
+      summary: List tickets
+      description: Get tickets with optional filters and pagination.
+      operationId: listTickets
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/TicketStatus"
+        - name: priority
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/TicketPriority"
+        - name: assignee_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          example: 10
+      responses:
+        "200":
+          description: Get tickets successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetTicketResponse"
+              # example:
+              #   success: true
+              #   message: Get tickets successfully
+              #   data:
+              #     items:
+              #       - id: 1
+              #         requestor_id: 0a5389df-ba3a-4494-a095-126d05c7c2e7
+              #         assignee_id: 9ee00625-0436-4f11-8bb1-b9e4f3f7bf88
+              #         title: Cannot access internal system
+              #         description: User cannot access internal support system
+              #         priority: low
+              #         status: assigned
+              #         sla_due_at: "2026-05-17T15:19:55.169302+07:00"
+              #         created_at: "2026-05-15T15:19:55.169302+07:00"
+              #         updated_at: "2026-05-15T15:19:55.169302+07:00"
+              #     page: 1
+              #     limit: 10
+              #     total: 10
+              #     total_pages: 1
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: INVALID_QUERY_PARAMETERS
+                  status: 400
+                  message: invalid query parameters
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /tickets/{id}:
+    get:
+      tags:
+        - Tickets
+      summary: Get ticket detail
+      description: Get ticket detail by ticket ID.
+      operationId: getTicketById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TicketId"
+      responses:
+        "200":
+          description: Get ticket detail successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetTicketResponse"
+        "400":
+          description: Invalid ticket ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: INVALID_INPUT
+                  status: 400
+                  message: invalid ticket id
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/TicketNotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /tickets/{id}/status:
+    patch:
+      tags:
+        - Tickets
+      summary: Update ticket status
+      description: Update status of a ticket by ID.
+      operationId: updateTicketStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TicketId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTicketStatusRequest"
+            example:
+              status: in_progress
+              note: Start processing ticket
+      responses:
+        "200":
+          description: Ticket status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessageResponse"
+              example:
+                success: true
+                message: Ticket status updated successfully
+        "400":
+          description: Invalid status transition or invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: INVALID_STATUS_TRANSITION
+                  status: 400
+                  message: invalid status transition from new to in_progress
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/TicketNotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /ticket-events/import:
+    post:
+      tags:
+        - Ticket Events
+      summary: Import ticket events
+      description: Import ticket events in batch. Accepts either a multipart file upload via the `file` field or a raw JSON body.
+      operationId: importTicketEvents
+      security:
+        - BearerAuth: []
+
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV or JSON file to import.
+
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/TicketEventImportRequest"
+            example:
+              - ticket_id: 19
+                note: Ticket assigned to support agent
+                from_status: new
+                to_status: assigned
+                assignee_id: 9ee00625-0436-4f11-8bb1-b9e4f3f7bf88
+                created_at: "2026-05-30T17:59:49.129094074+07:00"
+              - ticket_id: 19
+                note: Ticket moved to in progress
+                from_status: assigned
+                to_status: in_progress
+                assignee_id: 9ee00625-0436-4f11-8bb1-b9e4f3f7bf88
+                created_at: "2026-06-01T17:59:49.129094074+07:00"
+
+      responses:
+        "200":
+          description: Import ticket events successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketEventImportResponse"
+
+        "400":
+          description: Invalid import input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                emptyBody:
+                  summary: Empty request body
+                  value:
+                    success: false
+                    error:
+                      code: EMPTY_REQUEST_BODY
+                      status: 400
+                      message: request body is empty
+                unsupportedFileFormat:
+                  summary: Unsupported file format
+                  value:
+                    success: false
+                    error:
+                      code: UNSUPPORTED_FILE_FORMAT
+                      status: 400
+                      message: unsupported file format
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /reports/daily:
+    get:
+      tags:
+        - Reports
+      summary: Get daily report
+      description: Get daily ticket report by date.
+      operationId: getDailyReport
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Report date in YYYY-MM-DD format.
+          schema:
+            type: string
+            format: date
+          example: "2026-05-19"
+      responses:
+        "200":
+          description: Get daily report successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyReportResponse"
+              example:
+                success: true
+                data:
+                  id: 3
+                  report_date: "2026-05-22T00:00:00Z"
+                  new_count: 0
+                  resolved_count: 0
+                  cancelled_count: 0
+                  overdue_count: 250
+                  avg_resolution_time: 0
+                  high_priority_count: 0
+                  medium_priority_count: 0
+                  low_priority_count: 0
+                  sla_breache_count: 0
+                  created_at: "2026-05-22T16:03:47.639267008+07:00"
+        "400":
+          description: Invalid date format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: INVALID_INPUT
+                  status: 400
+                  message: invalid date format, expected YYYY-MM-DD
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TicketId:
+      name: id
+      in: path
+      required: true
+      description: Ticket ID.
+      schema:
+        type: integer
+        minimum: 1
+      example: 9
+
+  responses:
+    BadRequest:
+      description: Invalid request body or invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error:
+              code: INVALID_REQUEST_BODY
+              status: 400
+              message: invalid request body
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error:
+              code: UNAUTHORIZED
+              status: 401
+              message: invalid authorization header format
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error:
+              code: FORBIDDEN
+              status: 403
+              message: "forbidden: insufficient role"
+    TicketNotFound:
+      description: Ticket not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error:
+              code: TICKET_NOT_FOUND
+              status: 404
+              message: ticket not found
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error:
+              code: INTERNAL_SERVER_ERROR
+              status: 500
+              message: internal server error
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: requestor-1
+        password:
+          type: string
+          format: password
+          example: requestor-1
+
+    LoginSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Login successfully
+        data:
+          type: object
+          properties:
+            access_token:
+              type: string
+              example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+            token_type:
+              type: string
+              example: Bearer
+            expires_in:
+              type: integer
+              example: 300
+
+    CreateTicketRequest:
+      type: object
+      required:
+        - title
+        - description
+        - priority
+        - sla_due_at
+      properties:
+        requestor_id:
+          type: string
+          description: Optional when requestor is derived from authenticated user.
+          example: nguyengnuyen
+        title:
+          type: string
+          example: Cannot access internal system
+        description:
+          type: string
+          example: User cannot access internal support system
+        priority:
+          $ref: "#/components/schemas/TicketPriority"
+        sla_due_at:
+          type: string
+          format: date-time
+          example: "2026-05-25T15:57:38.248399+07:00"
+
+    CreateTicketResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Ticket created successfully
+        data:
+          $ref: "#/components/schemas/Ticket"
+
+    TicketStatus:
+      type: string
+      enum:
+        - new
+        - assigned
+        - in_progress
+        - resolved
+        - closed
+        - cancelled
+      example: new
+
+    TicketPriority:
+      type: string
+      enum:
+        - low
+        - medium
+        - high
+      example: low
+
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        requestor_id:
+          type: string
+          example: 0a5389df-ba3a-44..............
+        assignee_id:
+          type: string
+          example: 9ee00625-0436-43..............
+        title:
+          type: string
+          example: Cannot access internal system
+        description:
+          type: string
+          example: User cannot access internal support system
+        priority:
+          $ref: "#/components/schemas/TicketPriority"
+        status:
+          $ref: "#/components/schemas/TicketStatus"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-15T15:19:55.169302+07:00"
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        sla_due_at:
+          type: string
+          format: date-time
+          example: "2026-05-17T15:19:55.169302+07:00"
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/TicketEvent"
+
+    GetTicketResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Get tickets successfully
+        data:
+          $ref: "#/components/schemas/Ticket"
+
+    UpdateTicketStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: "#/components/schemas/TicketStatus"
+        note:
+          type: string
+          example: Start processing ticket
+
+    UpdateTicketStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Ticket status updated successfully
+
+    TicketEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        ticket_id:
+          type: integer
+          example: 1
+        from_status:
+          $ref: "#/components/schemas/TicketStatus"
+        to_status:
+          type: string
+          example: assigned
+        requestor_id:
+          type: string
+          example: 0a5389df-ba3a-44..............
+        assignee_id:
+          type: string
+          example: 9ee00625-0436-43..............
+        note:
+          type: string
+          example: Ticket assigned to support agent
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-06-04T17:59:49.129094074+07:00"
+
+    TicketEventImportRequest:
+      type: array
+      items:
+        type: object
+        required:
+          - ticket_id
+          - from_status
+          - to_status
+          - created_at
+        properties:
+          ticket_id:
+            type: integer
+            example: 19
+          note:
+            type: string
+            example: Ticket assigned to support agent
+          from_status:
+            $ref: "#/components/schemas/TicketStatus"
+          to_status:
+            $ref: "#/components/schemas/TicketStatus"
+          assignee_id:
+            type: string
+            nullable: true
+            example: 9ee00625-0436-4f11-8bb1-b9e4f3f7bf88
+          created_at:
+            type: string
+            format: date-time
+            example: "2026-05-30T17:59:49.129094074+07:00"
+
+    TicketEventImportResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            accepted_count:
+              type: integer
+              example: 0
+            rejected_count:
+              type: integer
+              example: 1
+            duplicate_count:
+              type: integer
+              example: 1
+            rejected_details:
+              type: array
+              items:
+                type: object
+                properties:
+                  error_name:
+                    type: string
+                    example: from_status and to_status cannot be the same ('new')
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        ticket_id:
+                          type: integer
+                          example: 19
+                        note:
+                          type: string
+                          example: Ticket assigned to support agent
+                        from_status:
+                          $ref: "#/components/schemas/TicketStatus"
+                        to_status:
+                          $ref: "#/components/schemas/TicketStatus"
+                        assignee_id:
+                          type: string
+                          nullable: true
+                          example: 9ee00625-0436-4f11-8bb1-b9e4f3f7bf88
+                        created_at:
+                          type: string
+                          format: date-time
+                          example: "2026-05-30T17:59:49.129094074+07:00"
+
+    DailyReport:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 3
+        report_date:
+          type: string
+          format: date-time
+          example: "2026-05-22T00:00:00Z"
+        new_count:
+          type: integer
+          example: 0
+        resolved_count:
+          type: integer
+          example: 0
+        cancelled_count:
+          type: integer
+          example: 0
+        overdue_count:
+          type: integer
+          example: 250
+        avg_resolution_time:
+          type: integer
+          example: 0
+        high_priority_count:
+          type: integer
+          example: 0
+        medium_priority_count:
+          type: integer
+          example: 0
+        low_priority_count:
+          type: integer
+          example: 0
+        sla_breache_count:
+          type: integer
+          example: 0
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-22T16:03:47.639267008+07:00"
+
+    DailyReportResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: "#/components/schemas/DailyReport"
+
+    SuccessMessageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: operation completed successfully
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: INVALID_INPUT
+            status:
+              type: integer
+              example: 400
+            message:
+              type: string
+              example: invalid input

@@ -2,9 +2,9 @@ package common
 
 type APIResponse[T any] struct {
 	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
 	Data    T      `json:"data,omitempty"`
 	Error   *Error `json:"error,omitempty"`
-	Message string `json:"message,omitempty"`
 }
 
 func SuccessResponse[T any](data T) APIResponse[T] {
