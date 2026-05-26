@@ -34,6 +34,7 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/ticket-sla-api .
+COPY --from=builder /app/docs ./docs
 
 EXPOSE 8080
 

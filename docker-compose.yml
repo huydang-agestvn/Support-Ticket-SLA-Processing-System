@@ -103,6 +103,9 @@ services:
       postgres:
         condition: service_healthy
 
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   ticket_sla_postgres_data:
   keycloak_postgres_data:
