@@ -19,7 +19,7 @@ func InitRouter(
 	reportHandler *handler.ReportHandler,
 ) *gin.Engine {
 
-	// Swagger UI reads the manually maintained OpenAPI contract.
+	// Swagger UI reads the OpenAPI contract.
 	r.StaticFile("/swagger.yml", "./docs/swagger.yml")
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(
