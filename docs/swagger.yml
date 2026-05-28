@@ -48,7 +48,7 @@ paths:
       description: Create a new support ticket.
       operationId: createTicket
       security:
-        - BearerAuth: []
+        - OAuth2Password: []
       requestBody:
         $ref: "#/components/requestBodies/CreateTicketRequestBody"
       responses:
@@ -95,7 +95,7 @@ paths:
       description: Get ticket detail by ticket ID.
       operationId: getTicketById
       security:
-        - BearerAuth: []
+        - OAuth2Password: []
       parameters:
         - $ref: "#/components/parameters/TicketId"
       responses:
@@ -118,7 +118,7 @@ paths:
       description: Update status of a ticket by ID.
       operationId: updateTicketStatus
       security:
-        - BearerAuth: []
+        - OAuth2Password: []
       parameters:
         - $ref: "#/components/parameters/TicketId"
       requestBody:
@@ -145,7 +145,7 @@ paths:
       description: Import ticket events in batch. Accepts either a multipart file upload via the `file` field or a raw JSON body.
       operationId: importTicketEvents
       security:
-        - BearerAuth: []
+        - OAuth2Password: []
       requestBody:
         $ref: "#/components/requestBodies/ImportTicketEventsRequestBody"
       responses:
@@ -166,7 +166,7 @@ paths:
       description: Get daily ticket report by date.
       operationId: getDailyReport
       security:
-        - BearerAuth: []
+        - OAuth2Password: []
       parameters:
         - $ref: "#/components/parameters/ReportDateQuery"
       responses:
@@ -949,5 +949,4 @@ components:
           example: invalid input
 
 security:
-  - KeycloakOAuth2:
-      - openid
+  - OAuth2Password: []
