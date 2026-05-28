@@ -6,12 +6,14 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"support-ticket.com/internal/auth"
+	"support-ticket.com/internal/config"
 	"support-ticket.com/internal/handler"
 	"support-ticket.com/internal/middleware"
 )
 
 func InitRouter(
 	r *gin.Engine,
+	cfg *config.Config,
 	authHandler *handler.AuthHandler,
 	eventHandler *handler.TicketEventHandler,
 	ticketHandler *handler.TicketHandler,
@@ -25,6 +27,8 @@ func InitRouter(
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(
 		swaggerFiles.Handler,
 		ginSwagger.URL("/swagger.yml"),
+		ginSwagger.PersistAuthorization(true),
+		ginSwagger.Oauth2DefaultClientID(cfg.KeycloakClientID),
 	))
 
 	api := r.Group("/api/v1")

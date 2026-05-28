@@ -2,12 +2,12 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
 	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/request"
-	"support-ticket.com/internal/dto/response"
 	"support-ticket.com/internal/service"
 )
 
@@ -24,12 +24,19 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var input request.LoginRequest
 
-	if err := c.ShouldBindJSON(&input); err != nil {
-		HandleError(c, common.NewBadRequest(
-			common.ErrCodeInvalidBody,
-			"invalid login request: "+err.Error(),
-		))
-		return
+	contentType := c.GetHeader("Content-Type")
+
+	if strings.Contains(contentType, "application/x-www-form-urlencoded") {
+		input.Username = c.PostForm("username")
+		input.Password = c.PostForm("password")
+	} else {
+		if err := c.ShouldBindJSON(&input); err != nil {
+			HandleError(c, common.NewBadRequest(
+				common.ErrCodeInvalidBody,
+				"invalid login request: "+err.Error(),
+			))
+			return
+		}
 	}
 
 	result, err := h.authService.Login(input)
@@ -38,9 +45,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, common.APIResponse[*response.LoginResponse]{
-		Success: true,
-		Message: "Login successfully",
-		Data:    result,
+	c.JSON(http.StatusOK, gin.H{
+		"access_token":  result.AccessToken,
+		"refresh_token": result.RefreshToken,
+		"token_type":    result.TokenType,
+		"expires_in":    result.ExpiresIn,
 	})
 }

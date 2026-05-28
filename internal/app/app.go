@@ -102,6 +102,7 @@ func (a *App) setupDependencies() {
 	r := gin.New()
 	a.router = router.InitRouter(
 		r,
+		a.cfg,
 		authHandler,
 		eventHandler,
 		ticketHandler,

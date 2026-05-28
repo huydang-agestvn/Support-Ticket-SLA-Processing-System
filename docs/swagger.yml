@@ -70,7 +70,7 @@ paths:
       description: Get tickets with optional filters and pagination.
       operationId: listTickets
       security:
-        - BearerAuth: []
+        - OAuth2Password: []
       parameters:
         - $ref: "#/components/parameters/TicketStatusQuery"
         - $ref: "#/components/parameters/TicketPriorityQuery"
@@ -183,10 +183,18 @@ paths:
 
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    OAuth2Password:
+      type: oauth2
+      flows:
+        password:
+          tokenUrl: http://localhost:8080/api/v1/auth/login
+          scopes: {}
+
+  # securitySchemes:
+  #   BearerAuth:
+  #     type: http
+  #     scheme: bearer
+  #     bearerFormat: JWT
 
   parameters:
     TicketId:
@@ -564,10 +572,13 @@ components:
           format: password
           example: "123123"
 
-    LoginTokenData:
+    OAuthTokenResponse:
       type: object
       properties:
         access_token:
+          type: string
+          example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+        refresh_token:
           type: string
           example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
         token_type:
@@ -586,7 +597,7 @@ components:
               type: string
               example: Login successfully
             data:
-              $ref: "#/components/schemas/LoginTokenData"
+              $ref: "#/components/schemas/OAuthTokenResponse"
 
     CreateTicketRequest:
       type: object
@@ -936,3 +947,7 @@ components:
         message:
           type: string
           example: invalid input
+
+security:
+  - KeycloakOAuth2:
+      - openid
