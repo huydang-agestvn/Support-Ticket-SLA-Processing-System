@@ -8,7 +8,7 @@ test:
 
 # Run tests with coverage
 test-cover:
-	go test ./... -cover
+	go test ./... -coverpkg=./...
 
 # Generate Swagger API docs
 swagger:

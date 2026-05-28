@@ -5,7 +5,6 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	_ "support-ticket.com/docs"
 	"support-ticket.com/internal/auth"
 	"support-ticket.com/internal/handler"
 	"support-ticket.com/internal/middleware"
@@ -19,10 +18,14 @@ func InitRouter(
 	authMiddleware *middleware.AuthMiddleware,
 	reportHandler *handler.ReportHandler,
 ) *gin.Engine {
-	r.Use(gin.Logger(), gin.Recovery())
 
-	// Swagger API documentation
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Swagger UI reads the OpenAPI contract.
+	r.StaticFile("/swagger.yml", "./docs/swagger.yml")
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(
+		swaggerFiles.Handler,
+		ginSwagger.URL("/swagger.yml"),
+	))
 
 	api := r.Group("/api/v1")
 	{

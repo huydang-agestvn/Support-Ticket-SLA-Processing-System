@@ -8,17 +8,21 @@ import (
 	"support-ticket.com/internal/dto/response"
 )
 
-type AuthService struct {
+type AuthService interface {
+	Login(input request.LoginRequest) (*response.LoginResponse, error)
+}
+
+type authServiceImpl struct {
 	keycloakClient *ClientRequest
 }
 
-func NewAuthService(keycloakClient *ClientRequest) *AuthService {
-	return &AuthService{
+func NewAuthService(keycloakClient *ClientRequest) AuthService {
+	return &authServiceImpl{
 		keycloakClient: keycloakClient,
 	}
 }
 
-func (s *AuthService) Login(input request.LoginRequest) (*response.LoginResponse, error) {
+func (s *authServiceImpl) Login(input request.LoginRequest) (*response.LoginResponse, error) {
 	username := strings.TrimSpace(input.Username)
 	password := strings.TrimSpace(input.Password)
 
@@ -36,10 +40,8 @@ func (s *AuthService) Login(input request.LoginRequest) (*response.LoginResponse
 	}
 
 	return &response.LoginResponse{
-		AccessToken:      tokenResp.AccessToken,
-		TokenType:        tokenResp.TokenType,
-		ExpiresIn:        tokenResp.ExpiresIn,
-		RefreshExpiresIn: tokenResp.RefreshExpiresIn,
-		Scope:            tokenResp.Scope,
+		AccessToken: tokenResp.AccessToken,
+		TokenType:   tokenResp.TokenType,
+		ExpiresIn:   tokenResp.ExpiresIn,
 	}, nil
 }

@@ -32,6 +32,14 @@ flowchart LR
   resolved --> closed
 ```
 
+### 📊 Main System Workflows
+
+#### 1. Batch Import Flow
+![Batch Import Flow](docs/batch-import-flow.png)
+
+#### 2. SLA Report Flow
+![SLA Report Flow](docs/sla-report-flow.png)
+
 ## 🚀 Execution Plan
 
 - **Week 5: Core Logic & Concurrency (No Database Yet!)**
