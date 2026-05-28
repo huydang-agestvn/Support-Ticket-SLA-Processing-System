@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,12 @@ func (h *ReportHandler) GetDaily(c *gin.Context) {
 
 	report, err := h.reportSvc.GetReport(date)
 	if err != nil {
+		if strings.Contains(err.Error(), "report not found") {
+			c.JSON(http.StatusNotFound, common.ErrorResponse(
+				common.NewNotFound(common.ErrCodeNotFound, "report not yet available for this date, please contact your administrator to generate it"),
+			))
+			return
+		}
 		HandleError(c, err)
 		return
 	}
