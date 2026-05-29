@@ -60,6 +60,8 @@ func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicket
 }
 
 func (s *ticketServiceImpl) FindById(ctx context.Context, id uint) (*domain.Ticket, error) {
+	currentUser := auth.UserFromContext(ctx)
+	userId := currentUser.UserID
 	ticket, err := s.repo.FindById(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ticket from db: %w", err)
@@ -67,6 +69,10 @@ func (s *ticketServiceImpl) FindById(ctx context.Context, id uint) (*domain.Tick
 
 	if ticket == nil {
 		return nil, errmsgs.ErrTicketNotFound
+	}
+
+	if userId != ticket.RequestorID && currentUser.HasAnyRole(auth.RoleRequestor) {
+		return nil, errmsgs.ErrUnauthorizedToViewTicket
 	}
 
 	return ticket, nil
