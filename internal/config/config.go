@@ -31,6 +31,13 @@ type Config struct {
 	KeycloakIssuer       string
 	KeycloakTokenURL     string
 	KeycloakJWKSURL      string
+
+	// SMTP config
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUser     string
+	SMTPPass     string
+	ManagerEmail string
 }
 
 // LoadConfig
@@ -59,6 +66,12 @@ func LoadConfig() *Config {
 		KeycloakIssuer:       getEnv("KEYCLOAK_ISSUER"),
 		KeycloakTokenURL:     getEnv("KEYCLOAK_TOKEN_URL"),
 		KeycloakJWKSURL:      getEnv("KEYCLOAK_JWKS_URL"),
+
+		SMTPHost:     getEnv("SMTP_HOST"),
+		SMTPPort:     getEnvInt("SMTP_PORT"),
+		SMTPUser:     getEnv("SMTP_USER"),
+		SMTPPass:     getEnv("SMTP_PASS"),
+		ManagerEmail: getEnv("MANAGER_EMAIL"),
 	}
 
 	return cfg

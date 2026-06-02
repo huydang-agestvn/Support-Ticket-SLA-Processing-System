@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Daily Support Ticket SLA Report</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #2c3e50;
+            margin: 0;
+        }
+        .date {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+
+        /* DÙNG TABLE ĐỂ ÉP RA 3 Ô CẠNH NHAU */
+        .summary-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 15px; /* Tạo khoảng cách giữa 3 ô */
+            margin: 0px -15px 30px -15px; /* Cân bằng lề hai bên */
+            padding: 30px 0px;  
+        }
+        .summary-table td {
+            width: 33.333%;
+            background: #f0f3f4; /* Màu nền xám cho mỗi ô */
+            padding: 15px 5px !important;
+            border-radius: 6px;
+            text-align: center;
+            border: none !important;
+        }
+        .card-title {
+            margin: 0;
+            font-size: 12px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .card-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-top: 10px;
+        }
+        .text-success {
+            color: #2ecc71 !important;
+        }
+        .text-breach {
+            color: #e74c3c !important;
+        }
+
+        /* Định dạng các bảng chi tiết bên dưới */
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        .detail-table th {
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .detail-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #edf2f7;
+        }
+        .detail-table td:last-child {
+            text-align: right;
+            font-weight: 500;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #bdc3c7;
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Daily Ticket SLA Report</h1>
+            <div class="date">Report Date: {{.ReportDate.Format "2006-01-02"}}</div>
+        </div>
+
+        <table class="summary-table">
+            <tr>
+                <td>
+                    <div class="card-title">New Tickets</div>
+                    <div class="card-value">{{.NewCount}}</div>
+                </td>
+                <td>
+                    <div class="card-title">Resolved</div>
+                    <div class="card-value text-success">{{.ResolvedCount}}</div>
+                </td>
+                <td>
+                    <div class="card-title">SLA Breaches</div>
+                    <div class="card-value text-breach">{{.SlaBreacheCount}}</div>
+                </td>
+            </tr>
+        </table>
+
+        <table class="detail-table">
+            <tr>
+                <th colspan="2">Ticket Status Details</th>
+            </tr>
+            <tr>
+                <td>Cancelled Tickets</td>
+                <td>{{.CancelledCount}}</td>
+            </tr>
+            <tr>
+                <td>Overdue Tickets</td>
+                <td>{{.OverdueCount}}</td>
+            </tr>
+            <tr>
+                <td>Average Resolution Time</td>
+                <td>{{printf "%.2f" .AvgResolutionTime}} hours</td>
+            </tr>
+        </table>
+
+        <table class="detail-table">
+            <tr>
+                <th colspan="2">Priority Breakdown</th>
+            </tr>
+            <tr>
+                <td>High Priority</td>
+                <td>{{.HighPriorityCount}}</td>
+            </tr>
+            <tr>
+                <td>Medium Priority</td>
+                <td>{{.MediumPriorityCount}}</td>
+            </tr>
+            <tr>
+                <td>Low Priority</td>
+                <td>{{.LowPriorityCount}}</td>
+            </tr>
+        </table>
+
+        <div class="footer">
+            This is an automated message generated by the Support Ticket SLA Processing System.
+        </div>
+    </div>
+</body>
+</html>

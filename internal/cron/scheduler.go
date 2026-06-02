@@ -11,19 +11,21 @@ import (
 type Scheduler struct {
 	cron      *cron.Cron
 	reportSvc service.ReportService
+	emailSvc  service.EmailService
 }
 
-func NewScheduler(reportSvc service.ReportService) *Scheduler {
+func NewScheduler(reportSvc service.ReportService, emailSvc service.EmailService) *Scheduler {
 	c := cron.New(cron.WithLocation(time.Local))
 	return &Scheduler{
 		cron:      c,
 		reportSvc: reportSvc,
+		emailSvc:  emailSvc,
 	}
 }
 
 // Start registers and starts the cron jobs.
 func (s *Scheduler) Start() error {
-	_, err := s.cron.AddFunc("0 17 * * *", func() {
+	_, err := s.cron.AddFunc("26 11 * * *", func() {
 		now := time.Now()
 		log.Printf("[Cron] Starting daily ticket report aggregation for %s...", now.Format("2006-01-02"))
 		
@@ -34,6 +36,13 @@ func (s *Scheduler) Start() error {
 		}
 		
 		log.Printf("[Cron] Daily report successfully generated for %s (ID: %d)", report.ReportDate.Format("2006-01-02"), report.ID)
+
+		// Send email to manager
+		if s.emailSvc != nil {
+			if err := s.emailSvc.SendDailyReportEmail(report); err != nil {
+				log.Printf("[Cron] Error sending daily report email: %v", err)
+			}
+		}
 	})
 	if err != nil {
 		return err
