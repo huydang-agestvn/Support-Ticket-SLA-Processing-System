@@ -71,3 +71,23 @@ func (h *TicketEventHandler) ImportEvents(c *gin.Context) {
 		Data:    response.NewTicketImportResponse(result),
 	})
 }
+
+func (h *TicketEventHandler) DownloadAuditLog(c *gin.Context) {
+	filename := c.Param("filename")
+	if filename == "" {
+		HandleError(c, dto.NewBadRequest(dto.ErrCodeInvalidInput, "filename parameter is required"))
+		return
+	}
+
+	filePath, err := h.service.GetAuditLogPath(filename)
+	if err != nil {
+		HandleError(c, err)
+		return
+	}
+
+	c.Header("Content-Description", "File Transfer")
+	c.Header("Content-Disposition", "attachment; filename="+filepath.Base(filePath))
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.File(filePath)
+}

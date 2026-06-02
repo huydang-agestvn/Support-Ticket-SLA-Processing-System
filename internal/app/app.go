@@ -80,8 +80,10 @@ func (a *App) setupDependencies() {
 	eventRepo := repository.NewTicketEventRepository(a.db)
 	reportRepo := repository.NewReportRepository(a.db)
 
+	auditLogger := service.NewCSVFileAuditLogger(a.cfg.AuditLogDir)
+
 	ticketService := service.NewTicketService(ticketRepo, eventRepo)
-	eventService := service.NewTicketEventService(eventRepo, ticketRepo)
+	eventService := service.NewTicketEventService(eventRepo, ticketRepo, auditLogger)
 	reportService := service.NewReportService(reportRepo)
 
 	ticketHandler := handler.NewTicketHandler(ticketService)

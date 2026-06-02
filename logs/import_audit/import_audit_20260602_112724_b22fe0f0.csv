@@ -1,0 +1,301 @@
+ticket_id,from_status,to_status,assignee_id,created_at,error_reason
+593,new,in_progress,agent-007,2026-05-03T10:20:00+07:00,illegal event transition from 'new' to 'in_progress'
+268,new,in_progress,agent-004,2026-05-02T07:15:00+07:00,illegal event transition from 'new' to 'in_progress'
+148,new,in_progress,agent-010,2026-05-01T21:15:00+07:00,illegal event transition from 'new' to 'in_progress'
+797,new,in_progress,agent-004,2026-05-04T03:20:00+07:00,illegal event transition from 'new' to 'in_progress'
+314,new,in_progress,agent-009,2026-05-02T11:05:00+07:00,illegal event transition from 'new' to 'in_progress'
+463,new,in_progress,agent-004,2026-05-02T23:30:00+07:00,illegal event transition from 'new' to 'in_progress'
+242,new,in_progress,agent-007,2026-05-02T05:05:00+07:00,illegal event transition from 'new' to 'in_progress'
+888,new,in_progress,agent-001,2026-05-04T10:55:00+07:00,illegal event transition from 'new' to 'in_progress'
+590,new,in_progress,agent-007,2026-05-03T10:05:00+07:00,illegal event transition from 'new' to 'in_progress'
+777,new,in_progress,agent-001,2026-05-04T01:40:00+07:00,illegal event transition from 'new' to 'in_progress'
+39,new,in_progress,agent-005,2026-05-01T12:10:00+07:00,illegal event transition from 'new' to 'in_progress'
+979,new,in_progress,agent-004,2026-05-04T18:30:00+07:00,illegal event transition from 'new' to 'in_progress'
+10,new,in_progress,agent-007,2026-05-01T09:45:00+07:00,illegal event transition from 'new' to 'in_progress'
+287,new,in_progress,agent-002,2026-05-02T08:50:00+07:00,illegal event transition from 'new' to 'in_progress'
+348,new,in_progress,agent-001,2026-05-02T13:55:00+07:00,illegal event transition from 'new' to 'in_progress'
+15,new,in_progress,agent-010,2026-05-01T10:10:00+07:00,illegal event transition from 'new' to 'in_progress'
+517,new,in_progress,agent-006,2026-05-03T04:00:00+07:00,illegal event transition from 'new' to 'in_progress'
+332,new,in_progress,agent-001,2026-05-02T12:35:00+07:00,illegal event transition from 'new' to 'in_progress'
+132,new,in_progress,agent-001,2026-05-01T19:55:00+07:00,illegal event transition from 'new' to 'in_progress'
+505,new,in_progress,agent-003,2026-05-03T03:00:00+07:00,illegal event transition from 'new' to 'in_progress'
+2,new,resolved,agent-004,2026-05-01T08:05:00+07:00,illegal event transition from 'new' to 'resolved'
+140,new,resolved,agent-007,2026-05-01T19:35:00+07:00,illegal event transition from 'new' to 'resolved'
+172,new,resolved,agent-001,2026-05-01T22:15:00+07:00,illegal event transition from 'new' to 'resolved'
+998,new,resolved,agent-007,2026-05-04T19:05:00+07:00,illegal event transition from 'new' to 'resolved'
+347,new,resolved,agent-001,2026-05-02T12:50:00+07:00,illegal event transition from 'new' to 'resolved'
+84,new,resolved,agent-008,2026-05-01T14:55:00+07:00,illegal event transition from 'new' to 'resolved'
+803,new,resolved,agent-010,2026-05-04T02:50:00+07:00,illegal event transition from 'new' to 'resolved'
+765,new,resolved,agent-007,2026-05-03T23:40:00+07:00,illegal event transition from 'new' to 'resolved'
+602,new,resolved,agent-003,2026-05-03T10:05:00+07:00,illegal event transition from 'new' to 'resolved'
+918,new,resolved,agent-007,2026-05-04T12:25:00+07:00,illegal event transition from 'new' to 'resolved'
+962,new,resolved,agent-006,2026-05-04T16:05:00+07:00,illegal event transition from 'new' to 'resolved'
+237,new,resolved,agent-005,2026-05-02T03:40:00+07:00,illegal event transition from 'new' to 'resolved'
+663,new,resolved,agent-005,2026-05-03T15:10:00+07:00,illegal event transition from 'new' to 'resolved'
+812,new,resolved,agent-004,2026-05-04T03:35:00+07:00,illegal event transition from 'new' to 'resolved'
+460,new,resolved,agent-010,2026-05-02T22:15:00+07:00,illegal event transition from 'new' to 'resolved'
+716,new,resolved,agent-001,2026-05-03T19:35:00+07:00,illegal event transition from 'new' to 'resolved'
+539,new,resolved,agent-002,2026-05-03T04:50:00+07:00,illegal event transition from 'new' to 'resolved'
+259,new,resolved,agent-010,2026-05-02T05:30:00+07:00,illegal event transition from 'new' to 'resolved'
+887,new,resolved,agent-004,2026-05-04T09:50:00+07:00,illegal event transition from 'new' to 'resolved'
+515,new,resolved,agent-006,2026-05-03T02:50:00+07:00,illegal event transition from 'new' to 'resolved'
+943,new,resolved,agent-008,2026-05-04T14:30:00+07:00,illegal event transition from 'new' to 'resolved'
+627,new,resolved,agent-001,2026-05-03T12:10:00+07:00,illegal event transition from 'new' to 'resolved'
+835,new,resolved,agent-005,2026-05-04T05:30:00+07:00,illegal event transition from 'new' to 'resolved'
+572,new,resolved,agent-004,2026-05-03T07:35:00+07:00,illegal event transition from 'new' to 'resolved'
+25,new,resolved,agent-005,2026-05-01T10:00:00+07:00,illegal event transition from 'new' to 'resolved'
+79,new,resolved,agent-004,2026-05-01T14:30:00+07:00,illegal event transition from 'new' to 'resolved'
+996,new,resolved,agent-004,2026-05-04T18:55:00+07:00,illegal event transition from 'new' to 'resolved'
+100,new,resolved,agent-001,2026-05-01T16:15:00+07:00,illegal event transition from 'new' to 'resolved'
+186,new,resolved,agent-004,2026-05-01T23:25:00+07:00,illegal event transition from 'new' to 'resolved'
+435,new,resolved,agent-009,2026-05-02T20:10:00+07:00,illegal event transition from 'new' to 'resolved'
+187,new,assigned,agent-002,2026-05-01T23:30:00+07:00,invalid flow ticket
+187,in_progress,resolved,agent-002,2026-05-02T02:30:00+07:00,invalid flow ticket
+187,resolved,closed,agent-002,2026-05-02T03:30:00+07:00,invalid flow ticket
+753,new,assigned,agent-002,2026-05-03T22:40:00+07:00,invalid flow ticket
+753,in_progress,resolved,agent-002,2026-05-04T01:40:00+07:00,invalid flow ticket
+753,resolved,closed,agent-002,2026-05-04T02:40:00+07:00,invalid flow ticket
+970,new,cancelled,user-002,2026-05-04T16:45:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+502,new,cancelled,user-008,2026-05-03T01:45:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+346,new,assigned,agent-005,2026-05-02T12:45:00+07:00,invalid flow ticket
+346,in_progress,resolved,agent-005,2026-05-02T15:45:00+07:00,invalid flow ticket
+346,resolved,closed,agent-005,2026-05-02T16:45:00+07:00,invalid flow ticket
+866,new,assigned,agent-002,2026-05-04T08:05:00+07:00,invalid flow ticket
+866,in_progress,resolved,agent-002,2026-05-04T11:05:00+07:00,invalid flow ticket
+866,resolved,closed,agent-002,2026-05-04T12:05:00+07:00,invalid flow ticket
+573,new,cancelled,user-009,2026-05-03T07:40:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+7,new,cancelled,user-010,2026-05-01T08:30:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+869,new,assigned,agent-010,2026-05-04T08:20:00+07:00,invalid flow ticket
+869,in_progress,resolved,agent-010,2026-05-04T11:20:00+07:00,invalid flow ticket
+869,resolved,closed,agent-010,2026-05-04T12:20:00+07:00,invalid flow ticket
+498,new,cancelled,user-006,2026-05-03T01:25:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+145,new,cancelled,user-002,2026-05-01T20:00:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+583,new,assigned,agent-001,2026-05-03T08:30:00+07:00,invalid flow ticket
+583,in_progress,resolved,agent-001,2026-05-03T11:30:00+07:00,invalid flow ticket
+583,resolved,closed,agent-001,2026-05-03T12:30:00+07:00,invalid flow ticket
+642,new,cancelled,user-003,2026-05-03T13:25:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+660,new,cancelled,user-009,2026-05-03T14:55:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+280,new,cancelled,user-010,2026-05-02T07:15:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+865,new,cancelled,user-001,2026-05-04T08:00:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+465,new,cancelled,user-004,2026-05-02T22:40:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+273,new,cancelled,user-007,2026-05-02T06:40:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+383,new,cancelled,user-006,2026-05-02T15:50:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+112,new,cancelled,user-002,2026-05-01T17:15:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+542,new,cancelled,user-001,2026-05-03T05:05:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+491,new,cancelled,user-010,2026-05-03T00:50:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+355,new,cancelled,user-010,2026-05-02T13:30:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+685,new,cancelled,user-006,2026-05-03T17:00:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+223,new,cancelled,user-005,2026-05-02T02:30:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+837,new,cancelled,user-005,2026-05-04T05:40:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+857,new,cancelled,user-006,2026-05-04T07:20:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+483,new,assigned,agent-006,2026-05-03T00:10:00+07:00,invalid flow ticket
+483,in_progress,resolved,agent-006,2026-05-03T03:10:00+07:00,invalid flow ticket
+483,resolved,closed,agent-006,2026-05-03T04:10:00+07:00,invalid flow ticket
+89,new,cancelled,user-005,2026-05-01T15:20:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+233,new,assigned,agent-010,2026-05-02T03:20:00+07:00,invalid flow ticket
+233,in_progress,resolved,agent-010,2026-05-02T06:20:00+07:00,invalid flow ticket
+233,resolved,closed,agent-010,2026-05-02T07:20:00+07:00,invalid flow ticket
+686,new,cancelled,user-004,2026-05-03T17:05:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+143,new,cancelled,user-005,2026-05-01T19:50:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+396,new,assigned,agent-004,2026-05-02T16:55:00+07:00,invalid flow ticket
+396,in_progress,resolved,agent-004,2026-05-02T19:55:00+07:00,invalid flow ticket
+396,resolved,closed,agent-004,2026-05-02T20:55:00+07:00,invalid flow ticket
+563,new,cancelled,user-001,2026-05-03T06:50:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+847,new,cancelled,user-002,2026-05-04T06:30:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+64,new,cancelled,user-003,2026-05-01T13:15:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+191,new,cancelled,user-005,2026-05-01T23:50:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+794,new,assigned,agent-007,2026-05-04T02:05:00+07:00,invalid flow ticket
+794,in_progress,resolved,agent-007,2026-05-04T05:05:00+07:00,invalid flow ticket
+794,resolved,closed,agent-007,2026-05-04T06:05:00+07:00,invalid flow ticket
+305,new,cancelled,user-008,2026-05-02T09:20:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+372,new,assigned,agent-008,2026-05-02T14:55:00+07:00,invalid flow ticket
+372,in_progress,resolved,agent-008,2026-05-02T17:55:00+07:00,invalid flow ticket
+372,resolved,closed,agent-008,2026-05-02T18:55:00+07:00,invalid flow ticket
+406,new,assigned,agent-008,2026-05-02T17:45:00+07:00,invalid flow ticket
+406,in_progress,resolved,agent-008,2026-05-02T20:45:00+07:00,invalid flow ticket
+406,resolved,closed,agent-008,2026-05-02T21:45:00+07:00,invalid flow ticket
+922,new,cancelled,user-008,2026-05-04T12:45:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+29,new,assigned,agent-008,2026-05-01T10:20:00+07:00,invalid flow ticket
+29,in_progress,resolved,agent-008,2026-05-01T13:20:00+07:00,invalid flow ticket
+29,resolved,closed,agent-008,2026-05-01T14:20:00+07:00,invalid flow ticket
+109,new,cancelled,user-009,2026-05-01T17:00:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+359,new,cancelled,user-007,2026-05-02T13:50:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+620,new,assigned,agent-010,2026-05-03T11:35:00+07:00,invalid flow ticket
+620,in_progress,resolved,agent-010,2026-05-03T14:35:00+07:00,invalid flow ticket
+620,resolved,closed,agent-010,2026-05-03T15:35:00+07:00,invalid flow ticket
+588,new,cancelled,user-002,2026-05-03T08:55:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+168,new,cancelled,user-010,2026-05-01T21:55:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+897,new,cancelled,user-008,2026-05-04T10:40:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+611,new,assigned,agent-002,2026-05-03T10:50:00+07:00,invalid flow ticket
+611,in_progress,resolved,agent-002,2026-05-03T13:50:00+07:00,invalid flow ticket
+611,resolved,closed,agent-002,2026-05-03T14:50:00+07:00,invalid flow ticket
+978,new,cancelled,user-006,2026-05-04T17:25:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+552,new,assigned,agent-009,2026-05-03T05:55:00+07:00,invalid flow ticket
+552,in_progress,resolved,agent-009,2026-05-03T08:55:00+07:00,invalid flow ticket
+552,resolved,closed,agent-009,2026-05-03T09:55:00+07:00,invalid flow ticket
+32,new,cancelled,user-003,2026-05-01T10:35:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+257,new,assigned,agent-010,2026-05-02T05:20:00+07:00,invalid flow ticket
+257,in_progress,resolved,agent-010,2026-05-02T08:20:00+07:00,invalid flow ticket
+257,resolved,closed,agent-010,2026-05-02T09:20:00+07:00,invalid flow ticket
+362,new,assigned,agent-005,2026-05-02T14:05:00+07:00,invalid flow ticket
+362,in_progress,resolved,agent-005,2026-05-02T17:05:00+07:00,invalid flow ticket
+362,resolved,closed,agent-005,2026-05-02T18:05:00+07:00,invalid flow ticket
+520,new,assigned,agent-006,2026-05-03T03:15:00+07:00,invalid flow ticket
+520,in_progress,resolved,agent-006,2026-05-03T06:15:00+07:00,invalid flow ticket
+520,resolved,closed,agent-006,2026-05-03T07:15:00+07:00,invalid flow ticket
+810,new,cancelled,user-005,2026-05-04T03:25:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+648,new,assigned,agent-007,2026-05-03T13:55:00+07:00,invalid flow ticket
+648,in_progress,resolved,agent-007,2026-05-03T16:55:00+07:00,invalid flow ticket
+648,resolved,closed,agent-007,2026-05-03T17:55:00+07:00,invalid flow ticket
+510,new,cancelled,user-006,2026-05-03T02:25:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+26,new,assigned,agent-004,2026-05-01T10:05:00+07:00,invalid flow ticket
+26,in_progress,resolved,agent-004,2026-05-01T13:05:00+07:00,invalid flow ticket
+26,resolved,closed,agent-004,2026-05-01T14:05:00+07:00,invalid flow ticket
+307,new,cancelled,user-007,2026-05-02T09:30:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+750,new,cancelled,user-009,2026-05-03T22:25:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+193,new,cancelled,user-006,2026-05-02T00:00:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+649,new,cancelled,user-008,2026-05-03T14:00:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+503,new,cancelled,user-008,2026-05-03T01:50:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+31,new,cancelled,user-009,2026-05-01T10:30:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+501,new,cancelled,user-006,2026-05-03T01:40:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+728,new,cancelled,user-008,2026-05-03T20:35:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+854,new,cancelled,user-007,2026-05-04T07:05:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+553,new,cancelled,user-006,2026-05-03T06:00:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+581,new,cancelled,user-007,2026-05-03T08:20:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+138,new,cancelled,user-006,2026-05-01T19:25:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+384,new,cancelled,user-010,2026-05-02T15:55:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+731,new,cancelled,user-010,2026-05-03T20:50:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+873,new,assigned,agent-009,2026-05-04T08:40:00+07:00,invalid flow ticket
+873,in_progress,resolved,agent-009,2026-05-04T11:40:00+07:00,invalid flow ticket
+873,resolved,closed,agent-009,2026-05-04T12:40:00+07:00,invalid flow ticket
+577,new,cancelled,user-001,2026-05-03T08:00:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+924,new,cancelled,user-002,2026-05-04T12:55:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+444,new,assigned,agent-006,2026-05-02T20:55:00+07:00,invalid flow ticket
+444,in_progress,resolved,agent-006,2026-05-02T23:55:00+07:00,invalid flow ticket
+444,resolved,closed,agent-006,2026-05-03T00:55:00+07:00,invalid flow ticket
+667,new,cancelled,user-005,2026-05-03T15:30:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+719,new,assigned,agent-007,2026-05-03T19:50:00+07:00,invalid flow ticket
+719,in_progress,resolved,agent-007,2026-05-03T22:50:00+07:00,invalid flow ticket
+719,resolved,closed,agent-007,2026-05-03T23:50:00+07:00,invalid flow ticket
+331,new,assigned,agent-010,2026-05-02T11:30:00+07:00,invalid flow ticket
+331,in_progress,resolved,agent-010,2026-05-02T14:30:00+07:00,invalid flow ticket
+331,resolved,closed,agent-010,2026-05-02T15:30:00+07:00,invalid flow ticket
+971,new,cancelled,user-009,2026-05-04T16:50:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+253,new,cancelled,user-002,2026-05-02T05:00:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+484,new,assigned,agent-005,2026-05-03T00:15:00+07:00,invalid flow ticket
+484,in_progress,resolved,agent-005,2026-05-03T03:15:00+07:00,invalid flow ticket
+484,resolved,closed,agent-005,2026-05-03T04:15:00+07:00,invalid flow ticket
+906,new,cancelled,user-002,2026-05-04T11:25:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+421,new,assigned,agent-004,2026-05-02T19:00:00+07:00,invalid flow ticket
+421,in_progress,resolved,agent-004,2026-05-02T22:00:00+07:00,invalid flow ticket
+421,resolved,closed,agent-004,2026-05-02T23:00:00+07:00,invalid flow ticket
+470,new,cancelled,user-008,2026-05-02T23:05:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+329,new,assigned,agent-005,2026-05-02T11:20:00+07:00,invalid flow ticket
+329,in_progress,resolved,agent-005,2026-05-02T14:20:00+07:00,invalid flow ticket
+329,resolved,closed,agent-005,2026-05-02T15:20:00+07:00,invalid flow ticket
+944,new,cancelled,user-003,2026-05-04T14:35:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+274,new,cancelled,user-010,2026-05-02T06:45:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+932,new,cancelled,user-004,2026-05-04T13:35:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+488,new,assigned,agent-007,2026-05-03T00:35:00+07:00,invalid flow ticket
+488,in_progress,resolved,agent-007,2026-05-03T03:35:00+07:00,invalid flow ticket
+488,resolved,closed,agent-007,2026-05-03T04:35:00+07:00,invalid flow ticket
+160,new,assigned,agent-005,2026-05-01T21:15:00+07:00,invalid flow ticket
+160,in_progress,resolved,agent-005,2026-05-02T00:15:00+07:00,invalid flow ticket
+160,resolved,closed,agent-005,2026-05-02T01:15:00+07:00,invalid flow ticket
+162,new,cancelled,user-005,2026-05-01T21:25:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+689,new,cancelled,user-003,2026-05-03T17:20:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+822,new,assigned,agent-005,2026-05-04T04:25:00+07:00,invalid flow ticket
+822,in_progress,resolved,agent-005,2026-05-04T07:25:00+07:00,invalid flow ticket
+822,resolved,closed,agent-005,2026-05-04T08:25:00+07:00,invalid flow ticket
+903,new,assigned,agent-001,2026-05-04T11:10:00+07:00,invalid flow ticket
+903,in_progress,resolved,agent-001,2026-05-04T14:10:00+07:00,invalid flow ticket
+903,resolved,closed,agent-001,2026-05-04T15:10:00+07:00,invalid flow ticket
+270,new,assigned,agent-007,2026-05-02T06:25:00+07:00,invalid flow ticket
+270,in_progress,resolved,agent-007,2026-05-02T09:25:00+07:00,invalid flow ticket
+270,resolved,closed,agent-007,2026-05-02T10:25:00+07:00,invalid flow ticket
+261,new,cancelled,user-003,2026-05-02T05:40:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+941,new,assigned,agent-007,2026-05-04T14:20:00+07:00,invalid flow ticket
+941,in_progress,resolved,agent-007,2026-05-04T17:20:00+07:00,invalid flow ticket
+941,resolved,closed,agent-007,2026-05-04T18:20:00+07:00,invalid flow ticket
+90,new,cancelled,user-001,2026-05-01T15:25:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+67,new,cancelled,user-007,2026-05-01T13:30:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+908,new,cancelled,user-004,2026-05-04T11:35:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+596,new,cancelled,user-003,2026-05-03T09:35:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+516,new,cancelled,user-009,2026-05-03T02:55:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+757,new,assigned,agent-009,2026-05-03T23:00:00+07:00,invalid flow ticket
+757,in_progress,resolved,agent-009,2026-05-04T02:00:00+07:00,invalid flow ticket
+757,resolved,closed,agent-009,2026-05-04T03:00:00+07:00,invalid flow ticket
+890,new,assigned,agent-009,2026-05-04T10:05:00+07:00,invalid flow ticket
+890,in_progress,resolved,agent-009,2026-05-04T13:05:00+07:00,invalid flow ticket
+890,resolved,closed,agent-009,2026-05-04T14:05:00+07:00,invalid flow ticket
+905,new,cancelled,user-005,2026-05-04T11:20:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+489,new,cancelled,user-004,2026-05-03T00:40:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+958,new,cancelled,user-004,2026-05-04T15:45:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+394,new,assigned,agent-010,2026-05-02T16:45:00+07:00,invalid flow ticket
+394,in_progress,resolved,agent-010,2026-05-02T19:45:00+07:00,invalid flow ticket
+394,resolved,closed,agent-010,2026-05-02T20:45:00+07:00,invalid flow ticket
+216,new,cancelled,user-010,2026-05-02T01:55:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+451,new,cancelled,user-009,2026-05-02T21:30:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+860,new,cancelled,user-002,2026-05-04T07:35:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+382,new,assigned,agent-001,2026-05-02T15:45:00+07:00,invalid flow ticket
+382,in_progress,resolved,agent-001,2026-05-02T18:45:00+07:00,invalid flow ticket
+382,resolved,closed,agent-001,2026-05-02T19:45:00+07:00,invalid flow ticket
+754,new,cancelled,user-003,2026-05-03T22:45:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+923,new,assigned,agent-003,2026-05-04T12:50:00+07:00,invalid flow ticket
+923,in_progress,resolved,agent-003,2026-05-04T15:50:00+07:00,invalid flow ticket
+923,resolved,closed,agent-003,2026-05-04T16:50:00+07:00,invalid flow ticket
+293,new,cancelled,user-002,2026-05-02T08:20:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+300,new,cancelled,user-001,2026-05-02T08:55:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+960,new,cancelled,user-003,2026-05-04T15:55:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+538,new,cancelled,user-001,2026-05-03T04:45:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+309,new,cancelled,user-005,2026-05-02T09:40:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+524,new,cancelled,user-008,2026-05-03T03:35:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+150,new,assigned,agent-005,2026-05-01T20:25:00+07:00,invalid flow ticket
+150,in_progress,resolved,agent-005,2026-05-01T23:25:00+07:00,invalid flow ticket
+150,resolved,closed,agent-005,2026-05-02T00:25:00+07:00,invalid flow ticket
+968,new,assigned,agent-009,2026-05-04T16:35:00+07:00,invalid flow ticket
+968,in_progress,resolved,agent-009,2026-05-04T19:35:00+07:00,invalid flow ticket
+968,resolved,closed,agent-009,2026-05-04T20:35:00+07:00,invalid flow ticket
+612,new,cancelled,user-007,2026-05-03T10:55:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+886,new,cancelled,user-003,2026-05-04T09:45:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+290,new,cancelled,user-008,2026-05-02T08:05:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+318,new,assigned,agent-010,2026-05-02T10:25:00+07:00,invalid flow ticket
+318,in_progress,resolved,agent-010,2026-05-02T13:25:00+07:00,invalid flow ticket
+318,resolved,closed,agent-010,2026-05-02T14:25:00+07:00,invalid flow ticket
+522,new,cancelled,user-003,2026-05-03T03:25:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+195,new,cancelled,user-005,2026-05-02T00:10:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+41,new,cancelled,user-006,2026-05-01T11:20:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+816,new,assigned,agent-005,2026-05-04T03:55:00+07:00,invalid flow ticket
+816,in_progress,resolved,agent-005,2026-05-04T06:55:00+07:00,invalid flow ticket
+816,resolved,closed,agent-005,2026-05-04T07:55:00+07:00,invalid flow ticket
+566,new,cancelled,user-006,2026-05-03T07:05:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+582,new,assigned,agent-010,2026-05-03T08:25:00+07:00,invalid flow ticket
+582,in_progress,resolved,agent-010,2026-05-03T11:25:00+07:00,invalid flow ticket
+582,resolved,closed,agent-010,2026-05-03T12:25:00+07:00,invalid flow ticket
+913,new,cancelled,user-002,2026-05-04T12:00:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+321,new,assigned,agent-009,2026-05-02T10:40:00+07:00,invalid flow ticket
+321,in_progress,resolved,agent-009,2026-05-02T13:40:00+07:00,invalid flow ticket
+321,resolved,closed,agent-009,2026-05-02T14:40:00+07:00,invalid flow ticket
+796,new,cancelled,user-006,2026-05-04T02:15:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+745,new,cancelled,user-005,2026-05-03T22:00:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+683,new,cancelled,user-005,2026-05-03T16:50:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+78,new,cancelled,user-002,2026-05-01T14:25:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+969,new,assigned,agent-007,2026-05-04T16:40:00+07:00,invalid flow ticket
+969,in_progress,resolved,agent-007,2026-05-04T19:40:00+07:00,invalid flow ticket
+969,resolved,closed,agent-007,2026-05-04T20:40:00+07:00,invalid flow ticket
+185,new,assigned,agent-002,2026-05-01T23:20:00+07:00,invalid flow ticket
+185,in_progress,resolved,agent-002,2026-05-02T02:20:00+07:00,invalid flow ticket
+185,resolved,closed,agent-002,2026-05-02T03:20:00+07:00,invalid flow ticket
+626,new,cancelled,user-002,2026-05-03T12:05:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+832,new,cancelled,user-010,2026-05-04T05:15:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+565,new,cancelled,user-009,2026-05-03T07:00:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+323,new,assigned,agent-009,2026-05-02T10:50:00+07:00,invalid flow ticket
+323,in_progress,resolved,agent-009,2026-05-02T13:50:00+07:00,invalid flow ticket
+323,resolved,closed,agent-009,2026-05-02T14:50:00+07:00,invalid flow ticket
+594,new,cancelled,user-007,2026-05-03T09:25:00+07:00,invalid input: Cannot change assignee during status transition to 'cancelled'
+945,new,assigned,agent-009,2026-05-04T14:40:00+07:00,invalid flow ticket
+945,in_progress,resolved,agent-009,2026-05-04T17:40:00+07:00,invalid flow ticket
+945,resolved,closed,agent-009,2026-05-04T18:40:00+07:00,invalid flow ticket
+475,new,assigned,agent-006,2026-05-02T23:30:00+07:00,invalid flow ticket
+475,in_progress,resolved,agent-006,2026-05-03T02:30:00+07:00,invalid flow ticket
+475,resolved,closed,agent-006,2026-05-03T03:30:00+07:00,invalid flow ticket

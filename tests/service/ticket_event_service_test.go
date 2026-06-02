@@ -2,6 +2,8 @@ package service_test
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -131,7 +133,9 @@ func TestTicketEventService_Import(t *testing.T) {
 			tt.mockRepo(mockRepo)
 			tt.mockEventRepo(mockEventRepo)
 
-			svc := service.NewTicketEventService(mockEventRepo, mockRepo)
+			tempDir := t.TempDir()
+			auditLogger := service.NewCSVFileAuditLogger(tempDir)
+			svc := service.NewTicketEventService(mockEventRepo, mockRepo, auditLogger)
 			res, err := svc.Import(ctx, tt.inputEvents)
 
 			if tt.expectedError != "" {
@@ -144,7 +148,14 @@ func TestTicketEventService_Import(t *testing.T) {
 				assert.Equal(t, tt.expectedAccepted, res.AcceptedCount)
 				assert.Equal(t, tt.expectedRejected, res.RejectedCount)
 				if tt.expectedRejectDetail != "" {
-					assert.Contains(t, res.RejectedDetails[0].ErrorName, tt.expectedRejectDetail)
+					assert.NotEmpty(t, res.AuditLogFile)
+					filePath := filepath.Join(tempDir, res.AuditLogFile)
+					assert.FileExists(t, filePath)
+					content, readErr := os.ReadFile(filePath)
+					assert.NoError(t, readErr)
+					assert.Contains(t, string(content), tt.expectedRejectDetail)
+				} else {
+					assert.Empty(t, res.AuditLogFile)
 				}
 			}
 

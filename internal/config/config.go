@@ -38,6 +38,9 @@ type Config struct {
 	SMTPUser     string
 	SMTPPass     string
 	ManagerEmail string
+
+	// Audit Log Dir
+	AuditLogDir string
 }
 
 // LoadConfig
@@ -45,6 +48,11 @@ func LoadConfig() *Config {
 	err := loadEnv()
 	if err != nil {
 		log.Println("Warning: No .env file found, using system environment variables")
+	}
+
+	auditDir := getEnv("AUDIT_LOG_DIR")
+	if auditDir == "" {
+		auditDir = "logs/import_audit"
 	}
 
 	cfg := &Config{
@@ -72,6 +80,8 @@ func LoadConfig() *Config {
 		SMTPUser:     getEnv("SMTP_USER"),
 		SMTPPass:     getEnv("SMTP_PASS"),
 		ManagerEmail: getEnv("MANAGER_EMAIL"),
+
+		AuditLogDir: auditDir,
 	}
 
 	return cfg

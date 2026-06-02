@@ -17,18 +17,26 @@ import (
 
 type TicketEventService interface {
 	Import(ctx context.Context, events []domain.TicketEvent) (domain.BatchImportResult, error)
+	GetAuditLogPath(filename string) (string, error)
 }
 
 type ticketEventService struct {
-	eventRepo  repository.TicketEventRepository
-	ticketRepo repository.TicketRepository
+	eventRepo   repository.TicketEventRepository
+	ticketRepo  repository.TicketRepository
+	auditLogger AuditLogger
 }
 
-func NewTicketEventService(eventRepo repository.TicketEventRepository, ticketRepo repository.TicketRepository) TicketEventService {
+func NewTicketEventService(eventRepo repository.TicketEventRepository, ticketRepo repository.TicketRepository, auditLogger AuditLogger) TicketEventService {
 	return &ticketEventService{
-		eventRepo:  eventRepo,
-		ticketRepo: ticketRepo,
+		eventRepo:   eventRepo,
+		ticketRepo:  ticketRepo,
+		auditLogger: auditLogger,
 	}
+}
+
+type rejectedEventWithReason struct {
+	Event  domain.TicketEvent
+	Reason string
 }
 
 type updateJob struct {
@@ -108,15 +116,68 @@ func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketE
 		RejectedCount: rejectedCount,
 	}
 
-	for errorName, events := range rejectedEvents {
-		finalResult.RejectedDetails = append(finalResult.RejectedDetails, domain.RejectedDetail{
-			ErrorName: errorName,
-			Events:    events,
-		})
+	var allRejected []rejectedEventWithReason
+
+	for errStr, evs := range rejectedEvents {
+		for _, ev := range evs {
+			allRejected = append(allRejected, rejectedEventWithReason{
+				Event:  ev,
+				Reason: errStr,
+			})
+		}
 	}
 
-	err = s.applyImportResults(ctx, results, &finalResult)
-	return finalResult, err
+	var eventsToInsert []domain.TicketEvent
+	var finalUpdates []updateJob
+
+	for _, res := range results {
+		finalResult.DuplicateCount += res.DuplicateCount
+
+		if res.RejectedError != "" {
+			finalResult.RejectedCount += len(res.RejectedEvents)
+			for _, ev := range res.RejectedEvents {
+				allRejected = append(allRejected, rejectedEventWithReason{
+					Event:  ev,
+					Reason: res.RejectedError,
+				})
+			}
+		}
+
+		if len(res.AcceptedEvents) > 0 {
+			eventsToInsert = append(eventsToInsert, res.AcceptedEvents...)
+			finalResult.AcceptedCount += len(res.AcceptedEvents)
+		}
+
+		if res.FinalUpdateJob != nil {
+			finalUpdates = append(finalUpdates, *res.FinalUpdateJob)
+		}
+	}
+
+	err = s.applyDBResults(ctx, eventsToInsert, finalUpdates)
+	if err != nil {
+		return domain.BatchImportResult{}, err
+	}
+
+	if finalResult.RejectedCount > 0 {
+		records := make([]AuditLogRecord, len(allRejected))
+		for i, r := range allRejected {
+			records[i] = AuditLogRecord{
+				TicketID:   r.Event.TicketID,
+				FromStatus: string(r.Event.FromStatus),
+				ToStatus:   string(r.Event.ToStatus),
+				AssigneeID: r.Event.AssigneeID,
+				CreatedAt:  r.Event.CreatedAt,
+				Reason:     r.Reason,
+			}
+		}
+		fileName, err := s.auditLogger.WriteAuditLog(records)
+		if err != nil {
+			return domain.BatchImportResult{}, fmt.Errorf("failed to write audit log: %w", err)
+		}
+		finalResult.AuditLogFile = fileName
+	}
+
+	return finalResult, nil
 }
 
 func (s *ticketEventService) filterAndGroupEvents(parsedEvents []parsedEvent) ([]ticketWorkerJob, map[string][]domain.TicketEvent, int, []uint, []string) {
@@ -264,36 +325,7 @@ func rejectJob(job ticketWorkerJob, err error) ticketJobResult {
 	}
 }
 
-func (s *ticketEventService) applyImportResults(ctx context.Context, results []ticketJobResult, finalResult *domain.BatchImportResult) error {
-	var eventsToInsert []domain.TicketEvent
-	var finalUpdates []updateJob
-	rejectedEvents := make(map[string][]domain.TicketEvent)
-
-	for _, res := range results {
-		finalResult.DuplicateCount += res.DuplicateCount
-
-		if res.RejectedError != "" {
-			rejectedEvents[res.RejectedError] = append(rejectedEvents[res.RejectedError], res.RejectedEvents...)
-			finalResult.RejectedCount += len(res.RejectedEvents)
-		}
-
-		if len(res.AcceptedEvents) > 0 {
-			eventsToInsert = append(eventsToInsert, res.AcceptedEvents...)
-			finalResult.AcceptedCount += len(res.AcceptedEvents)
-		}
-
-		if res.FinalUpdateJob != nil {
-			finalUpdates = append(finalUpdates, *res.FinalUpdateJob)
-		}
-	}
-
-	for errorName, events := range rejectedEvents {
-		finalResult.RejectedDetails = append(finalResult.RejectedDetails, domain.RejectedDetail{
-			ErrorName: errorName,
-			Events:    events,
-		})
-	}
-
+func (s *ticketEventService) applyDBResults(ctx context.Context, eventsToInsert []domain.TicketEvent, finalUpdates []updateJob) error {
 	// Wrap DB operations inside a Database Transaction
 	return s.ticketRepo.Transaction(ctx, func(txCtx context.Context) error {
 		if len(eventsToInsert) > 0 {
@@ -354,4 +386,8 @@ func (s *ticketEventService) applyImportResults(ctx context.Context, results []t
 
 		return nil
 	})
+}
+
+func (s *ticketEventService) GetAuditLogPath(filename string) (string, error) {
+	return s.auditLogger.GetAuditLogPath(filename)
 }
