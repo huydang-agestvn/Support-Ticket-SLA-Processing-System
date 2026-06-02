@@ -11,7 +11,7 @@ import (
 
 func TestNewScheduler(t *testing.T) {
 	mockSvc := new(mock.MockReportService)
-	scheduler := cron.NewScheduler(mockSvc)
+	scheduler := cron.NewScheduler(mockSvc, nil)
 
 	assert.NotNil(t, scheduler)
 	assert.NotNil(t, scheduler.GetCron())
@@ -20,7 +20,7 @@ func TestNewScheduler(t *testing.T) {
 
 func TestScheduler_StartStop(t *testing.T) {
 	mockSvc := new(mock.MockReportService)
-	scheduler := cron.NewScheduler(mockSvc)
+	scheduler := cron.NewScheduler(mockSvc, nil)
 
 	// Verify Start succeeds and schedules our task
 	err := scheduler.Start()
@@ -40,7 +40,7 @@ func TestScheduler_JobExecution(t *testing.T) {
 	// In the real code, AddFunc adds a func that runs asynchronously.
 	// We can manually run the func registered in the cron entry to verify its logic.
 	
-	scheduler := cron.NewScheduler(mockSvc)
+	scheduler := cron.NewScheduler(mockSvc, nil)
 	err := scheduler.Start()
 	assert.NoError(t, err)
 	defer scheduler.Stop()
