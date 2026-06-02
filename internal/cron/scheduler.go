@@ -25,7 +25,7 @@ func NewScheduler(reportSvc service.ReportService, emailSvc service.EmailService
 
 // Start registers and starts the cron jobs.
 func (s *Scheduler) Start() error {
-	_, err := s.cron.AddFunc("06 14 * * *", func() {
+	_, err := s.cron.AddFunc("0 17 * * *", func() {
 		now := time.Now()
 		log.Printf("[Cron] Starting daily ticket report aggregation for %s...", now.Format("2006-01-02"))
 		
