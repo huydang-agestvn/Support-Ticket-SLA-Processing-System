@@ -117,8 +117,9 @@ func (a *App) setupDependencies() {
 		reportHander,
 	)
 
-	// 6. Initialize Cron Scheduler
-	a.scheduler = cron.NewScheduler(reportService)
+	// 6. Initialize EmailService and Cron Scheduler
+	emailService := service.NewEmailService(a.cfg)
+	a.scheduler = cron.NewScheduler(reportService, emailService)
 }
 
 func (a *App) startServer() error {
