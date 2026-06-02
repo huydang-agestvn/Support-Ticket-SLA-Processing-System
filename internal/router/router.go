@@ -46,6 +46,16 @@ func InitRouter(
 				),
 				eventHandler.ImportEvents,
 			)
+
+			eventGroup.GET(
+				"/import/logs/:filename",
+				authMiddleware.RequireAuth(),
+				authMiddleware.RequireRole(
+					auth.RoleAgent,
+					auth.RoleManager,
+				),
+				eventHandler.DownloadAuditLog,
+			)
 		}
 
 		ticketGroup := api.Group("/tickets")
