@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"support-ticket.com/internal/auth"
 	"support-ticket.com/internal/config"
 	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/errmsgs"
@@ -158,6 +159,7 @@ func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketE
 		return domain.BatchImportResult{}, err
 	}
 
+	currentUser := auth.UserFromContext(ctx)
 	if finalResult.RejectedCount > 0 {
 		records := make([]AuditLogRecord, len(allRejected))
 		for i, r := range allRejected {
@@ -170,7 +172,7 @@ func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketE
 				Reason:     r.Reason,
 			}
 		}
-		fileName, err := s.auditLogger.WriteAuditLog(records)
+		fileName, err := s.auditLogger.WriteAuditLog(records, currentUser.UserID)
 		if err != nil {
 			return domain.BatchImportResult{}, fmt.Errorf("failed to write audit log: %w", err)
 		}

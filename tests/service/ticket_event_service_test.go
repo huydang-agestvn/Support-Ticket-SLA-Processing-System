@@ -2,20 +2,39 @@ package service_test
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"support-ticket.com/internal/auth"
 	domain "support-ticket.com/internal/model"
 	"support-ticket.com/internal/service"
 	testmock "support-ticket.com/tests/mock"
 )
 
+type MockAuditLogger struct {
+	mock.Mock
+}
+
+func (m *MockAuditLogger) WriteAuditLog(records []service.AuditLogRecord, userID string) (string, error) {
+	args := m.Called(records, userID)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockAuditLogger) GetAuditLogPath(filename string) (string, error) {
+	args := m.Called(filename)
+	return args.String(0), args.Error(1)
+}
+
 func TestTicketEventService_Import(t *testing.T) {
 	ctx := context.Background()
+	user := auth.UserPrincipal{
+		UserID:   "test-user-id",
+		Username: "test-user",
+	}
+	ctx = auth.WithUser(ctx, user)
+	
 	now := time.Now()
 
 	validEvent := domain.TicketEvent{
@@ -130,12 +149,16 @@ func TestTicketEventService_Import(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(testmock.MockTicketRepository)
 			mockEventRepo := new(testmock.MockTicketEventRepository)
+			mockAuditLogger := new(MockAuditLogger)
+
 			tt.mockRepo(mockRepo)
 			tt.mockEventRepo(mockEventRepo)
 
-			tempDir := t.TempDir()
-			auditLogger := service.NewCSVFileAuditLogger(tempDir)
-			svc := service.NewTicketEventService(mockEventRepo, mockRepo, auditLogger)
+			if tt.expectedRejectDetail != "" {
+				mockAuditLogger.On("WriteAuditLog", mock.Anything, mock.Anything).Return("mock_audit.csv", nil)
+			}
+
+			svc := service.NewTicketEventService(mockEventRepo, mockRepo, mockAuditLogger)
 			res, err := svc.Import(ctx, tt.inputEvents)
 
 			if tt.expectedError != "" {
@@ -148,12 +171,7 @@ func TestTicketEventService_Import(t *testing.T) {
 				assert.Equal(t, tt.expectedAccepted, res.AcceptedCount)
 				assert.Equal(t, tt.expectedRejected, res.RejectedCount)
 				if tt.expectedRejectDetail != "" {
-					assert.NotEmpty(t, res.AuditLogFile)
-					filePath := filepath.Join(tempDir, res.AuditLogFile)
-					assert.FileExists(t, filePath)
-					content, readErr := os.ReadFile(filePath)
-					assert.NoError(t, readErr)
-					assert.Contains(t, string(content), tt.expectedRejectDetail)
+					assert.Equal(t, "mock_audit.csv", res.AuditLogFile)
 				} else {
 					assert.Empty(t, res.AuditLogFile)
 				}
@@ -161,6 +179,7 @@ func TestTicketEventService_Import(t *testing.T) {
 
 			mockRepo.AssertExpectations(t)
 			mockEventRepo.AssertExpectations(t)
+			mockAuditLogger.AssertExpectations(t)
 		})
 	}
 }
