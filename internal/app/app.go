@@ -80,7 +80,16 @@ func (a *App) setupDependencies() {
 	eventRepo := repository.NewTicketEventRepository(a.db)
 	reportRepo := repository.NewReportRepository(a.db)
 
-	auditLogger := service.NewCSVFileAuditLogger(a.cfg.AuditLogDir)
+	auditLogger, err := service.NewMinIOAuditLogger(
+		a.cfg.MinioEndpoint,
+		a.cfg.MinioAccessKey,
+		a.cfg.MinioSecretKey,
+		a.cfg.MinioUseSSL,
+		a.cfg.MinioBucketName,
+	)
+	if err != nil {
+		log.Fatalf("failed to initialize audit logger: %v", err)
+	}
 
 	ticketService := service.NewTicketService(ticketRepo, eventRepo)
 	eventService := service.NewTicketEventService(eventRepo, ticketRepo, auditLogger)

@@ -41,6 +41,13 @@ type Config struct {
 
 	// Audit Log Dir
 	AuditLogDir string
+
+	// MinIO Config
+	MinioEndpoint   string
+	MinioAccessKey  string
+	MinioSecretKey  string
+	MinioUseSSL     bool
+	MinioBucketName string
 }
 
 // LoadConfig
@@ -53,6 +60,12 @@ func LoadConfig() *Config {
 	auditDir := getEnv("AUDIT_LOG_DIR")
 	if auditDir == "" {
 		auditDir = "logs/import_audit"
+	}
+
+	minioUseSSL, _ := strconv.ParseBool(getEnv("MINIO_USE_SSL"))
+	minioBucket := getEnv("MINIO_BUCKET_NAME")
+	if minioBucket == "" {
+		minioBucket = "audit-logs"
 	}
 
 	cfg := &Config{
@@ -82,6 +95,12 @@ func LoadConfig() *Config {
 		ManagerEmail: getEnv("MANAGER_EMAIL"),
 
 		AuditLogDir: auditDir,
+
+		MinioEndpoint:   getEnv("MINIO_ENDPOINT"),
+		MinioAccessKey:  getEnv("MINIO_ACCESS_KEY"),
+		MinioSecretKey:  getEnv("MINIO_SECRET_KEY"),
+		MinioUseSSL:     minioUseSSL,
+		MinioBucketName: minioBucket,
 	}
 
 	return cfg
