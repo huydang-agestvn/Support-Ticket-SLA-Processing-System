@@ -8,8 +8,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"support-ticket.com/internal/auth"
 	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/request"
+	"support-ticket.com/internal/errmsgs"
 	domain "support-ticket.com/internal/model"
 	"support-ticket.com/internal/service"
 	testmock "support-ticket.com/tests/mock"
@@ -91,33 +93,93 @@ func TestTicketService_Create(t *testing.T) {
 }
 
 func TestTicketService_FindById(t *testing.T) {
-	ctx := context.Background()
-	ticket := &domain.Ticket{ID: 1, Title: "Test"}
+	ticket := &domain.Ticket{ID: 1, Title: "Test", RequestorID: "user-123"}
 
 	tests := []struct {
 		name          string
 		id            uint
-		mockRepo      func(*testmock.MockTicketRepository)
+		currentUser   auth.UserPrincipal
+		mockRepo      func(context.Context, *testmock.MockTicketRepository)
 		expectedRes   *domain.Ticket
-		expectedError bool
+		expectedError error
 	}{
 		{
-			name: "Success",
+			name: "Success_RequestorOwnsTicket",
 			id:   1,
-			mockRepo: func(m *testmock.MockTicketRepository) {
+			currentUser: auth.UserPrincipal{
+				UserID: "user-123",
+				Roles:  []string{auth.RoleRequestor},
+			},
+			mockRepo: func(ctx context.Context, m *testmock.MockTicketRepository) {
 				m.On("FindById", ctx, uint(1)).Return(ticket, nil)
 			},
 			expectedRes:   ticket,
-			expectedError: false,
+			expectedError: nil,
+		},
+		{
+			name: "Success_AgentViewsAnyTicket",
+			id:   1,
+			currentUser: auth.UserPrincipal{
+				UserID: "agent-456",
+				Roles:  []string{auth.RoleAgent},
+			},
+			mockRepo: func(ctx context.Context, m *testmock.MockTicketRepository) {
+				m.On("FindById", ctx, uint(1)).Return(ticket, nil)
+			},
+			expectedRes:   ticket,
+			expectedError: nil,
+		},
+		{
+			name: "Success_ManagerViewsAnyTicket",
+			id:   1,
+			currentUser: auth.UserPrincipal{
+				UserID: "manager-789",
+				Roles:  []string{auth.RoleManager},
+			},
+			mockRepo: func(ctx context.Context, m *testmock.MockTicketRepository) {
+				m.On("FindById", ctx, uint(1)).Return(ticket, nil)
+			},
+			expectedRes:   ticket,
+			expectedError: nil,
+		},
+		{
+			name: "Unauthorized_RequestorViewsOtherTicket",
+			id:   1,
+			currentUser: auth.UserPrincipal{
+				UserID: "user-other",
+				Roles:  []string{auth.RoleRequestor},
+			},
+			mockRepo: func(ctx context.Context, m *testmock.MockTicketRepository) {
+				m.On("FindById", ctx, uint(1)).Return(ticket, nil)
+			},
+			expectedRes:   nil,
+			expectedError: errmsgs.ErrUnauthorizedToViewTicket,
 		},
 		{
 			name: "NotFound",
 			id:   1,
-			mockRepo: func(m *testmock.MockTicketRepository) {
+			currentUser: auth.UserPrincipal{
+				UserID: "user-123",
+				Roles:  []string{auth.RoleRequestor},
+			},
+			mockRepo: func(ctx context.Context, m *testmock.MockTicketRepository) {
 				m.On("FindById", ctx, uint(1)).Return((*domain.Ticket)(nil), nil)
 			},
 			expectedRes:   nil,
-			expectedError: true,
+			expectedError: errmsgs.ErrTicketNotFound,
+		},
+		{
+			name: "DBError",
+			id:   1,
+			currentUser: auth.UserPrincipal{
+				UserID: "user-123",
+				Roles:  []string{auth.RoleRequestor},
+			},
+			mockRepo: func(ctx context.Context, m *testmock.MockTicketRepository) {
+				m.On("FindById", ctx, uint(1)).Return(nil, errors.New("db error"))
+			},
+			expectedRes:   nil,
+			expectedError: errors.New("failed to get ticket from db: db error"),
 		},
 	}
 
@@ -125,13 +187,16 @@ func TestTicketService_FindById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(testmock.MockTicketRepository)
 			mockEventRepo := new(testmock.MockTicketEventRepository)
-			tt.mockRepo(mockRepo)
+
+			ctx := auth.WithUser(context.Background(), tt.currentUser)
+			tt.mockRepo(ctx, mockRepo)
 
 			svc := service.NewTicketService(mockRepo, mockEventRepo)
 			res, err := svc.FindById(ctx, tt.id)
 
-			if tt.expectedError {
+			if tt.expectedError != nil {
 				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError.Error())
 				assert.Nil(t, res)
 			} else {
 				assert.NoError(t, err)

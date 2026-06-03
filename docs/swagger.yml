@@ -622,7 +622,47 @@ components:
               type: string
               example: Ticket created successfully
             data:
-              $ref: "#/components/schemas/Ticket"
+              type: object
+              properties:
+                id:
+                  type: integer
+                  example: 1
+                requestor_id:
+                  type: string
+                  example: 0a5389df-ba3a-4494-a095-126d05c7c2e7
+                assignee_id:
+                  type: string
+                  nullable: true
+                  example: 
+                title:
+                  type: string
+                  example: Cannot access internal system
+                description:
+                  type: string
+                  example: User cannot access internal support system
+                priority:
+                  $ref: "#/components/schemas/TicketPriority"
+                status:
+                  type: string
+                  example: new
+                created_at:
+                  type: string
+                  format: date-time
+                  example: "2026-05-15T15:19:55.169302+07:00"
+                resolved_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  example: null
+                sla_due_at:
+                  type: string
+                  format: date-time
+                  example: "2026-05-17T15:19:55.169302+07:00"
+                cancelled_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  example: null
 
     ListTicketsResponse:
       allOf:
@@ -670,7 +710,7 @@ components:
           example: 10
         total:
           type: integer
-          example: 10
+          example: 1
         total_pages:
           type: integer
           example: 1
@@ -697,7 +737,8 @@ components:
         priority:
           $ref: "#/components/schemas/TicketPriority"
         status:
-          $ref: "#/components/schemas/TicketStatus"
+          type: string
+          example: assigned
         created_at:
           type: string
           format: date-time
@@ -763,7 +804,8 @@ components:
         from_status:
           $ref: "#/components/schemas/TicketStatus"
         to_status:
-          $ref: "#/components/schemas/TicketStatus"
+          type: string
+          example: assigned
         requestor_id:
           type: string
           nullable: true
@@ -810,9 +852,13 @@ components:
           type: string
           example: Ticket assigned to support agent
         from_status:
-          $ref: "#/components/schemas/TicketStatus"
+          type: string
+          nullable: true
+          example: assigned
         to_status:
-          $ref: "#/components/schemas/TicketStatus"
+          type: string
+          nullable: true
+          example: assigned
         assignee_id:
           type: string
           nullable: true
@@ -852,7 +898,7 @@ components:
       properties:
         error_name:
           type: string
-          example: from_status and to_status cannot be the same ('new')
+          example: from_status and to_status cannot be the same 'assigned'
         events:
           type: array
           items:
@@ -878,31 +924,31 @@ components:
           example: "2026-05-22T00:00:00Z"
         new_count:
           type: integer
-          example: 0
+          example: 45
         resolved_count:
           type: integer
-          example: 0
+          example: 38
         cancelled_count:
           type: integer
-          example: 0
+          example: 3
         overdue_count:
           type: integer
-          example: 250
+          example: 12
         avg_resolution_time:
           type: integer
-          example: 0
+          example: 120
         high_priority_count:
           type: integer
-          example: 0
+          example: 5
         medium_priority_count:
           type: integer
-          example: 0
+          example: 25
         low_priority_count:
           type: integer
-          example: 0
+          example: 15
         sla_breache_count:
           type: integer
-          example: 0
+          example: 2
         created_at:
           type: string
           format: date-time

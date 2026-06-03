@@ -21,15 +21,10 @@ type TicketEvent struct {
 }
 
 type BatchImportResult struct {
-	AcceptedCount   int              `json:"accepted_count"`
-	RejectedCount   int              `json:"rejected_count"`
-	DuplicateCount  int              `json:"duplicate_count"`
-	RejectedDetails []RejectedDetail `json:"rejected_details"`
-}
-
-type RejectedDetail struct {
-	ErrorName string        `json:"error_name"`
-	Events    []TicketEvent `json:"events"`
+	AcceptedCount  int    `json:"accepted_count"`
+	RejectedCount  int    `json:"rejected_count"`
+	DuplicateCount int    `json:"duplicate_count"`
+	AuditLogFile   string `json:"audit_log_file,omitempty"`
 }
 
 func (e *TicketEvent) Validate() error {

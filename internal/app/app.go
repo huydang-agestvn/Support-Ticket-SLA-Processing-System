@@ -12,15 +12,17 @@ import (
 	"support-ticket.com/internal/handler"
 	"support-ticket.com/internal/middleware"
 	"support-ticket.com/internal/migration"
+	"support-ticket.com/internal/cron"
 	"support-ticket.com/internal/repository"
 	"support-ticket.com/internal/router"
 	"support-ticket.com/internal/service"
 )
 
 type App struct {
-	cfg    *config.Config
-	db     *gorm.DB
-	router *gin.Engine
+	cfg       *config.Config
+	db        *gorm.DB
+	router    *gin.Engine
+	scheduler *cron.Scheduler
 }
 
 func NewApp() *App {
@@ -53,7 +55,13 @@ func (a *App) Run() error {
 	// 4. Setup Dependency Injection
 	a.setupDependencies()
 
-	// 5. Start HTTP Server
+	// 5. Start Cron Scheduler
+	if err := a.scheduler.Start(); err != nil {
+		return fmt.Errorf("failed to start scheduler: %w", err)
+	}
+	defer a.scheduler.Stop()
+
+	// 6. Start HTTP Server
 	return a.startServer()
 }
 
@@ -72,8 +80,19 @@ func (a *App) setupDependencies() {
 	eventRepo := repository.NewTicketEventRepository(a.db)
 	reportRepo := repository.NewReportRepository(a.db)
 
+	auditLogger, err := service.NewMinIOAuditLogger(
+		a.cfg.MinioEndpoint,
+		a.cfg.MinioAccessKey,
+		a.cfg.MinioSecretKey,
+		a.cfg.MinioUseSSL,
+		a.cfg.MinioBucketName,
+	)
+	if err != nil {
+		log.Fatalf("failed to initialize audit logger: %v", err)
+	}
+
 	ticketService := service.NewTicketService(ticketRepo, eventRepo)
-	eventService := service.NewTicketEventService(eventRepo, ticketRepo)
+	eventService := service.NewTicketEventService(eventRepo, ticketRepo, auditLogger)
 	reportService := service.NewReportService(reportRepo)
 
 	ticketHandler := handler.NewTicketHandler(ticketService)
@@ -108,6 +127,10 @@ func (a *App) setupDependencies() {
 		authMiddleware,
 		reportHander,
 	)
+
+	// 6. Initialize EmailService and Cron Scheduler
+	emailService := service.NewEmailService(a.cfg)
+	a.scheduler = cron.NewScheduler(reportService, emailService)
 }
 
 func (a *App) startServer() error {
