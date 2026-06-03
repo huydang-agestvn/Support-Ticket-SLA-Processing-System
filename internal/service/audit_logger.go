@@ -70,7 +70,7 @@ func (l *minioAuditLogger) WriteAuditLog(records []AuditLogRecord, userID string
 	if _, err := rand.Read(randBytes); err != nil {
 		return "", fmt.Errorf("failed to generate random bytes for filename: %w", err)
 	}
-	fileName := fmt.Sprintf("import_audit_%s_%x.csv", timestamp, randBytes)
+	fileName := fmt.Sprintf("import_error_report_%s_%x.csv", timestamp, randBytes)
 
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
