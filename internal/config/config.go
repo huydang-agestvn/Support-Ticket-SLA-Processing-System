@@ -1,8 +1,9 @@
 package config
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strconv"
 	"time"
@@ -54,7 +55,7 @@ type Config struct {
 func LoadConfig() *Config {
 	err := loadEnv()
 	if err != nil {
-		log.Println("Warning: No .env file found, using system environment variables")
+		slog.WarnContext(context.Background(), "No .env file found, using system environment variables", slog.Any("error", err))
 	}
 
 	auditDir := getEnv("AUDIT_LOG_DIR")
@@ -145,27 +146,19 @@ func getEnv(key string) string {
 }
 
 func GetPoolSize(key string) int {
-	err := loadEnv()
-	if err != nil {
-		log.Println("Warning: No .env file found in GetPoolSize, using system environment variables")
-	}
 	value := os.Getenv(key)
 	intVal, err := strconv.Atoi(value)
 	if err != nil {
-		log.Printf("Error converting %s to integer: %v. Using default value 5", key, err)
+		slog.WarnContext(context.Background(), "Error converting %s to integer: %v. Using default value 5", key, err)
 		return 5
 	}
 	return intVal
 }
 func GetBatchSize(key string) int {
-	err := loadEnv()
-	if err != nil {
-		log.Println("Warning: No .env file found in GetBatchSize, using system environment variables")
-	}
 	value := os.Getenv(key)
 	intVal, err := strconv.Atoi(value)
 	if err != nil {
-		log.Printf("Error converting %s to integer: %v. Using default value 1000", key, err)
+		slog.WarnContext(context.Background(), "Error converting %s to integer: %v. Using default value 1000", key, err)
 		return 1000
 	}
 	return intVal
@@ -175,7 +168,7 @@ func getEnvInt(key string) int {
 	value := os.Getenv(key)
 	intVal, err := strconv.Atoi(value)
 	if err != nil {
-		log.Fatalf("Error converting %s to integer: %v", key, err)
+		slog.ErrorContext(context.Background(), "Error converting %s to integer: %v", key, err)
 	}
 	return intVal
 }

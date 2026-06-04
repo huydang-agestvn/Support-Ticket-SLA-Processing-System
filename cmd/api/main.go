@@ -1,7 +1,8 @@
 package main
 
 import (
-	"log"
+	"context"
+	"log/slog"
 
 	"support-ticket.com/internal/app"
 )
@@ -19,6 +20,6 @@ func main() {
 	application := app.NewApp()
 
 	if err := application.Run(); err != nil {
-		log.Fatalf("application failed to start: %v", err)
+		slog.ErrorContext(context.Background(), "application failed to start", slog.Any("error", err))
 	}
 }

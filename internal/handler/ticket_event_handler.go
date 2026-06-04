@@ -2,6 +2,7 @@ package handler
 
 import (
 	"io"
+	"log/slog"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -23,12 +24,13 @@ func NewTicketEventHandler(service service.TicketEventService) *TicketEventHandl
 	}
 }
 
-// readImportInput reads raw bytes and detects the file format from the request.
-// Supports multipart file upload (CSV/JSON) and raw JSON body (backward compatible).
 func readImportInput(c *gin.Context) (data []byte, format string, err error) {
 	if strings.Contains(c.GetHeader("Content-Type"), "multipart/form-data") {
 		file, header, ferr := c.Request.FormFile("file")
 		if ferr != nil {
+			slog.WarnContext(c.Request.Context(), "missing or invalid file field in multipart form",
+				slog.Any("error", ferr),
+			)
 			return nil, "", dto.NewBadRequest(dto.ErrCodeInvalidBody, "missing or invalid 'file' field in multipart form")
 		}
 		defer file.Close()
@@ -75,6 +77,7 @@ func (h *TicketEventHandler) ImportEvents(c *gin.Context) {
 func (h *TicketEventHandler) DownloadAuditLog(c *gin.Context) {
 	filename := c.Param("filename")
 	if filename == "" {
+		slog.WarnContext(c.Request.Context(), "missing filename parameter for audit log download")
 		HandleError(c, dto.NewBadRequest(dto.ErrCodeInvalidInput, "filename parameter is required"))
 		return
 	}

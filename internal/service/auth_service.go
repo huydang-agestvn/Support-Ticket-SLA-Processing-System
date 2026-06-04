@@ -1,7 +1,9 @@
 package service
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"support-ticket.com/internal/dto/request"
@@ -36,8 +38,16 @@ func (s *authServiceImpl) Login(input request.LoginRequest) (*response.LoginResp
 
 	tokenResp, err := s.keycloakClient.Login(username, password)
 	if err != nil {
+		slog.ErrorContext(context.Background(), "login failed",
+			slog.String("username", username),
+			slog.Any("error", err),
+		)
 		return nil, err
 	}
+
+	slog.InfoContext(context.Background(), "login successful",
+		slog.String("username", username),
+	)
 
 	return &response.LoginResponse{
 		AccessToken: tokenResp.AccessToken,

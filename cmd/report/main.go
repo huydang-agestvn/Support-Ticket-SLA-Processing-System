@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"support-ticket.com/internal/config"
-	"support-ticket.com/internal/model"
+	domain "support-ticket.com/internal/model"
 	"support-ticket.com/internal/repository"
 	"support-ticket.com/internal/service"
 )
@@ -19,7 +20,7 @@ func main() {
 
 	date, err := time.ParseInLocation("2006-01-02", *dateStr, time.Local)
 	if err != nil {
-		log.Fatalf("invalid date format, expected YYYY-MM-DD: %v", err)
+		slog.ErrorContext(context.Background(), "invalid date format", slog.Any("error", err))
 	}
 
 	// Load config từ .env
@@ -28,12 +29,12 @@ func main() {
 	// Connect DB
 	db, err := cfg.GetDatabase()
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		slog.ErrorContext(context.Background(), "failed to connect to database", slog.Any("error", err))
 	}
 
 	// AutoMigrate report table
 	if err := db.AutoMigrate(&domain.TicketReport{}); err != nil {
-		log.Fatalf("failed to migrate: %v", err)
+		slog.ErrorContext(context.Background(), "failed to migrate", slog.Any("error", err))
 	}
 
 	// Wire dependencies
@@ -43,7 +44,7 @@ func main() {
 	// Generate report
 	report, err := reportSvc.GenerateReport(date)
 	if err != nil {
-		log.Fatalf("failed to generate report: %v", err)
+		slog.ErrorContext(context.Background(), "failed to generate report", slog.Any("error", err))
 	}
 
 	fmt.Printf("Report generated for %s\n", date.Format("2006-01-02"))
@@ -56,4 +57,5 @@ func main() {
 	fmt.Printf("  high:      %d\n", report.HighPriorityCount)
 	fmt.Printf("  medium:    %d\n", report.MediumPriorityCount)
 	fmt.Printf("  low:       %d\n", report.LowPriorityCount)
+	
 }
