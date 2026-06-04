@@ -1,8 +1,9 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,8 +20,10 @@ type ClientRequest struct {
 }
 
 func NewClient(tokenURL, clientID, clientSecret string) *ClientRequest {
-	log.Printf("NewClient tokenURL=%s", tokenURL)
-	log.Printf("NewClient clientID=%s", clientID)
+	slog.InfoContext(context.Background(), "initializing new keycloak client",
+		slog.String("token_url", tokenURL),
+		slog.String("client_id", clientID),
+	)
 
 	return &ClientRequest{
 		tokenURL:     tokenURL,
@@ -55,7 +58,9 @@ func (c *ClientRequest) Login(username, password string) (*response.KeycloakToke
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		log.Printf("[ERROR] keycloak unreachable: %v", err)
+		slog.ErrorContext(context.Background(), "keycloak unreachable",
+			slog.Any("error", err),
+		)
 		return nil, newServiceUnavailable("authentication service is temporarily unavailable")
 	}
 	defer resp.Body.Close()
@@ -67,7 +72,11 @@ func (c *ClientRequest) Login(username, password string) (*response.KeycloakToke
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 			return nil, common.NewUnauthorized(common.ErrCodeUnauthorized, "invalid username or password")
 		}
-		log.Printf("[ERROR] keycloak returned %d: %s - %s", resp.StatusCode, kcErr.Error, kcErr.ErrorDescription)
+		slog.ErrorContext(context.Background(), "keycloak returned error",
+			slog.Int("status_code", resp.StatusCode),
+			slog.String("kc_error", kcErr.Error),
+			slog.String("kc_error_description", kcErr.ErrorDescription),
+		)
 		return nil, newServiceUnavailable("authentication service is temporarily unavailable")
 	}
 

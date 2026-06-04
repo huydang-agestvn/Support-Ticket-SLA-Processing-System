@@ -103,6 +103,14 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_USE_SSL: "false"
       MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      MANAGER_EMAIL: ${MANAGER_EMAIL}
+    volumes:
+      - app_logs:/app/logs
+    command: sh -c "mkdir -p /app/logs && ./ticket-sla-api 2>&1 | tee /app/logs/app.log"
     depends_on:
       postgres:
         condition: service_healthy
@@ -111,7 +119,39 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: ticket-sla-loki
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./logging/loki-config.yaml:/etc/loki/local-config.yaml:ro
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: ticket-sla-promtail
+    volumes:
+      - app_logs:/var/log/app:ro
+      - ./logging/promtail-config.yaml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: ticket-sla-grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - ./logging/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - loki
+
 volumes:
   ticket_sla_postgres_data:
   keycloak_postgres_data:
   minio_data:
+  grafana_data:
+  app_logs:

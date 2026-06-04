@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -28,6 +29,10 @@ func parseTicketID(c *gin.Context) (uint, error) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
+		slog.WarnContext(c.Request.Context(), "invalid ticket id parameter",
+			slog.String("id", idStr),
+			slog.Any("error", err),
+		)
 		return 0, errmsgs.ErrInvalidInput
 	}
 	return uint(id), nil

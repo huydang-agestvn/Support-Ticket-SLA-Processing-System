@@ -1,18 +1,19 @@
 package app
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
 	"support-ticket.com/internal/auth"
 	"support-ticket.com/internal/config"
+	"support-ticket.com/internal/cron"
 	"support-ticket.com/internal/handler"
 	"support-ticket.com/internal/middleware"
 	"support-ticket.com/internal/migration"
-	"support-ticket.com/internal/cron"
 	"support-ticket.com/internal/repository"
 	"support-ticket.com/internal/router"
 	"support-ticket.com/internal/service"
@@ -42,7 +43,7 @@ func (a *App) Run() error {
 	if err == nil {
 		defer func() {
 			if closeErr := sqlDB.Close(); closeErr != nil {
-				log.Printf("warning: failed to close database connection: %v", closeErr)
+				slog.ErrorContext(context.Background(), "failed to close database connection", slog.Any("error", closeErr))
 			}
 		}()
 	}
@@ -71,7 +72,7 @@ func (a *App) initDB() error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
-	log.Printf("database connected: %s:%d/%s", a.cfg.DBHost, a.cfg.DBPort, a.cfg.DBName)
+	slog.InfoContext(context.Background(), "database connected", slog.String("db_host", a.cfg.DBHost), slog.Int("db_port", a.cfg.DBPort), slog.String("db_name", a.cfg.DBName))
 	return nil
 }
 
@@ -88,7 +89,7 @@ func (a *App) setupDependencies() {
 		a.cfg.MinioBucketName,
 	)
 	if err != nil {
-		log.Fatalf("failed to initialize audit logger: %v", err)
+		slog.ErrorContext(context.Background(), "failed to initialize audit logger", slog.Any("error", err))
 	}
 
 	ticketService := service.NewTicketService(ticketRepo, eventRepo)
@@ -140,8 +141,8 @@ func (a *App) startServer() error {
 	}
 	addr := fmt.Sprintf(":%d", serverPort)
 
-	log.Printf("worker pool size: %d", a.cfg.WorkerPoolSize)
-	log.Printf("starting HTTP server on %s", addr)
+	slog.InfoContext(context.Background(), "worker pool size", slog.Int("worker_pool_size", a.cfg.WorkerPoolSize))
+	slog.InfoContext(context.Background(), "starting HTTP server on", slog.String("addr", addr))
 
 	// Khởi chạy server (blocking operation)
 	return a.router.Run(addr)

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -25,6 +26,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 
 		if authHeader == "" {
+			slog.WarnContext(c.Request.Context(), "missing authorization header")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, common.ErrorResponse(
 				common.NewUnauthorized(common.ErrCodeUnauthorized, "authorization header is required"),
 			))
@@ -33,6 +35,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 
 		const bearerPrefix = "Bearer "
 		if !strings.HasPrefix(authHeader, bearerPrefix) {
+			slog.WarnContext(c.Request.Context(), "invalid authorization header format")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, common.ErrorResponse(
 				common.NewUnauthorized(common.ErrCodeUnauthorized, "invalid authorization header format"),
 			))
@@ -41,6 +44,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 
 		tokenString := strings.TrimSpace(strings.TrimPrefix(authHeader, bearerPrefix))
 		if tokenString == "" {
+			slog.WarnContext(c.Request.Context(), "missing bearer token in authorization header")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, common.ErrorResponse(
 				common.NewUnauthorized(common.ErrCodeUnauthorized, "missing bearer token"),
 			))
@@ -66,6 +70,7 @@ func (m *AuthMiddleware) RequireRole(allowedRoles ...string) gin.HandlerFunc {
 		currentUser := auth.UserFromContext(c.Request.Context())
 
 		if currentUser.UserID == "" {
+			slog.WarnContext(c.Request.Context(), "unauthorized access attempt (no active user)")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, common.ErrorResponse(
 				common.NewUnauthorized(common.ErrCodeUnauthorized, "unauthorized"),
 			))
@@ -73,6 +78,10 @@ func (m *AuthMiddleware) RequireRole(allowedRoles ...string) gin.HandlerFunc {
 		}
 
 		if !currentUser.HasAnyRole(allowedRoles...) {
+			slog.WarnContext(c.Request.Context(), "forbidden access attempt",
+				slog.Any("required_roles", allowedRoles),
+				slog.String("user_id", currentUser.UserID),
+			)
 			c.AbortWithStatusJSON(http.StatusForbidden, common.ErrorResponse(
 				common.NewForbidden(common.ErrCodeForbidden, "forbidden: insufficient role"),
 			))

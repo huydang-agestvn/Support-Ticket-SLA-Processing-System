@@ -7,6 +7,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -41,6 +42,9 @@ func NewMinIOAuditLogger(endpoint, accessKey, secretKey string, useSSL bool, buc
 		Secure: useSSL,
 	})
 	if err != nil {
+		slog.ErrorContext(context.Background(), "failed to initialize minio client",
+			slog.Any("error", err),
+		)
 		return nil, fmt.Errorf("failed to initialize minio client: %w", err)
 	}
 
@@ -49,11 +53,19 @@ func NewMinIOAuditLogger(endpoint, accessKey, secretKey string, useSSL bool, buc
 
 	exists, err := minioClient.BucketExists(ctx, bucketName)
 	if err != nil {
+		slog.ErrorContext(context.Background(), "failed to check if bucket exists",
+			slog.String("bucket", bucketName),
+			slog.Any("error", err),
+		)
 		return nil, fmt.Errorf("failed to check if bucket exists: %w", err)
 	}
 	if !exists {
 		err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
 		if err != nil {
+			slog.ErrorContext(context.Background(), "failed to create bucket",
+				slog.String("bucket", bucketName),
+				slog.Any("error", err),
+			)
 			return nil, fmt.Errorf("failed to create bucket: %w", err)
 		}
 	}
@@ -70,7 +82,7 @@ func (l *minioAuditLogger) WriteAuditLog(records []AuditLogRecord, userID string
 	if _, err := rand.Read(randBytes); err != nil {
 		return "", fmt.Errorf("failed to generate random bytes for filename: %w", err)
 	}
-	fileName := fmt.Sprintf("import_audit_%s_%x.csv", timestamp, randBytes)
+	fileName := fmt.Sprintf("import_error_report_%s_%x.csv", timestamp, randBytes)
 
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
@@ -106,8 +118,16 @@ func (l *minioAuditLogger) WriteAuditLog(records []AuditLogRecord, userID string
 		ContentType: "text/csv",
 	})
 	if err != nil {
+		slog.ErrorContext(context.Background(), "failed to upload audit log to MinIO",
+			slog.String("filename", fileName),
+			slog.Any("error", err),
+		)
 		return "", fmt.Errorf("failed to upload audit log to MinIO: %w", err)
 	}
+	
+	slog.InfoContext(context.Background(), "audit log uploaded successfully",
+		slog.String("filename", fileName),
+	)
 
 	return fileName, nil
 }
@@ -120,6 +140,10 @@ func (l *minioAuditLogger) GetAuditLogPath(filename string) (string, error) {
 
 	object, err := l.client.GetObject(ctx, l.bucketName, safeFilename, minio.GetObjectOptions{})
 	if err != nil {
+		slog.ErrorContext(context.Background(), "failed to get object from MinIO",
+			slog.String("filename", safeFilename),
+			slog.Any("error", err),
+		)
 		return "", fmt.Errorf("failed to get object from MinIO: %w", err)
 	}
 	defer object.Close()
