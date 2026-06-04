@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math"
 	"strings"
 	"time"
@@ -37,6 +38,12 @@ func NewTicketService(repo repository.TicketRepository, eventRepo repository.Tic
 func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicketReq) (*domain.Ticket, error) {
 	now := time.Now()
 
+	slog.InfoContext(ctx, "initiating ticket creation",
+		slog.String("requestor_id", req.RequestorID),
+		slog.String("title", req.Title),
+		slog.String("priority", string(req.Priority)),
+	)
+
 	ticket := &domain.Ticket{
 		RequestorID: req.RequestorID,
 		Title:       req.Title,
@@ -48,13 +55,26 @@ func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicket
 	}
 
 	if err := ticket.Validate(); err != nil {
+		slog.WarnContext(ctx, "failed to validate ticket data",
+			slog.String("requestor_id", req.RequestorID),
+			slog.Any("validation_error", err),
+		)
 		return nil, fmt.Errorf("invalid ticket data: %w", err)
 	}
 
-	// Persistence: DB layer
 	if err := s.repo.Create(ctx, ticket); err != nil {
+		slog.ErrorContext(ctx, "failed to save ticket to database",
+			slog.String("requestor_id", req.RequestorID),
+			slog.Any("db_error", err),
+		)
 		return nil, fmt.Errorf("failed to create ticket in db: %w", err)
 	}
+
+	slog.InfoContext(ctx, "ticket created successfully",
+		slog.Uint64("ticket_id", uint64(ticket.ID)),
+		slog.String("status", string(ticket.Status)),
+		slog.Duration("duration", time.Since(now)),
+	)
 
 	return ticket, nil
 }
