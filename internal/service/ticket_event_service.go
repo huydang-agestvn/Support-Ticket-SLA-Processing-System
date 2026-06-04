@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -77,8 +78,7 @@ type importMetadata struct {
 	existingTicketAssignees map[uint]string
 }
 
-// buildParsedEvents validates each event and enforces batch size limits.
-// This is business logic: the service owns validation rules and size constraints.
+
 func (s *ticketEventService) buildParsedEvents(events []domain.TicketEvent) ([]parsedEvent, error) {
 	if len(events) == 0 {
 		return nil, errmsgs.ErrEmptyBatch
@@ -97,6 +97,10 @@ func (s *ticketEventService) buildParsedEvents(events []domain.TicketEvent) ([]p
 }
 
 func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketEvent) (domain.BatchImportResult, error) {
+	slog.InfoContext(ctx, "initiating batch import",
+		slog.Int("total_events", len(events)),
+	)
+
 	parsedEvents, err := s.buildParsedEvents(events)
 	if err != nil {
 		return domain.BatchImportResult{}, err
@@ -106,6 +110,9 @@ func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketE
 
 	meta, err := s.fetchMetadata(ctx, ticketIDs, eventKeys)
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to fetch metadata for import",
+			slog.Any("error", err),
+		)
 		return domain.BatchImportResult{}, err
 	}
 
@@ -156,6 +163,9 @@ func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketE
 
 	err = s.applyDBResults(ctx, eventsToInsert, finalUpdates)
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to apply import db results",
+			slog.Any("error", err),
+		)
 		return domain.BatchImportResult{}, err
 	}
 
@@ -174,10 +184,20 @@ func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketE
 		}
 		fileName, err := s.auditLogger.WriteAuditLog(records, currentUser.UserID)
 		if err != nil {
+			slog.ErrorContext(ctx, "failed to write audit log for rejected events",
+				slog.Any("error", err),
+			)
 			return domain.BatchImportResult{}, fmt.Errorf("failed to write audit log: %w", err)
 		}
 		finalResult.AuditLogFile = fileName
 	}
+
+	slog.InfoContext(ctx, "batch import completed",
+		slog.Int("accepted_count", finalResult.AcceptedCount),
+		slog.Int("rejected_count", finalResult.RejectedCount),
+		slog.Int("duplicate_count", finalResult.DuplicateCount),
+		slog.String("audit_log_file", finalResult.AuditLogFile),
+	)
 
 	return finalResult, nil
 }
