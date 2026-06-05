@@ -128,7 +128,7 @@ MANAGER_EMAIL=manager_email@gmail.com
 GRAFANA_PORT=3000
 LOKI_PORT=3100
 ```
-
+* Note: The default credentials provided below are for local development purposes only. Please ensure you generate strong, unique passwords for production environments.
 ---
 
 ## 💻 Installation & Run
