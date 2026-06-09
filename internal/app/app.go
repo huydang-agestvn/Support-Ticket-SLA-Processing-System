@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"support-ticket.com/internal/ai"
 	"support-ticket.com/internal/auth"
 	"support-ticket.com/internal/config"
 	"support-ticket.com/internal/cron"
@@ -77,6 +78,14 @@ func (a *App) initDB() error {
 }
 
 func (a *App) setupDependencies() {
+	var aiAdapter ai.AIAdapter = ai.NewFakeAdapter(a.cfg.AIPromptVersion)
+	if a.cfg.AIEnabled {
+		// aiAdapter = ai.NewOllamaAdapter(a.cfg)
+		slog.WarnContext(context.Background(), "AI_ENABLED=true but real adapter is not yet implemented, falling back to FakeAdapter")
+	}
+
+	_ = aiAdapter
+
 	ticketRepo := repository.NewTicketRepository(a.db)
 	eventRepo := repository.NewTicketEventRepository(a.db)
 	reportRepo := repository.NewReportRepository(a.db)
