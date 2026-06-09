@@ -49,6 +49,16 @@ type Config struct {
 	MinioSecretKey  string
 	MinioUseSSL     bool
 	MinioBucketName string
+
+	//AI Config
+	AIProvider      string
+	AIModel         string
+	AIBaseURL       string
+	AIAPIKey        string
+	AITimeoutSecs   int
+	AIMaxRetries    int
+	AIEnabled       bool
+	AIPromptVersion string
 }
 
 // LoadConfig
@@ -67,6 +77,23 @@ func LoadConfig() *Config {
 	minioBucket := getEnv("MINIO_BUCKET_NAME")
 	if minioBucket == "" {
 		minioBucket = "audit-logs"
+	}
+
+	aiEnabled, _ := strconv.ParseBool(getEnv("AI_ENABLED"))
+
+	aiTimeoutSecs := getEnvInt("AI_TIMEOUT_SECS")
+	if aiTimeoutSecs == 0 {
+		aiTimeoutSecs = 30
+	}
+
+	aiMaxRetries := getEnvInt("AI_MAX_RETRIES")
+	if aiMaxRetries == 0 {
+		aiMaxRetries = 2
+	}
+
+	aiPromptVersion := getEnv("AI_PROMPT_VERSION")
+	if aiPromptVersion == "" {
+		aiPromptVersion = "v1.0"
 	}
 
 	cfg := &Config{
@@ -102,6 +129,15 @@ func LoadConfig() *Config {
 		MinioSecretKey:  getEnv("MINIO_SECRET_KEY"),
 		MinioUseSSL:     minioUseSSL,
 		MinioBucketName: minioBucket,
+
+		AIProvider:      getEnv("AI_PROVIDER"),
+		AIModel:         getEnv("AI_MODEL"),
+		AIBaseURL:       getEnv("AI_BASE_URL"),
+		AIAPIKey:        getEnv("AI_API_KEY"),
+		AITimeoutSecs:   aiTimeoutSecs,
+		AIMaxRetries:    aiMaxRetries,
+		AIEnabled:       aiEnabled,
+		AIPromptVersion: aiPromptVersion,
 	}
 
 	return cfg
