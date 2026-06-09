@@ -9,18 +9,18 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"support-ticket.com/internal/dto/request"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 )
 
 type TicketRepository interface {
-	Create(ctx context.Context, ticket *domain.Ticket) error
-	FindById(ctx context.Context, id uint) (*domain.Ticket, error)
-	FindAll(ctx context.Context, filter request.TicketFilter, offset int, limit int) ([]domain.Ticket, int64, error)
-	UpdateStatusWithEvent(ctx context.Context, ticket *domain.Ticket, event *domain.TicketEvent) error
+	Create(ctx context.Context, ticket *model.Ticket) error
+	FindById(ctx context.Context, id uint) (*model.Ticket, error)
+	FindAll(ctx context.Context, filter request.TicketFilter, offset int, limit int) ([]model.Ticket, int64, error)
+	UpdateStatusWithEvent(ctx context.Context, ticket *model.Ticket, event *model.TicketEvent) error
 	GetExistingTicketIDs(ctx context.Context, ticketIDs []uint) (map[uint]bool, error)
-	GetTicketStatusAndCreatedAt(ctx context.Context, ticketIDs []uint) (map[uint]domain.TicketStatus, map[uint]time.Time, map[uint]string, error)
+	GetTicketStatusAndCreatedAt(ctx context.Context, ticketIDs []uint) (map[uint]model.TicketStatus, map[uint]time.Time, map[uint]string, error)
 	Transaction(ctx context.Context, fn func(ctx context.Context) error) error
-	UpdateStatusesBatch(ctx context.Context, tickets []domain.Ticket) error
+	UpdateStatusesBatch(ctx context.Context, tickets []model.Ticket) error
 }
 
 type ticketRepositoryImpl struct {
@@ -50,7 +50,7 @@ func (r *ticketRepositoryImpl) Transaction(ctx context.Context, fn func(ctx cont
 	})
 }
 
-func (r *ticketRepositoryImpl) UpdateStatusesBatch(ctx context.Context, tickets []domain.Ticket) error {
+func (r *ticketRepositoryImpl) UpdateStatusesBatch(ctx context.Context, tickets []model.Ticket) error {
 	if len(tickets) == 0 {
 		return nil
 	}
@@ -60,12 +60,12 @@ func (r *ticketRepositoryImpl) UpdateStatusesBatch(ctx context.Context, tickets 
 	}).CreateInBatches(tickets, 100).Error
 }
 
-func (r *ticketRepositoryImpl) Create(ctx context.Context, ticket *domain.Ticket) error {
+func (r *ticketRepositoryImpl) Create(ctx context.Context, ticket *model.Ticket) error {
 	return r.getDB(ctx).Create(ticket).Error
 }
 
-func (r *ticketRepositoryImpl) FindById(ctx context.Context, id uint) (*domain.Ticket, error) {
-	var ticket domain.Ticket
+func (r *ticketRepositoryImpl) FindById(ctx context.Context, id uint) (*model.Ticket, error) {
+	var ticket model.Ticket
 
 	err := r.getDB(ctx).Preload("Events").First(&ticket, id).Error
 	if err != nil {
@@ -78,11 +78,11 @@ func (r *ticketRepositoryImpl) FindById(ctx context.Context, id uint) (*domain.T
 	return &ticket, nil
 }
 
-func (r *ticketRepositoryImpl) FindAll(ctx context.Context, filter request.TicketFilter, offset, limit int) ([]domain.Ticket, int64, error) {
-	var tickets []domain.Ticket
+func (r *ticketRepositoryImpl) FindAll(ctx context.Context, filter request.TicketFilter, offset, limit int) ([]model.Ticket, int64, error) {
+	var tickets []model.Ticket
 	var total int64
 
-	query := r.getDB(ctx).Model(&domain.Ticket{})
+	query := r.getDB(ctx).Model(&model.Ticket{})
 
 	if filter.Status != "" {
 		query = query.Where("status = ?", filter.Status)
@@ -99,7 +99,7 @@ func (r *ticketRepositoryImpl) FindAll(ctx context.Context, filter request.Ticke
 		return nil, 0, err
 	}
 	if total == 0 {
-		return []domain.Ticket{}, 0, nil
+		return []model.Ticket{}, 0, nil
 	}
 	err := query.Preload("Events").
 		Order("created_at DESC").
@@ -114,7 +114,7 @@ func (r *ticketRepositoryImpl) FindAll(ctx context.Context, filter request.Ticke
 	return tickets, total, nil
 }
 
-func (r *ticketRepositoryImpl) UpdateStatusWithEvent(ctx context.Context, ticket *domain.Ticket, event *domain.TicketEvent) error {
+func (r *ticketRepositoryImpl) UpdateStatusWithEvent(ctx context.Context, ticket *model.Ticket, event *model.TicketEvent) error {
 	return r.getDB(ctx).Transaction(func(tx *gorm.DB) error {
 		// 1. Update ticket
 		if err := tx.Save(ticket).Error; err != nil {
@@ -132,7 +132,7 @@ func (r *ticketRepositoryImpl) UpdateStatusWithEvent(ctx context.Context, ticket
 
 func (r *ticketRepositoryImpl) GetExistingTicketIDs(ctx context.Context, ticketIDs []uint) (map[uint]bool, error) {
 	var existingIDs []uint
-	err := r.getDB(ctx).Model(&domain.Ticket{}).Where("id IN ?", ticketIDs).Pluck("id", &existingIDs).Error
+	err := r.getDB(ctx).Model(&model.Ticket{}).Where("id IN ?", ticketIDs).Pluck("id", &existingIDs).Error
 	if err != nil {
 		return nil, err
 	}
@@ -145,20 +145,20 @@ func (r *ticketRepositoryImpl) GetExistingTicketIDs(ctx context.Context, ticketI
 	return result, nil
 }
 
-func (r *ticketRepositoryImpl) GetTicketStatusAndCreatedAt(ctx context.Context, ticketIDs []uint) (map[uint]domain.TicketStatus, map[uint]time.Time, map[uint]string, error) {
+func (r *ticketRepositoryImpl) GetTicketStatusAndCreatedAt(ctx context.Context, ticketIDs []uint) (map[uint]model.TicketStatus, map[uint]time.Time, map[uint]string, error) {
 	if len(ticketIDs) == 0 {
-		return make(map[uint]domain.TicketStatus), make(map[uint]time.Time), make(map[uint]string), nil
+		return make(map[uint]model.TicketStatus), make(map[uint]time.Time), make(map[uint]string), nil
 	}
 
 	type ticketMetadataRow struct {
 		ID         uint                `gorm:"column:id"`
-		Status     domain.TicketStatus `gorm:"column:status"`
+		Status     model.TicketStatus `gorm:"column:status"`
 		CreatedAt  time.Time           `gorm:"column:created_at"`
 		AssigneeID string              `gorm:"column:assignee_id"`
 	}
 
 	var rows []ticketMetadataRow
-	err := r.getDB(ctx).Model(&domain.Ticket{}).
+	err := r.getDB(ctx).Model(&model.Ticket{}).
 		Select("id, status, created_at, assignee_id").
 		Where("id IN ?", ticketIDs).
 		Find(&rows).Error
@@ -166,7 +166,7 @@ func (r *ticketRepositoryImpl) GetTicketStatusAndCreatedAt(ctx context.Context, 
 		return nil, nil, nil, err
 	}
 
-	statuses := make(map[uint]domain.TicketStatus, len(rows))
+	statuses := make(map[uint]model.TicketStatus, len(rows))
 	createdAt := make(map[uint]time.Time, len(rows))
 	assignees := make(map[uint]string, len(rows))
 	for _, row := range rows {

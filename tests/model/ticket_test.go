@@ -5,20 +5,20 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 )
 
 func TestPriority_IsValid(t *testing.T) {
 	tests := []struct {
 		name     string
-		priority domain.Priority
+		priority model.Priority
 		expected bool
 	}{
-		{"Low", domain.PriorityLow, true},
-		{"Medium", domain.PriorityMedium, true},
-		{"High", domain.PriorityHigh, true},
-		{"Invalid", domain.Priority("critical"), false},
-		{"Empty", domain.Priority(""), false},
+		{"Low", model.PriorityLow, true},
+		{"Medium", model.PriorityMedium, true},
+		{"High", model.PriorityHigh, true},
+		{"Invalid", model.Priority("critical"), false},
+		{"Empty", model.Priority(""), false},
 	}
 
 	for _, tt := range tests {
@@ -31,16 +31,16 @@ func TestPriority_IsValid(t *testing.T) {
 func TestTicketStatus_IsValid(t *testing.T) {
 	tests := []struct {
 		name     string
-		status   domain.TicketStatus
+		status   model.TicketStatus
 		expected bool
 	}{
-		{"New", domain.StatusNew, true},
-		{"Assigned", domain.StatusAssigned, true},
-		{"InProgress", domain.StatusInProgress, true},
-		{"Resolved", domain.StatusResolved, true},
-		{"Closed", domain.StatusClosed, true},
-		{"Cancelled", domain.StatusCancelled, true},
-		{"Invalid", domain.TicketStatus("unknown"), false},
+		{"New", model.StatusNew, true},
+		{"Assigned", model.StatusAssigned, true},
+		{"InProgress", model.StatusInProgress, true},
+		{"Resolved", model.StatusResolved, true},
+		{"Closed", model.StatusClosed, true},
+		{"Cancelled", model.StatusCancelled, true},
+		{"Invalid", model.TicketStatus("unknown"), false},
 	}
 
 	for _, tt := range tests {
@@ -53,18 +53,18 @@ func TestTicketStatus_IsValid(t *testing.T) {
 func TestTicketStatus_CanTransitionTo(t *testing.T) {
 	tests := []struct {
 		name     string
-		from     domain.TicketStatus
-		to       domain.TicketStatus
+		from     model.TicketStatus
+		to       model.TicketStatus
 		expected bool
 	}{
-		{"New to Assigned", domain.StatusNew, domain.StatusAssigned, true},
-		{"New to Cancelled", domain.StatusNew, domain.StatusCancelled, true},
-		{"New to InProgress (Invalid)", domain.StatusNew, domain.StatusInProgress, false},
-		{"Assigned to InProgress", domain.StatusAssigned, domain.StatusInProgress, true},
-		{"InProgress to Resolved", domain.StatusInProgress, domain.StatusResolved, true},
-		{"Resolved to Closed", domain.StatusResolved, domain.StatusClosed, true},
-		{"Closed to New (Invalid)", domain.StatusClosed, domain.StatusNew, false},
-		{"Unknown to New", domain.TicketStatus("unknown"), domain.StatusNew, false},
+		{"New to Assigned", model.StatusNew, model.StatusAssigned, true},
+		{"New to Cancelled", model.StatusNew, model.StatusCancelled, true},
+		{"New to InProgress (Invalid)", model.StatusNew, model.StatusInProgress, false},
+		{"Assigned to InProgress", model.StatusAssigned, model.StatusInProgress, true},
+		{"InProgress to Resolved", model.StatusInProgress, model.StatusResolved, true},
+		{"Resolved to Closed", model.StatusResolved, model.StatusClosed, true},
+		{"Closed to New (Invalid)", model.StatusClosed, model.StatusNew, false},
+		{"Unknown to New", model.TicketStatus("unknown"), model.StatusNew, false},
 	}
 
 	for _, tt := range tests {
@@ -79,13 +79,13 @@ func TestTicket_Validate(t *testing.T) {
 	later := now.Add(2 * time.Hour)
 	earlier := now.Add(-2 * time.Hour)
 
-	validTicket := func() *domain.Ticket {
-		return &domain.Ticket{
+	validTicket := func() *model.Ticket {
+		return &model.Ticket{
 			Title:       "Valid Title",
 			Description: "Valid Description",
 			RequestorID: "req-1",
-			Priority:    domain.PriorityHigh,
-			Status:      domain.StatusNew,
+			Priority:    model.PriorityHigh,
+			Status:      model.StatusNew,
 			CreatedAt:   now,
 			SLADueAt:    &later,
 		}
@@ -93,30 +93,30 @@ func TestTicket_Validate(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		modify      func(*domain.Ticket)
+		modify      func(*model.Ticket)
 		expectError bool
 		errorMsg    string
 	}{
-		{"Valid", func(t *domain.Ticket) {}, false, ""},
-		{"Empty Title", func(t *domain.Ticket) { t.Title = "   " }, true, "title is required"},
-		{"Empty Description", func(t *domain.Ticket) { t.Description = "" }, true, "description is required"},
-		{"Empty Requestor", func(t *domain.Ticket) { t.RequestorID = "" }, true, "requestor_id is required"},
-		{"Invalid Priority", func(t *domain.Ticket) { t.Priority = "invalid" }, true, "unknown priority 'invalid'"},
-		{"Invalid Status", func(t *domain.Ticket) { t.Status = "invalid" }, true, "unknown status 'invalid'"},
-		{"Zero CreatedAt", func(t *domain.Ticket) { t.CreatedAt = time.Time{} }, true, "created_at is required"},
-		{"Nil SLADueAt", func(t *domain.Ticket) { t.SLADueAt = nil }, true, "sla_due_at is required"},
-		{"Zero SLADueAt", func(t *domain.Ticket) { t.SLADueAt = &time.Time{} }, true, "sla_due_at is required"},
-		{"SLADueAt before CreatedAt", func(t *domain.Ticket) { t.SLADueAt = &earlier }, true, "cannot be before the ticket creation time"},
-		{"Resolved but missing ResolvedAt", func(t *domain.Ticket) {
-			t.Status = domain.StatusResolved
+		{"Valid", func(t *model.Ticket) {}, false, ""},
+		{"Empty Title", func(t *model.Ticket) { t.Title = "   " }, true, "title is required"},
+		{"Empty Description", func(t *model.Ticket) { t.Description = "" }, true, "description is required"},
+		{"Empty Requestor", func(t *model.Ticket) { t.RequestorID = "" }, true, "requestor_id is required"},
+		{"Invalid Priority", func(t *model.Ticket) { t.Priority = "invalid" }, true, "unknown priority 'invalid'"},
+		{"Invalid Status", func(t *model.Ticket) { t.Status = "invalid" }, true, "unknown status 'invalid'"},
+		{"Zero CreatedAt", func(t *model.Ticket) { t.CreatedAt = time.Time{} }, true, "created_at is required"},
+		{"Nil SLADueAt", func(t *model.Ticket) { t.SLADueAt = nil }, true, "sla_due_at is required"},
+		{"Zero SLADueAt", func(t *model.Ticket) { t.SLADueAt = &time.Time{} }, true, "sla_due_at is required"},
+		{"SLADueAt before CreatedAt", func(t *model.Ticket) { t.SLADueAt = &earlier }, true, "cannot be before the ticket creation time"},
+		{"Resolved but missing ResolvedAt", func(t *model.Ticket) {
+			t.Status = model.StatusResolved
 			t.ResolvedAt = nil
 		}, true, "resolved_at is required"},
-		{"Resolved with ResolvedAt before CreatedAt", func(t *domain.Ticket) {
-			t.Status = domain.StatusResolved
+		{"Resolved with ResolvedAt before CreatedAt", func(t *model.Ticket) {
+			t.Status = model.StatusResolved
 			t.ResolvedAt = &earlier
 		}, true, "resolved_at cannot be before created_at"},
-		{"Cancelled but missing CancelledAt", func(t *domain.Ticket) {
-			t.Status = domain.StatusCancelled
+		{"Cancelled but missing CancelledAt", func(t *model.Ticket) {
+			t.Status = model.StatusCancelled
 			t.CancelledAt = nil
 		}, true, "cancelled_at is required"},
 	}
@@ -143,17 +143,17 @@ func TestTicket_ValidateStatusTransition(t *testing.T) {
 	now := time.Now()
 	timestamp := now.Add(time.Hour)
 
-	validTicket := func() *domain.Ticket {
-		return &domain.Ticket{
-			Status:    domain.StatusNew,
+	validTicket := func() *model.Ticket {
+		return &model.Ticket{
+			Status:    model.StatusNew,
 			CreatedAt: now,
 		}
 	}
 
 	tests := []struct {
 		name          string
-		modify        func(*domain.Ticket)
-		newStatus     domain.TicketStatus
+		modify        func(*model.Ticket)
+		newStatus     model.TicketStatus
 		reqAssigneeID string
 		timestamp     time.Time
 		expectError   bool
@@ -161,16 +161,16 @@ func TestTicket_ValidateStatusTransition(t *testing.T) {
 	}{
 		{
 			name:          "Valid: New to Assigned",
-			modify:        func(t *domain.Ticket) {},
-			newStatus:     domain.StatusAssigned,
+			modify:        func(t *model.Ticket) {},
+			newStatus:     model.StatusAssigned,
 			reqAssigneeID: "assignee-1",
 			timestamp:     timestamp,
 			expectError:   false,
 		},
 		{
 			name:          "Invalid: New to Assigned without AssigneeID",
-			modify:        func(t *domain.Ticket) {},
-			newStatus:     domain.StatusAssigned,
+			modify:        func(t *model.Ticket) {},
+			newStatus:     model.StatusAssigned,
 			reqAssigneeID: "",
 			timestamp:     timestamp,
 			expectError:   true,
@@ -178,11 +178,11 @@ func TestTicket_ValidateStatusTransition(t *testing.T) {
 		},
 		{
 			name: "Invalid: Change assignee during transition",
-			modify: func(t *domain.Ticket) {
-				t.Status = domain.StatusAssigned
+			modify: func(t *model.Ticket) {
+				t.Status = model.StatusAssigned
 				t.AssigneeID = "assignee-1"
 			},
-			newStatus:     domain.StatusInProgress,
+			newStatus:     model.StatusInProgress,
 			reqAssigneeID: "assignee-2",
 			timestamp:     timestamp,
 			expectError:   true,
@@ -190,8 +190,8 @@ func TestTicket_ValidateStatusTransition(t *testing.T) {
 		},
 		{
 			name:          "Invalid: Same status",
-			modify:        func(t *domain.Ticket) {},
-			newStatus:     domain.StatusNew,
+			modify:        func(t *model.Ticket) {},
+			newStatus:     model.StatusNew,
 			reqAssigneeID: "",
 			timestamp:     timestamp,
 			expectError:   true,
@@ -199,8 +199,8 @@ func TestTicket_ValidateStatusTransition(t *testing.T) {
 		},
 		{
 			name:          "Invalid: Unknown status",
-			modify:        func(t *domain.Ticket) {},
-			newStatus:     domain.TicketStatus("unknown"),
+			modify:        func(t *model.Ticket) {},
+			newStatus:     model.TicketStatus("unknown"),
 			reqAssigneeID: "",
 			timestamp:     timestamp,
 			expectError:   true,
@@ -208,8 +208,8 @@ func TestTicket_ValidateStatusTransition(t *testing.T) {
 		},
 		{
 			name:          "Invalid: Illegal transition",
-			modify:        func(t *domain.Ticket) {},
-			newStatus:     domain.StatusClosed,
+			modify:        func(t *model.Ticket) {},
+			newStatus:     model.StatusClosed,
 			reqAssigneeID: "",
 			timestamp:     timestamp,
 			expectError:   true,
@@ -217,21 +217,21 @@ func TestTicket_ValidateStatusTransition(t *testing.T) {
 		},
 		{
 			name: "Valid: To Resolved",
-			modify: func(t *domain.Ticket) {
-				t.Status = domain.StatusInProgress
+			modify: func(t *model.Ticket) {
+				t.Status = model.StatusInProgress
 				t.AssigneeID = "assignee-1"
 			},
-			newStatus:     domain.StatusResolved,
+			newStatus:     model.StatusResolved,
 			reqAssigneeID: "assignee-1",
 			timestamp:     timestamp,
 			expectError:   false,
 		},
 		{
 			name: "Valid: To Cancelled",
-			modify: func(t *domain.Ticket) {
-				t.Status = domain.StatusNew
+			modify: func(t *model.Ticket) {
+				t.Status = model.StatusNew
 			},
-			newStatus:     domain.StatusCancelled,
+			newStatus:     model.StatusCancelled,
 			reqAssigneeID: "",
 			timestamp:     timestamp,
 			expectError:   false,

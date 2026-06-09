@@ -11,7 +11,7 @@ import (
 
 	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/errmsgs"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 )
 
 // csvRequiredColumns are the mandatory headers expected in every CSV import.
@@ -19,7 +19,7 @@ var csvRequiredColumns = []string{"ticket_id", "from_status", "to_status", "assi
 
 // parseEvents dispatches to the correct parser based on format ("json" or "csv")
 // and returns the parsed events ready to pass to the service.
-func parseEvents(data []byte, format string) ([]domain.TicketEvent, error) {
+func parseEvents(data []byte, format string) ([]model.TicketEvent, error) {
 	if len(data) == 0 {
 		return nil, errmsgs.ErrEmptyBody
 	}
@@ -34,8 +34,8 @@ func parseEvents(data []byte, format string) ([]domain.TicketEvent, error) {
 }
 
 // parseJSON deserializes a JSON array of TicketEvent.
-func parseJSON(data []byte) ([]domain.TicketEvent, error) {
-	var events []domain.TicketEvent
+func parseJSON(data []byte) ([]model.TicketEvent, error) {
+	var events []model.TicketEvent
 	if err := json.Unmarshal(data, &events); err != nil {
 		return nil, common.NewBadRequest(common.ErrCodeInvalidBody, "invalid JSON: "+err.Error())
 	}
@@ -44,7 +44,7 @@ func parseJSON(data []byte) ([]domain.TicketEvent, error) {
 
 // parseCSV deserializes a CSV file into a slice of TicketEvent.
 // Expected header (case-insensitive): ticket_id, from_status, to_status, assignee_id, created_at[, note]
-func parseCSV(data []byte) ([]domain.TicketEvent, error) {
+func parseCSV(data []byte) ([]model.TicketEvent, error) {
 	records, err := csv.NewReader(bytes.NewReader(data)).ReadAll()
 	if err != nil {
 		return nil, common.NewBadRequest(common.ErrCodeInvalidBody, "invalid CSV: "+err.Error())
@@ -58,7 +58,7 @@ func parseCSV(data []byte) ([]domain.TicketEvent, error) {
 		return nil, err
 	}
 
-	events := make([]domain.TicketEvent, 0, len(records)-1)
+	events := make([]model.TicketEvent, 0, len(records)-1)
 	for i, row := range records[1:] {
 		event, err := parseCSVRow(row, colIndex, i+2)
 		if err != nil {
@@ -87,22 +87,22 @@ func buildColIndex(header []string) (map[string]int, error) {
 
 // parseCSVRow converts a single CSV row into a TicketEvent.
 // rowNum is 1-indexed and used only for error messages.
-func parseCSVRow(row []string, colIndex map[string]int, rowNum int) (domain.TicketEvent, error) {
+func parseCSVRow(row []string, colIndex map[string]int, rowNum int) (model.TicketEvent, error) {
 	if len(row) < len(colIndex) {
-		return domain.TicketEvent{}, common.NewBadRequest(common.ErrCodeInvalidBody,
+		return model.TicketEvent{}, common.NewBadRequest(common.ErrCodeInvalidBody,
 			fmt.Sprintf("invalid CSV: row %d has fewer columns than header", rowNum))
 	}
 
 	ticketIDStr := strings.TrimSpace(row[colIndex["ticket_id"]])
 	ticketIDRaw, err := strconv.ParseUint(ticketIDStr, 10, 64)
 	if err != nil {
-		return domain.TicketEvent{}, common.NewBadRequest(common.ErrCodeInvalidInput,
+		return model.TicketEvent{}, common.NewBadRequest(common.ErrCodeInvalidInput,
 			fmt.Sprintf("invalid CSV: row %d — ticket_id '%s' is not a valid integer", rowNum, ticketIDStr))
 	}
 
 	createdAt, err := parseCSVTime(strings.TrimSpace(row[colIndex["created_at"]]))
 	if err != nil {
-		return domain.TicketEvent{}, common.NewBadRequest(common.ErrCodeInvalidInput,
+		return model.TicketEvent{}, common.NewBadRequest(common.ErrCodeInvalidInput,
 			fmt.Sprintf("invalid CSV: row %d — created_at '%s' must be RFC3339 or 'YYYY-MM-DD HH:MM:SS'",
 				rowNum, row[colIndex["created_at"]]))
 	}
@@ -114,10 +114,10 @@ func parseCSVRow(row []string, colIndex map[string]int, rowNum int) (domain.Tick
 		}
 	}
 
-	return domain.TicketEvent{
+	return model.TicketEvent{
 		TicketID:   uint(ticketIDRaw),
-		FromStatus: domain.TicketStatus(strings.TrimSpace(row[colIndex["from_status"]])),
-		ToStatus:   domain.TicketStatus(strings.TrimSpace(row[colIndex["to_status"]])),
+		FromStatus: model.TicketStatus(strings.TrimSpace(row[colIndex["from_status"]])),
+		ToStatus:   model.TicketStatus(strings.TrimSpace(row[colIndex["to_status"]])),
 		AssigneeID: strings.TrimSpace(row[colIndex["assignee_id"]]),
 		CreatedAt:  createdAt,
 		Note:       note,

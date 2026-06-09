@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"support-ticket.com/internal/auth"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 	"support-ticket.com/internal/service"
 	testmock "support-ticket.com/tests/mock"
 )
@@ -37,33 +37,33 @@ func TestTicketEventService_Import(t *testing.T) {
 	
 	now := time.Now()
 
-	validEvent := domain.TicketEvent{
+	validEvent := model.TicketEvent{
 		TicketID:   1,
-		FromStatus: domain.StatusNew,
-		ToStatus:   domain.StatusAssigned,
+		FromStatus: model.StatusNew,
+		ToStatus:   model.StatusAssigned,
 		AssigneeID: "agent1",
 		CreatedAt:  now,
 	}
 
-	invalidTransitionEvent := domain.TicketEvent{
+	invalidTransitionEvent := model.TicketEvent{
 		TicketID:   2,
-		FromStatus: domain.StatusNew,
-		ToStatus:   domain.StatusNew, // Invalid transition
+		FromStatus: model.StatusNew,
+		ToStatus:   model.StatusNew, // Invalid transition
 		AssigneeID: "agent1",
 		CreatedAt:  now,
 	}
 
-	nonExistentTicketEvent := domain.TicketEvent{
+	nonExistentTicketEvent := model.TicketEvent{
 		TicketID:   999,
-		FromStatus: domain.StatusNew,
-		ToStatus:   domain.StatusAssigned,
+		FromStatus: model.StatusNew,
+		ToStatus:   model.StatusAssigned,
 		AssigneeID: "agent1",
 		CreatedAt:  now,
 	}
 
 	tests := []struct {
 		name                 string
-		inputEvents          []domain.TicketEvent
+		inputEvents          []model.TicketEvent
 		mockRepo             func(*testmock.MockTicketRepository)
 		mockEventRepo        func(*testmock.MockTicketEventRepository)
 		expectedError        string
@@ -73,18 +73,18 @@ func TestTicketEventService_Import(t *testing.T) {
 	}{
 		{
 			name:        "SuccessSimpleImport",
-			inputEvents: []domain.TicketEvent{validEvent},
+			inputEvents: []model.TicketEvent{validEvent},
 			mockRepo: func(m *testmock.MockTicketRepository) {
 				m.On("GetExistingTicketIDs", ctx, []uint{1}).Return(map[uint]bool{1: true}, nil)
 				m.On("GetTicketStatusAndCreatedAt", ctx, []uint{1}).Return(
-					map[uint]domain.TicketStatus{1: domain.StatusNew},
+					map[uint]model.TicketStatus{1: model.StatusNew},
 					map[uint]time.Time{1: now.Add(-1 * time.Hour)},
 					map[uint]string{1: ""},
 					nil,
 				)
 				m.On("Transaction", ctx, mock.Anything).Return(nil)
-				m.On("UpdateStatusesBatch", mock.Anything, mock.MatchedBy(func(tickets []domain.Ticket) bool {
-					return len(tickets) == 1 && tickets[0].AssigneeID == "agent1" && tickets[0].Status == domain.StatusAssigned
+				m.On("UpdateStatusesBatch", mock.Anything, mock.MatchedBy(func(tickets []model.Ticket) bool {
+					return len(tickets) == 1 && tickets[0].AssigneeID == "agent1" && tickets[0].Status == model.StatusAssigned
 				})).Return(nil)
 			},
 			mockEventRepo: func(m *testmock.MockTicketEventRepository) {
@@ -96,7 +96,7 @@ func TestTicketEventService_Import(t *testing.T) {
 		},
 		{
 			name:             "EmptyBatch",
-			inputEvents:      []domain.TicketEvent{},
+			inputEvents:      []model.TicketEvent{},
 			mockRepo:         func(m *testmock.MockTicketRepository) {},
 			mockEventRepo:    func(m *testmock.MockTicketEventRepository) {},
 			expectedError:    "batch is empty",
@@ -105,11 +105,11 @@ func TestTicketEventService_Import(t *testing.T) {
 		},
 		{
 			name:        "RejectedNonExistentTicket",
-			inputEvents: []domain.TicketEvent{nonExistentTicketEvent},
+			inputEvents: []model.TicketEvent{nonExistentTicketEvent},
 			mockRepo: func(m *testmock.MockTicketRepository) {
 				m.On("GetExistingTicketIDs", ctx, []uint{999}).Return(map[uint]bool{}, nil)
 				m.On("GetTicketStatusAndCreatedAt", ctx, []uint{999}).Return(
-					map[uint]domain.TicketStatus{},
+					map[uint]model.TicketStatus{},
 					map[uint]time.Time{},
 					map[uint]string{},
 					nil,
@@ -125,11 +125,11 @@ func TestTicketEventService_Import(t *testing.T) {
 		},
 		{
 			name:        "ValidationError",
-			inputEvents: []domain.TicketEvent{invalidTransitionEvent},
+			inputEvents: []model.TicketEvent{invalidTransitionEvent},
 			mockRepo: func(m *testmock.MockTicketRepository) {
 				m.On("GetExistingTicketIDs", ctx, []uint(nil)).Return(map[uint]bool{}, nil)
 				m.On("GetTicketStatusAndCreatedAt", ctx, []uint(nil)).Return(
-					map[uint]domain.TicketStatus{},
+					map[uint]model.TicketStatus{},
 					map[uint]time.Time{},
 					map[uint]string{},
 					nil,

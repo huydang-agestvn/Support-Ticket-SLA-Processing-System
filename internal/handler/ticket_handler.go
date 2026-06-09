@@ -11,7 +11,7 @@ import (
 	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/request"
 	"support-ticket.com/internal/errmsgs"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 	"support-ticket.com/internal/service"
 )
 
@@ -72,7 +72,7 @@ func (h *TicketHandler) HandleListTickets(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, common.APIResponse[*common.PaginatedResult[domain.Ticket]]{
+	c.JSON(http.StatusOK, common.APIResponse[*common.PaginatedResult[model.Ticket]]{
 		Success: true,
 		Message: "Get tickets successfully",
 		Data:    tickets,

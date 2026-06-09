@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 )
 
 func TestTicketReport_Validate(t *testing.T) {
 	now := time.Now()
 
-	validReport := func() *domain.TicketReport {
-		return &domain.TicketReport{
+	validReport := func() *model.TicketReport {
+		return &model.TicketReport{
 			ReportDate:          now,
 			NewCount:            10,
 			ResolvedCount:       5,
@@ -28,21 +28,21 @@ func TestTicketReport_Validate(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		modify      func(*domain.TicketReport)
+		modify      func(*model.TicketReport)
 		expectError bool
 		errorMsg    string
 	}{
-		{"Valid", func(r *domain.TicketReport) {}, false, ""},
-		{"Zero ReportDate", func(r *domain.TicketReport) { r.ReportDate = time.Time{} }, true, "Report date is required"},
-		{"Negative NewCount", func(r *domain.TicketReport) { r.NewCount = -1 }, true, "Status counts cannot be negative"},
-		{"Negative ResolvedCount", func(r *domain.TicketReport) { r.ResolvedCount = -1 }, true, "Status counts cannot be negative"},
-		{"Negative CancelledCount", func(r *domain.TicketReport) { r.CancelledCount = -1 }, true, "Status counts cannot be negative"},
-		{"Negative OverdueCount", func(r *domain.TicketReport) { r.OverdueCount = -1 }, true, "Overdue count cannot be negative"},
-		{"Negative SlaBreacheCount", func(r *domain.TicketReport) { r.SlaBreacheCount = -1 }, true, "SLA breach count cannot be negative"},
-		{"Negative AvgResolutionTime", func(r *domain.TicketReport) { r.AvgResolutionTime = -1.5 }, true, "Average resolution time cannot be negative"},
-		{"Negative HighPriorityCount", func(r *domain.TicketReport) { r.HighPriorityCount = -1 }, true, "Priority counts cannot be negative"},
-		{"Negative MediumPriorityCount", func(r *domain.TicketReport) { r.MediumPriorityCount = -1 }, true, "Priority counts cannot be negative"},
-		{"Negative LowPriorityCount", func(r *domain.TicketReport) { r.LowPriorityCount = -1 }, true, "Priority counts cannot be negative"},
+		{"Valid", func(r *model.TicketReport) {}, false, ""},
+		{"Zero ReportDate", func(r *model.TicketReport) { r.ReportDate = time.Time{} }, true, "Report date is required"},
+		{"Negative NewCount", func(r *model.TicketReport) { r.NewCount = -1 }, true, "Status counts cannot be negative"},
+		{"Negative ResolvedCount", func(r *model.TicketReport) { r.ResolvedCount = -1 }, true, "Status counts cannot be negative"},
+		{"Negative CancelledCount", func(r *model.TicketReport) { r.CancelledCount = -1 }, true, "Status counts cannot be negative"},
+		{"Negative OverdueCount", func(r *model.TicketReport) { r.OverdueCount = -1 }, true, "Overdue count cannot be negative"},
+		{"Negative SlaBreacheCount", func(r *model.TicketReport) { r.SlaBreacheCount = -1 }, true, "SLA breach count cannot be negative"},
+		{"Negative AvgResolutionTime", func(r *model.TicketReport) { r.AvgResolutionTime = -1.5 }, true, "Average resolution time cannot be negative"},
+		{"Negative HighPriorityCount", func(r *model.TicketReport) { r.HighPriorityCount = -1 }, true, "Priority counts cannot be negative"},
+		{"Negative MediumPriorityCount", func(r *model.TicketReport) { r.MediumPriorityCount = -1 }, true, "Priority counts cannot be negative"},
+		{"Negative LowPriorityCount", func(r *model.TicketReport) { r.LowPriorityCount = -1 }, true, "Priority counts cannot be negative"},
 	}
 
 	for _, tt := range tests {

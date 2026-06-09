@@ -78,10 +78,18 @@ func (a *App) initDB() error {
 }
 
 func (a *App) setupDependencies() {
-	var aiAdapter ai.AIAdapter = ai.NewFakeAdapter(a.cfg.AIPromptVersion)
+	var aiAdapter ai.TriageAdapter
 	if a.cfg.AIEnabled {
-		// aiAdapter = ai.NewOllamaAdapter(a.cfg)
-		slog.WarnContext(context.Background(), "AI_ENABLED=true but real adapter is not yet implemented, falling back to FakeAdapter")
+		aiAdapter = ai.NewGroqAdapter(
+			a.cfg.AIBaseURL,
+			a.cfg.AIAPIKey,
+			a.cfg.AIModel,
+			a.cfg.AITimeoutSecs,
+			a.cfg.AIMaxRetries,
+			a.cfg.AIPromptVersion,
+		)
+	} else {
+		aiAdapter = ai.NewFakeAdapter(a.cfg.AIPromptVersion)
 	}
 
 	_ = aiAdapter

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"support-ticket.com/internal/config"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 	"support-ticket.com/internal/repository"
 	"support-ticket.com/internal/service"
 )
@@ -33,7 +33,7 @@ func main() {
 	}
 
 	// AutoMigrate report table
-	if err := db.AutoMigrate(&domain.TicketReport{}); err != nil {
+	if err := db.AutoMigrate(&model.TicketReport{}); err != nil {
 		slog.ErrorContext(context.Background(), "failed to migrate", slog.Any("error", err))
 	}
 
