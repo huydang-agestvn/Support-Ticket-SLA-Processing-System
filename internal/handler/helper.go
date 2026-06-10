@@ -12,20 +12,21 @@ import (
 func HandleError(c *gin.Context, err error) {
 	var apiErr *common.Error
 	if errors.As(err, &apiErr) {
-		if apiErr.Status >= 500 {
+		status := common.HTTPStatusFromCode(apiErr.Code)
+		if status >= 500 {
 			slog.ErrorContext(c.Request.Context(), "api error",
-				slog.Int("status", apiErr.Status),
+				slog.Int("status", status),
 				slog.String("code", apiErr.Code),
 				slog.String("message", apiErr.Message),
 			)
 		} else {
 			slog.WarnContext(c.Request.Context(), "api error",
-				slog.Int("status", apiErr.Status),
+				slog.Int("status", status),
 				slog.String("code", apiErr.Code),
 				slog.String("message", apiErr.Message),
 			)
 		}
-		c.JSON(apiErr.Status, common.ErrorResponse(apiErr))
+		c.JSON(status, common.ErrorResponse(apiErr))
 		return
 	}
 
