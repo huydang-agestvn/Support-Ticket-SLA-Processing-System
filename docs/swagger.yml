@@ -590,7 +590,6 @@ components:
                 success: false
                 error:
                   code: INVALID_INPUT
-                  status: 400
                   message: The target path identifier variable violates mathematical layout logic rules.
             invalidTransitionState:
               summary: Invalid State Flow Boundary
@@ -598,7 +597,6 @@ components:
                 success: false
                 error:
                   code: INVALID_FLOW_TICKET
-                  status: 400
                   message: The requested processing target references a ticket residing in a terminal status boundary.
 
     AITriageTicketNotFound:
@@ -611,7 +609,6 @@ components:
             success: false
             error:
               code: TICKET_NOT_FOUND
-              status: 404
               message: The matching ticket index row was not uncovered inside system data partitions.
 
     AIBatchTriageBadRequest:
@@ -627,7 +624,6 @@ components:
                 success: false
                 error:
                   code: INVALID_REQUEST_BODY
-                  status: 400
                   message: Parsing aborted due to corrupt payload or syntax structure compilation mismatch.
             emptyBatchArray:
               summary: Empty Ingestion Array
@@ -635,7 +631,6 @@ components:
                 success: false
                 error:
                   code: EMPTY_BATCH
-                  status: 400
                   message: Execution denied. The batch ingestion ticket identification array contains no items.
             sizeConstraintsExceeded:
               summary: Batch Payload Upper Constraints Exceeded
@@ -643,7 +638,6 @@ components:
                 success: false
                 error:
                   code: BATCH_TOO_LARGE
-                  status: 400
                   message: The ingestion tracking sequence limits are exceeded. Reduce the slice payload array footprint.
 
     AIEvaluationBadRequest:
@@ -659,7 +653,6 @@ components:
                 success: false
                 error:
                   code: INVALID_REQUEST_BODY
-                  status: 400
                   message: Unable to bind model body entity values due to structural formatting corruption.
             missingPromptMapping:
               summary: Validation Constraints Failure
@@ -667,7 +660,6 @@ components:
                 success: false
                 error:
                   code: VALIDATION_ERROR
-                  status: 400
                   message: The tracking field 'prompt_version' is structural and must be explicitly declared.
             emptyCasesMapping:
               summary: Missing Identification Target Array
@@ -675,7 +667,6 @@ components:
                 success: false
                 error:
                   code: INVALID_INPUT
-                  status: 400
                   message: Provided evaluation target array identifier sequences must contain active entries.
 
     BadRequest:
@@ -688,7 +679,6 @@ components:
             success: false
             error:
               code: INVALID_REQUEST_BODY
-              status: 400
               message: invalid request body
 
     InvalidQueryParameters:
@@ -701,7 +691,6 @@ components:
             success: false
             error:
               code: INVALID_QUERY_PARAMETERS
-              status: 400
               message: invalid query parameters
 
     InvalidTicketId:
@@ -714,7 +703,6 @@ components:
             success: false
             error:
               code: INVALID_INPUT
-              status: 400
               message: invalid ticket id
 
     InvalidStatusTransition:
@@ -727,7 +715,6 @@ components:
             success: false
             error:
               code: INVALID_STATUS_TRANSITION
-              status: 400
               message: invalid status transition from new to in_progress
 
     InvalidImportInput:
@@ -743,7 +730,6 @@ components:
                 success: false
                 error:
                   code: EMPTY_REQUEST_BODY
-                  status: 400
                   message: request body is empty
             unsupportedFileFormat:
               summary: Unsupported file format
@@ -751,7 +737,6 @@ components:
                 success: false
                 error:
                   code: UNSUPPORTED_FILE_FORMAT
-                  status: 400
                   message: unsupported file format
             batchTooLarge:
               summary: Batch size exceeds limit
@@ -759,7 +744,6 @@ components:
                 success: false
                 error:
                   code: BATCH_TOO_LARGE
-                  status: 400
                   message: batch size exceeds maximum limit
 
     InvalidDateFormat:
@@ -772,7 +756,6 @@ components:
             success: false
             error:
               code: INVALID_INPUT
-              status: 400
               message: invalid date format, expected YYYY-MM-DD
 
     InvalidCredentials:
@@ -785,7 +768,6 @@ components:
             success: false
             error:
               code: UNAUTHORIZED
-              status: 401
               message: invalid username or password
 
     Unauthorized:
@@ -798,7 +780,6 @@ components:
             success: false
             error:
               code: UNAUTHORIZED
-              status: 401
               message: invalid authorization header format
 
     Forbidden:
@@ -811,7 +792,6 @@ components:
             success: false
             error:
               code: FORBIDDEN
-              status: 403
               message: "forbidden: insufficient role"
 
     TicketNotFound:
@@ -824,7 +804,6 @@ components:
             success: false
             error:
               code: TICKET_NOT_FOUND
-              status: 404
               message: ticket not found
 
     InternalServerError:
@@ -837,7 +816,6 @@ components:
             success: false
             error:
               code: INTERNAL_SERVER_ERROR
-              status: 500
               message: internal server error
 
     AuthProviderUnavailable:
@@ -850,7 +828,6 @@ components:
             success: false
             error:
               code: AUTH_PROVIDER_UNAVAILABLE
-              status: 503
               message: authentication provider unavailable
 
   schemas:
@@ -1541,9 +1518,6 @@ components:
         code:
           type: string
           example: INVALID_INPUT
-        status:
-          type: integer
-          example: 400
         message:
           type: string
           example: invalid input
