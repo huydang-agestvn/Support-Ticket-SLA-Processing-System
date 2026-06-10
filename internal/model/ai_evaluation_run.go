@@ -11,6 +11,7 @@ type AIEvaluationRun struct {
 	FailedCases  int     `json:"failed_cases" gorm:"column:failed_cases;not null;default:0"`
 	AccuracyRate float64 `json:"accuracy_rate" gorm:"column:accuracy_rate;type:numeric(5,4)"`
 	AvgLatencyMs int64   `json:"avg_latency_ms" gorm:"column:avg_latency_ms"`
+	FallbackUsed bool    `json:"fallback_used" gorm:"column:fallback_used;default:false"`
 
 	AuditModel
 
