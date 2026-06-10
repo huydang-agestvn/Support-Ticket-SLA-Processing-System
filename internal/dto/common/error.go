@@ -2,7 +2,6 @@ package common
 
 import "net/http"
 
-
 const (
 	ErrCodeBadRequest            = "BAD_REQUEST"
 	ErrCodeValidation            = "VALIDATION_ERROR"
@@ -23,10 +22,8 @@ const (
 	ErrCodeInternal              = "INTERNAL_SERVER_ERROR"
 )
 
-
 type Error struct {
 	Code    string        `json:"code"`
-	Status  int           `json:"status"`
 	Message string        `json:"message"`
 	Details []ErrorDetail `json:"details,omitempty"`
 }
@@ -34,16 +31,15 @@ type Error struct {
 func (e *Error) Error() string {
 	return e.Message
 }
+
 type ErrorDetail struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`
 }
 
-
 func NewBadRequest(code, message string, details ...ErrorDetail) *Error {
 	return &Error{
 		Code:    code,
-		Status:  http.StatusBadRequest,
 		Message: message,
 		Details: details,
 	}
@@ -52,7 +48,6 @@ func NewBadRequest(code, message string, details ...ErrorDetail) *Error {
 func NewValidation(message string, details []ErrorDetail) *Error {
 	return &Error{
 		Code:    ErrCodeValidation,
-		Status:  http.StatusBadRequest,
 		Message: message,
 		Details: details,
 	}
@@ -61,7 +56,6 @@ func NewValidation(message string, details []ErrorDetail) *Error {
 func NewNotFound(code, message string) *Error {
 	return &Error{
 		Code:    code,
-		Status:  http.StatusNotFound,
 		Message: message,
 	}
 }
@@ -69,7 +63,6 @@ func NewNotFound(code, message string) *Error {
 func NewUnauthorized(code, message string) *Error {
 	return &Error{
 		Code:    code,
-		Status:  http.StatusUnauthorized,
 		Message: message,
 	}
 }
@@ -77,7 +70,6 @@ func NewUnauthorized(code, message string) *Error {
 func NewForbidden(code, message string) *Error {
 	return &Error{
 		Code:    code,
-		Status:  http.StatusForbidden,
 		Message: message,
 	}
 }
@@ -85,7 +77,6 @@ func NewForbidden(code, message string) *Error {
 func NewConflict(code, message string) *Error {
 	return &Error{
 		Code:    code,
-		Status:  http.StatusConflict,
 		Message: message,
 	}
 }
@@ -93,7 +84,26 @@ func NewConflict(code, message string) *Error {
 func NewInternal(message string) *Error {
 	return &Error{
 		Code:    ErrCodeInternal,
-		Status:  http.StatusInternalServerError,
 		Message: message,
+	}
+}
+
+// HTTPStatusFromCode maps an error code to an HTTP status.
+func HTTPStatusFromCode(code string) int {
+	switch code {
+	case ErrCodeInternal:
+		return http.StatusInternalServerError
+	case ErrCodeNotFound, ErrCodeTicketNotFound:
+		return http.StatusNotFound
+	case ErrCodeUnauthorized:
+		return http.StatusUnauthorized
+	case ErrCodeForbidden:
+		return http.StatusForbidden
+	case ErrCodeConflict:
+		return http.StatusConflict
+	case ErrCodeValidation, ErrCodeBadRequest, ErrCodeInvalidInput, ErrCodeInvalidBody, ErrCodeInvalidQuery, ErrCodeEmptyBody, ErrCodeEmptyBatch, ErrCodeBatchTooLarge, ErrCodeUnsupportedFileFormat:
+		return http.StatusBadRequest
+	default:
+		return http.StatusBadRequest
 	}
 }
