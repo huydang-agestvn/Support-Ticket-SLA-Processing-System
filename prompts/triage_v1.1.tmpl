@@ -1,5 +1,8 @@
 Analyze the following support ticket and provide triage information.
 
+IMPORTANT INSTRUCTION FOR SLA BREACH RISK:
+When determining "sla_breach_risk" (low, medium, high), you MUST consider the "Daily Stats". If the team has a high number of Overdue tickets or a high Avg Resolution Time compared to the SLA window, the team is overloaded. If the team is overloaded, you must increase the sla_breach_risk to "medium" or "high", even if the current ticket has plenty of time remaining before its SLA breaches.
+
 Ticket Information:
 - Title: {{.Ticket.Title}}
 - Description: {{.Ticket.Description}}
