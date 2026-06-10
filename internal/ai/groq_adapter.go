@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"support-ticket.com/internal/dto/request"
+	"support-ticket.com/internal/dto/response"
 )
 
 // GroqAdapter implements the TriageAdapter using the Groq API.
@@ -31,38 +34,6 @@ func NewGroqAdapter(baseURL, apiKey, model string, timeoutSecs int, maxRetries i
 		maxRetries:    maxRetries,
 		promptVersion: promptVersion,
 	}
-}
-
-// groqRequest represents the payload for the Groq API
-type groqRequest struct {
-	Model          string         `json:"model"`
-	Messages       []groqMessage  `json:"messages"`
-	Temperature    float64        `json:"temperature"`
-	ResponseFormat responseFormat `json:"response_format"`
-}
-
-type groqMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type responseFormat struct {
-	Type       string      `json:"type"`
-	JSONSchema *jsonSchema `json:"json_schema,omitempty"`
-}
-
-type jsonSchema struct {
-	Name   string         `json:"name"`
-	Strict bool           `json:"strict"`
-	Schema map[string]any `json:"schema"`
-}
-
-type groqResponse struct {
-	Choices []struct {
-		Message struct {
-			Content string `json:"content"`
-		} `json:"message"`
-	} `json:"choices"`
 }
 
 // AnalyzeTicket sends the ticket details to Groq and enforces strict JSON schema output.
@@ -132,10 +103,10 @@ SLA Policy & Daily Stats:
 		"additionalProperties": false,
 	}
 
-	reqBody := groqRequest{
+	reqBody := request.GroqRequest{
 		Model:       g.model,
 		Temperature: 0.0, // Use 0.0 for deterministic output required in Triage
-		Messages: []groqMessage{
+		Messages: []request.GroqMessage{
 			{
 				Role:    "system",
 				Content: "You are an AI Service Desk Triage Assistant. You must extract and infer details strictly following the JSON schema format.",
@@ -145,9 +116,9 @@ SLA Policy & Daily Stats:
 				Content: prompt,
 			},
 		},
-		ResponseFormat: responseFormat{
+		ResponseFormat: request.ResponseFormat{
 			Type: "json_schema", // Enforce strict JSON output
-			JSONSchema: &jsonSchema{
+			JSONSchema: &request.JSONSchema{
 				Name:   "triage_result",
 				Strict: true,
 				Schema: schema,
@@ -189,7 +160,7 @@ SLA Policy & Daily Stats:
 			continue
 		}
 
-		var groqResp groqResponse
+		var groqResp response.GroqResponse
 		if err := json.NewDecoder(resp.Body).Decode(&groqResp); err != nil {
 			resp.Body.Close()
 			lastErr = fmt.Errorf("failed to decode groq response: %w", err)
