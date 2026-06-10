@@ -2,7 +2,18 @@ openapi: 3.0.0
 info:
   title: Support Ticket SLA Processing System API
   version: 1.0.0
-  description: API contract for Support Ticket SLA Processing System.
+  description: |
+    RESTful API contract for the Internal Support Ticket & SLA Processing System. 
+    This system manages the entire lifecycle of internal support tickets (IT, HR, Facilities, etc.) and tracks compliance with Service Level Agreements (SLAs).
+
+    ### Key Features:
+    * **Ticket Lifecycle Management**: Implements a strict Finite State Machine (FSM) state transition workflow.
+    * **High-Throughput Batch Import**: Supports concurrent batch processing of historical ticket events via an in-memory worker pool, with comprehensive validation and automated audit logging to object storage (MinIO) for rejected events.
+    * **Automated SLA Reporting**: Features an ETL pipeline that aggregates operational metrics, resolution times, and SLA breaches daily via scheduled cron jobs or CLI triggers.
+    * **Enterprise Authentication & RBAC**: Secured via Keycloak Identity Provider (OAuth2/JWT) enforcing three functional roles: Requestor, Agent, and Manager.
+
+    ### Response Standardization
+    All responses adhere to a consistent wrapper format: `{ "success": boolean, "message": string, "data": object, "error": object }`.
 
 servers:
   - url: http://localhost:8080/api/v1
@@ -10,21 +21,23 @@ servers:
 
 tags:
   - name: Auth
-    description: Authentication APIs
+    description: Authentication and token management APIs integrated with Keycloak Identity Provider.
   - name: Tickets
-    description: Ticket management APIs
+    description: Core ticket operations including creation, pagination, detailed lookup, and state machine transitions.
   - name: Ticket Events
-    description: Batch ticket event import APIs
+    description: High-throughput asynchronous batch processing for importing historical ticket event trails.
   - name: Reports
-    description: Reporting APIs
+    description: Operational SLA dashboards and daily metrics aggregation for management.
+  - name: AI Assistant
+    description: AI-powered analytical, automated triage, model evaluation metrics, and descriptive query assistants for support tickets.
 
 paths:
   /auth/login:
     post:
       tags:
         - Auth
-      summary: Login
-      description: Login with username and password through Keycloak.
+      summary: Authenticate user credentials
+      description: Exchanges a username and password for a Keycloak OAuth2 access token. This endpoint does not require authentication headers.
       operationId: login
       requestBody:
         $ref: "#/components/requestBodies/LoginRequestBody"
@@ -44,11 +57,15 @@ paths:
     post:
       tags:
         - Tickets
-      summary: Create ticket
-      description: Create a new support ticket.
+      summary: Create a new support ticket
+      description: |
+        Initializes a new support ticket in the default `new` state. 
+        The `requestor_id` is automatically extracted from the authenticated user's JWT payload.
+        
+        **Required Roles**: Requestor, Manager.
       operationId: createTicket
       security:
-        - BearerAuth: []
+        - OAuth2Password: []
       requestBody:
         $ref: "#/components/requestBodies/CreateTicketRequestBody"
       responses:
@@ -66,11 +83,18 @@ paths:
     get:
       tags:
         - Tickets
-      summary: List tickets
-      description: Get tickets with optional filters and pagination.
+      summary: List and filter tickets
+      description: |
+        Retrieves a paginated list of support tickets. Supports advanced server-side filtering by status, priority, and assignee.
+        
+        **Data Visibility Constraints**:
+        * **Requestor**: Can only view tickets they personally created.
+        * **Agent / Manager**: Can view all tickets across the system.
+        
+        **Required Roles**: Requestor, Agent, Manager.
       operationId: listTickets
       security:
-        - BearerAuth: []
+        - OAuth2Password: []
       parameters:
         - $ref: "#/components/parameters/TicketStatusQuery"
         - $ref: "#/components/parameters/TicketPriorityQuery"
@@ -91,11 +115,18 @@ paths:
     get:
       tags:
         - Tickets
-      summary: Get ticket detail
-      description: Get ticket detail by ticket ID.
+      summary: Retrieve ticket details
+      description: |
+        Fetches the complete details of a specific ticket by its ID, including its associated historical state transitions (Ticket Events audit log).
+        
+        **Data Visibility Constraints**:
+        * **Requestor**: Access restricted to their own tickets.
+        * **Agent / Manager**: Unrestricted access to all tickets.
+        
+        **Required Roles**: Requestor, Agent, Manager.
       operationId: getTicketById
       security:
-        - BearerAuth: []
+        - OAuth2Password: []
       parameters:
         - $ref: "#/components/parameters/TicketId"
       responses:
@@ -114,11 +145,20 @@ paths:
     patch:
       tags:
         - Tickets
-      summary: Update ticket status
-      description: Update status of a ticket by ID.
+      summary: Update ticket status (FSM Transition)
+      description: |
+        Updates the operational status of an existing ticket. This endpoint strictly enforces the Finite State Machine (FSM) rules:
+        * `new` → `assigned`, `cancelled` (requires `assignee_id` when moving to `assigned`).
+        * `assigned` → `in_progress`, `cancelled`.
+        * `in_progress` → `resolved`.
+        * `resolved` → `closed`.
+        
+        Terminal states (`closed`, `cancelled`) cannot transition further. Each successful change logs a record into the database audit trail within a single transaction.
+        
+        **Required Roles**: Agent, Manager.
       operationId: updateTicketStatus
       security:
-        - BearerAuth: []
+        - OAuth2Password: []
       parameters:
         - $ref: "#/components/parameters/TicketId"
       requestBody:
@@ -141,11 +181,16 @@ paths:
     post:
       tags:
         - Ticket Events
-      summary: Import ticket events
-      description: Import ticket events in batch. Accepts either a multipart file upload via the `file` field or a raw JSON body.
+      summary: Asynchronously batch import ticket events
+      description: |
+        Imports a large batch of historical state transition logs. Accepts either a multipart file upload (`.csv` or `.json`) or a raw JSON array.
+        
+        Processing utilizes an in-memory concurrent worker pool to model and validate state machines concurrently per ticket. Valid logs are committed in bulk transactions, while validation failures generate a detailed CSV error report streamed directly to MinIO storage.
+        
+        **Required Roles**: Agent, Manager.
       operationId: importTicketEvents
       security:
-        - BearerAuth: []
+        - OAuth2Password: []
       requestBody:
         $ref: "#/components/requestBodies/ImportTicketEventsRequestBody"
       responses:
@@ -162,11 +207,14 @@ paths:
     get:
       tags:
         - Reports
-      summary: Get daily report
-      description: Get daily ticket report by date.
+      summary: Get daily SLA performance report
+      description: |
+        Retrieves consolidated SLA tracking metrics and KPIs for a specific date. Data includes volume counts, priority distributions, and average resolution times compiled via the ETL pipeline.
+        
+        **Required Roles**: Manager.
       operationId: getDailyReport
       security:
-        - BearerAuth: []
+        - OAuth2Password: []
       parameters:
         - $ref: "#/components/parameters/ReportDateQuery"
       responses:
@@ -178,22 +226,158 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "504":
+          description: Report not found for the requested date.
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /ai/tickets/{id}/triage:
+    post:
+      tags:
+        - AI Assistant
+      summary: Perform AI-driven triage and SLA risk analysis for a single ticket
+      description: |
+        Executes automated category classification (such as IT, HR, Facilities), evaluates urgency levels, predicts potential SLA breach risks, and provides tailored recommended next actions for a specific ticket identifier.
+        
+        The result integrates deterministic system rules with generative evaluation data.
+        
+        **Required Roles**: Agent, Manager.
+      operationId: triageSingleTicket
+      security:
+        - OAuth2Password: []
+      parameters:
+        - $ref: "#/components/parameters/TicketId"
+      responses:
+        "200":
+          description: AI triage analysis compiled and structured successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AITriageResponse"
+        "400":
+          $ref: "#/components/responses/AITriageSingleBadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/AITriageTicketNotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /ai/tickets/triage:batch:
+    post:
+      tags:
+        - AI Assistant
+      summary: Dispatch bulk ticket triage and SLA breach risk scanning
+      description: |
+        Allows system administrators (Support Leads or Managers) to process a large batch of open (non-closed and non-cancelled) support tickets.
+        
+        The in-memory worker pool evaluates the collections concurrently to detect early indicators of imminent SLA breaches, enabling optimized, preemptive resource reallocation and workload adjustments.
+        
+        **Required Roles**: Manager.
+      operationId: triageBatchTickets
+      security:
+        - OAuth2Password: []
+      requestBody:
+        $ref: "#/components/requestBodies/AIBatchTriageRequestBody"
+      responses:
+        "200":
+          description: Batch triage matrix analysis dispatched and evaluated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIBatchTriageResponse"
+        "400":
+          $ref: "#/components/responses/AIBatchTriageBadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /ai/tickets/{id}/triage/latest:
+    get:
+      tags:
+        - AI Assistant
+      summary: Fetch the latest stored AI triage results for a ticket
+      description: |
+        Provides pre-existing AI analytical triage data compiled from the most recent assessment job sequence for a specific ticket identifier.
+        
+        This drastically minimizes external LLM operational token costs, bypasses redundant upstream payload generation cycles, and optimizes server network response latency limits.
+        
+        **Required Roles**: Agent, Manager.
+      operationId: getLatestTicketTriage
+      security:
+        - OAuth2Password: []
+      parameters:
+        - $ref: "#/components/parameters/TicketId"
+      responses:
+        "200":
+          description: Previously persisted AI triage analytical records retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AITriageResponse"
+        "400":
+          $ref: "#/components/responses/AITriageSingleBadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/AITriageTicketNotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /ai/evaluations/ticket-triage:
+    post:
+      tags:
+        - AI Assistant
+      summary: Execute an automated batch evaluation run for ticket triage datasets
+      description: |
+        Triggers an isolated testing pipeline sequence over predefined baseline ground-truth data cases. 
+        
+        Compiles analytical assessment indicators regarding operational classification accuracy, system performance latency milestones, structural model token payloads, and aggregated infrastructure billing cost schemas. This assists system maintainers in qualifying prompt design adjustments before production environment provisioning.
+        
+        **Required Roles**: Manager.
+      operationId: runTriageEvaluation
+      security:
+        - OAuth2Password: []
+      requestBody:
+        $ref: "#/components/requestBodies/AIEvaluationRequestBody"
+      responses:
+        "200":
+          description: Evaluation matrix sequence metrics finalized and parsed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIEvaluationResponse"
+        "400":
+          $ref: "#/components/responses/AIEvaluationBadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    OAuth2Password:
+      type: oauth2
+      flows:
+        password:
+          tokenUrl: http://localhost:8080/api/v1/auth/login
+          scopes: {}
 
   parameters:
     TicketId:
       name: id
       in: path
       required: true
-      description: Ticket ID.
+      description: The unique auto-incrementing database identifier of the support ticket.
       schema:
         type: integer
         minimum: 1
@@ -203,7 +387,7 @@ components:
       name: status
       in: query
       required: false
-      description: Filter tickets by status.
+      description: Filters the results matching a specific lifecycle status.
       schema:
         $ref: "#/components/schemas/TicketStatus"
 
@@ -211,7 +395,7 @@ components:
       name: priority
       in: query
       required: false
-      description: Filter tickets by priority.
+      description: Filters the results matching an SLA urgency classification level.
       schema:
         $ref: "#/components/schemas/TicketPriority"
 
@@ -219,7 +403,7 @@ components:
       name: assignee_id
       in: query
       required: false
-      description: Filter tickets by assignee ID.
+      description: Filters tickets assigned to a specific processing agent using their Keycloak UUID string format.
       schema:
         type: string
       example: 9ee00625-0436-4f11-8bb1-b9e4f3f7bf88
@@ -228,7 +412,7 @@ components:
       name: page
       in: query
       required: false
-      description: Page number.
+      description: Page index number for server-side pagination.
       schema:
         type: integer
         minimum: 1
@@ -239,7 +423,7 @@ components:
       name: limit
       in: query
       required: false
-      description: Number of items per page.
+      description: Maximum number of ticket items to return per page.
       schema:
         type: integer
         minimum: 1
@@ -251,7 +435,7 @@ components:
       name: date
       in: query
       required: false
-      description: Report date in YYYY-MM-DD format.
+      description: Target date partition for the compiled report schema. Must follow the standard `YYYY-MM-DD` date layout.
       schema:
         type: string
         format: date
@@ -314,9 +498,28 @@ components:
               assignee_id: 9ee00625-0436-4f11-8bb1-b9e4f3f7bf88
               created_at: "2026-06-01T17:59:49.129094074+07:00"
 
+    AIBatchTriageRequestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AIBatchTriageRequest"
+          example:
+            ticket_ids: [455, 456, 457, 458]
+
+    AIEvaluationRequestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AIEvaluationRequest"
+          example:
+            prompt_version: "v2.1.0-triage-assistant"
+            evaluation_case_ids: [1, 2, 3, 4, 5, 12, 20]
+
   responses:
     LoginSuccess:
-      description: Login successfully
+      description: Authentication successful. Keycloak tokens granted.
       content:
         application/json:
           schema:
@@ -330,28 +533,28 @@ components:
               expires_in: 300
 
     CreateTicketSuccess:
-      description: Ticket created successfully
+      description: Support ticket compiled and stored successfully.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/CreateTicketResponse"
 
     ListTicketsSuccess:
-      description: Get tickets successfully
+      description: Paginated query list retrieved successfully.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ListTicketsResponse"
 
     GetTicketSuccess:
-      description: Get ticket detail successfully
+      description: Detailed metadata record and nested audit log array loaded successfully.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/GetTicketResponse"
 
     UpdateTicketStatusSuccess:
-      description: Ticket status updated successfully
+      description: State transaction committed and operational audit log recorded successfully.
       content:
         application/json:
           schema:
@@ -361,21 +564,122 @@ components:
             message: Ticket status updated successfully
 
     ImportTicketEventsSuccess:
-      description: Import ticket events successfully
+      description: Async stream ingestion completed. Partial rejections are outputted via the report payload mapping.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/TicketEventImportResponse"
 
     GetDailyReportSuccess:
-      description: Get daily report successfully
+      description: Extracted data metrics mapping loaded successfully.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/DailyReportResponse"
 
+    AITriageSingleBadRequest:
+      description: Invalid ticket key data representation constraints.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            invalidId:
+              summary: Invalid Input Key
+              value:
+                success: false
+                error:
+                  code: INVALID_INPUT
+                  status: 400
+                  message: The target path identifier variable violates mathematical layout logic rules.
+            invalidTransitionState:
+              summary: Invalid State Flow Boundary
+              value:
+                success: false
+                error:
+                  code: INVALID_FLOW_TICKET
+                  status: 400
+                  message: The requested processing target references a ticket residing in a terminal status boundary.
+
+    AITriageTicketNotFound:
+      description: Resource verification row scanning yielded zero entities.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error:
+              code: TICKET_NOT_FOUND
+              status: 404
+              message: The matching ticket index row was not uncovered inside system data partitions.
+
+    AIBatchTriageBadRequest:
+      description: Structural array validation anomalies encountered during ingestion processing.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            malformedJson:
+              summary: Malformed Request Body
+              value:
+                success: false
+                error:
+                  code: INVALID_REQUEST_BODY
+                  status: 400
+                  message: Parsing aborted due to corrupt payload or syntax structure compilation mismatch.
+            emptyBatchArray:
+              summary: Empty Ingestion Array
+              value:
+                success: false
+                error:
+                  code: EMPTY_BATCH
+                  status: 400
+                  message: Execution denied. The batch ingestion ticket identification array contains no items.
+            sizeConstraintsExceeded:
+              summary: Batch Payload Upper Constraints Exceeded
+              value:
+                success: false
+                error:
+                  code: BATCH_TOO_LARGE
+                  status: 400
+                  message: The ingestion tracking sequence limits are exceeded. Reduce the slice payload array footprint.
+
+    AIEvaluationBadRequest:
+      description: Validation failures during test dataset sequence binding operations.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            invalidBodyLayout:
+              summary: Corrupt JSON Layout
+              value:
+                success: false
+                error:
+                  code: INVALID_REQUEST_BODY
+                  status: 400
+                  message: Unable to bind model body entity values due to structural formatting corruption.
+            missingPromptMapping:
+              summary: Validation Constraints Failure
+              value:
+                success: false
+                error:
+                  code: VALIDATION_ERROR
+                  status: 400
+                  message: The tracking field 'prompt_version' is structural and must be explicitly declared.
+            emptyCasesMapping:
+              summary: Missing Identification Target Array
+              value:
+                success: false
+                error:
+                  code: INVALID_INPUT
+                  status: 400
+                  message: Provided evaluation target array identifier sequences must contain active entries.
+
     BadRequest:
-      description: Invalid request body or invalid input
+      description: Malformed JSON syntax structure or invalid model validation failure.
       content:
         application/json:
           schema:
@@ -388,7 +692,7 @@ components:
               message: invalid request body
 
     InvalidQueryParameters:
-      description: Invalid query parameters
+      description: Provided request parameter arguments failed URL validation parsing rules.
       content:
         application/json:
           schema:
@@ -401,7 +705,7 @@ components:
               message: invalid query parameters
 
     InvalidTicketId:
-      description: Invalid ticket ID
+      description: The path variable integer does not point to a valid index schema minimum boundary.
       content:
         application/json:
           schema:
@@ -414,7 +718,7 @@ components:
               message: invalid ticket id
 
     InvalidStatusTransition:
-      description: Invalid status transition or invalid request body
+      description: Requested update violates strict validation constraints governed by the Finite State Machine ruleset.
       content:
         application/json:
           schema:
@@ -427,7 +731,7 @@ components:
               message: invalid status transition from new to in_progress
 
     InvalidImportInput:
-      description: Invalid import input
+      description: Structural integrity checks failed during ingestion due to payload constraint violations.
       content:
         application/json:
           schema:
@@ -459,7 +763,7 @@ components:
                   message: batch size exceeds maximum limit
 
     InvalidDateFormat:
-      description: Invalid date format
+      description: Provided query string argument fails the exact date string layout check requirements.
       content:
         application/json:
           schema:
@@ -472,7 +776,7 @@ components:
               message: invalid date format, expected YYYY-MM-DD
 
     InvalidCredentials:
-      description: Invalid username or password
+      description: Identity verification failed against Keycloak. Invalid username or password payload.
       content:
         application/json:
           schema:
@@ -485,7 +789,7 @@ components:
               message: invalid username or password
 
     Unauthorized:
-      description: Unauthorized
+      description: Access token verification failed. The Authorization Bearer token is missing, expired, or structural token validation failed.
       content:
         application/json:
           schema:
@@ -498,7 +802,7 @@ components:
               message: invalid authorization header format
 
     Forbidden:
-      description: Forbidden
+      description: Authenticated subject possesses valid signature claims but lacks the business RBAC roles required for this resource operation.
       content:
         application/json:
           schema:
@@ -511,7 +815,7 @@ components:
               message: "forbidden: insufficient role"
 
     TicketNotFound:
-      description: Ticket not found
+      description: Resource resolution failed. No ticket row maps to the provided query index.
       content:
         application/json:
           schema:
@@ -524,7 +828,7 @@ components:
               message: ticket not found
 
     InternalServerError:
-      description: Internal server error
+      description: The server encountered an unexpected condition which prevented it from fulfilling the request.
       content:
         application/json:
           schema:
@@ -537,7 +841,7 @@ components:
               message: internal server error
 
     AuthProviderUnavailable:
-      description: Authentication provider unavailable
+      description: Upstream connection timeout or routing failure to Keycloak server endpoint clusters.
       content:
         application/json:
           schema:
@@ -564,10 +868,13 @@ components:
           format: password
           example: "123123"
 
-    LoginTokenData:
+    OAuthTokenResponse:
       type: object
       properties:
         access_token:
+          type: string
+          example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+        refresh_token:
           type: string
           example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
         token_type:
@@ -586,7 +893,7 @@ components:
               type: string
               example: Login successfully
             data:
-              $ref: "#/components/schemas/LoginTokenData"
+              $ref: "#/components/schemas/OAuthTokenResponse"
 
     CreateTicketRequest:
       type: object
@@ -830,7 +1137,7 @@ components:
         file:
           type: string
           format: binary
-          description: CSV or JSON file to import.
+          description: CSV or JSON file containing historical state trails to parse.
 
     TicketEventImportJsonRequest:
       type: array
@@ -891,7 +1198,7 @@ components:
         rejected_details:
           type: array
           items:
-            $ref: "#/components/schemas/TicketEventRejectedGroup"
+            $ref: "#/components/schemas/TicketEventImportItem"
 
     TicketEventRejectedGroup:
       type: object
@@ -954,6 +1261,264 @@ components:
           format: date-time
           example: "2026-05-22T16:03:47.639267008+07:00"
 
+    AITriageResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponseBase"
+        - type: object
+          properties:
+            message:
+              type: string
+              example: AI triage completed successfully
+            data:
+              $ref: "#/components/schemas/AITriageResult"
+
+    AIBatchTriageRequest:
+      type: object
+      required:
+        - ticket_ids
+      properties:
+        ticket_ids:
+          type: array
+          items:
+            type: integer
+          example: [455, 456, 457, 458]
+
+    AIBatchTriageResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponseBase"
+        - type: object
+          properties:
+            message:
+              type: string
+              example: Batch triage job dispatched successfully to the worker pool
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/AITriageResult"
+          example:
+            success: true
+            message: Batch triage job dispatched successfully to the worker pool
+            data:
+              - ticket_id: 455
+                category: "IT"
+                urgency_level: "high"
+                sla_breach_risk: "high"
+                reason_summary: "This ticket has been stalled in In Progress status for 5 consecutive hours with no recent activity logs. Based on historical resolution times, the assigned agent is likely facing a technical roadblock. An SLA breach will occur in less than 45 minutes if not intervened."
+                recommended_next_action: "Please initiate an immediate supervisor intervention. I recommend assigning a secondary senior engineer to co-own this ticket with the primary agent to unblock the technical issue and prevent a breach."
+                confidence_score: 0.92
+                prompt_version: "v1.2.0"
+                fallback_used: false
+              - ticket_id: 456
+                category: "HR"
+                urgency_level: "medium"
+                sla_breach_risk: "medium"
+                reason_summary: "This onboarding request has been sitting unassigned in the HR backlog for over 24 hours since its creation. Delaying this further risks impacting the new hire's day-one readiness and overall employee experience."
+                recommended_next_action: "Kindly bypass the automated dispatch and route this ticket directly to the HR Operations Team Lead for immediate manual assignment to an available specialist."
+                confidence_score: 0.65
+                prompt_version: "v1.2.0"
+                fallback_used: false
+              - ticket_id: 457
+                category: "Facilities"
+                urgency_level: "low"
+                sla_breach_risk: "low"
+                reason_summary: "The employee's request text was highly ambiguous and caused an AI processing timeout. To ensure no disruption, I have successfully executed safety protocols and switched to Deterministic Keyword Matching Fallback to classify this ticket."
+                recommended_next_action: "Please have a coordinator perform a quick manual review of the ticket body and layout. Since the AI confidence is based on keyword matching, verifying the specific facility items or maintenance location with the requester is recommended before dispatching a technician."
+                confidence_score: 1.00
+                prompt_version: "v1.2.0"
+                fallback_used: true
+
+    AITriageResult:
+      type: object
+      required:
+        - ticket_id
+        - category
+        - urgency_level
+        - sla_breach_risk
+        - reason_summary
+        - recommended_next_action
+        - confidence_score
+        - prompt_version
+        - fallback_used
+      properties:
+        ticket_id:
+          type: integer
+          description: The unique identifier of the analyzed support ticket resource.
+          example: 455
+        category:
+          type: string
+          description: Classified functional organizational domain assignment.
+          example: IT
+        urgency_level:
+          type: string
+          description: Evaluated internal operational resolution priority weighting.
+          example: high
+        sla_breach_risk:
+          type: string
+          description: Predicted algorithmic probability metric of violating system SLA markers.
+          example: high
+        reason_summary:
+          type: string
+          description: Concise natural language explanation details supporting the logical triage deduction.
+          example: "This ticket has been stalled In Progress status for 5 consecutive hours with no recent activity logs. Based on historical resolution times, the assigned agent is likely facing a technical roadblock. An SLA breach will occur in less than 45 minutes if not intervened."
+        recommended_next_action:
+          type: string
+          description: Tailored operations instruction proposal for human workflow operators.
+          example: "Please initiate an immediate supervisor intervention. I recommend assigning a secondary senior engineer to co-own this ticket with the primary agent to unblock the technical issue and prevent a breach."
+        confidence_score:
+          type: number
+          format: float
+          description: Model verification scoring matrix mapping parameter.
+          example: 0.92
+        prompt_version:
+          type: string
+          description: Active context pipeline semantic version tracing key.
+          example: v1.2.0
+        fallback_used:
+          type: boolean
+          description: Explicit flag denoting if automated heuristic fallback baselines stepped in.
+          example: false
+
+    AIEvaluationRequest:
+      type: object
+      required:
+        - prompt_version
+        - evaluation_case_ids
+      properties:
+        prompt_version:
+          type: string
+          description: Target engineering prompt pipeline tag identifier to evaluate against ground truth datasets.
+          example: "v2.1.0-triage-assistant"
+        evaluation_case_ids:
+          type: array
+          items:
+            type: integer
+          description: Array collection filtering specific seed case IDs to test within this session execution.
+          example: [1, 2, 3, 4, 5, 12, 20]
+
+    AIEvaluationResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponseBase"
+        - type: object
+          properties:
+            message:
+              type: string
+              example: Evaluation run completed successfully
+            data:
+              $ref: "#/components/schemas/AIEvaluationData"
+          example:
+            success: true
+            message: Evaluation run completed successfully
+            data:
+              run_id: 42
+              run_date: "2026-06-09T16:15:00Z"
+              prompt_version: "v2.1.0-triage-assistant"
+              metrics:
+                accuracy:
+                  total_cases: 20
+                  passed_cases: 18
+                  failed_cases: 2
+                  accuracy_rate: 90.00
+                performance:
+                  total_duration_ms: 15600
+                  avg_latency_ms: 780
+                  throughput_cps: 1.28
+                resource_usage:
+                  total_prompt_tokens: 12450
+                  total_completion_tokens: 3420
+                  total_tokens: 15870
+                  estimated_cost_usd: 0.047610
+
+    AIEvaluationData:
+      type: object
+      required:
+        - run_id
+        - run_date
+        - prompt_version
+        - metrics
+      properties:
+        run_id:
+          type: integer
+          description: Auto-incrementing relational tracking index assigned to this evaluation job pipeline.
+          example: 42
+        run_date:
+          type: string
+          format: date-time
+          description: Generated system timestamp layout recording exact execution start window.
+          example: "2026-06-09T16:15:00Z"
+        prompt_version:
+          type: string
+          description: The evaluated template config state tracking label.
+          example: "v2.1.0-triage-assistant"
+        metrics:
+          $ref: "#/components/schemas/AIEvaluationMetrics"
+
+    AIEvaluationMetrics:
+      type: object
+      required:
+        - accuracy
+        - performance
+        - resource_usage
+      properties:
+        accuracy:
+          type: object
+          required:
+            - total_cases
+            - passed_cases
+            - failed_cases
+            - accuracy_rate
+          properties:
+            total_cases:
+              type: integer
+              example: 20
+            passed_cases:
+              type: integer
+              example: 18
+            failed_cases:
+              type: integer
+              example: 2
+            accuracy_rate:
+              type: number
+              format: float
+              example: 90.00
+        performance:
+          type: object
+          required:
+            - total_duration_ms
+            - avg_latency_ms
+            - throughput_cps
+          properties:
+            total_duration_ms:
+              type: integer
+              example: 15600
+            avg_latency_ms:
+              type: integer
+              example: 780
+            throughput_cps:
+              type: number
+              format: float
+              example: 1.28
+        resource_usage:
+          type: object
+          required:
+            - total_prompt_tokens
+            - total_completion_tokens
+            - total_tokens
+            - estimated_cost_usd
+          properties:
+            total_prompt_tokens:
+              type: integer
+              example: 12450
+            total_completion_tokens:
+              type: integer
+              example: 3420
+            total_tokens:
+              type: integer
+              example: 15870
+            estimated_cost_usd:
+              type: number
+              format: double
+              example: 0.047610
+
     SuccessResponseBase:
       type: object
       properties:
@@ -982,3 +1547,6 @@ components:
         message:
           type: string
           example: invalid input
+
+security:
+  - OAuth2Password: []
