@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"text/template"
 	"time"
 
 	"support-ticket.com/internal/dto/request"
@@ -38,29 +39,17 @@ func NewGroqAdapter(baseURL, apiKey, model string, timeoutSecs int, maxRetries i
 
 // AnalyzeTicket sends the ticket details to Groq and enforces strict JSON schema output.
 func (g *GroqAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) (*TriageResult, error) {
-	var historyBuilder bytes.Buffer
-	for _, event := range data.Events {
-		historyBuilder.WriteString(fmt.Sprintf("- [%s] Status changed from %s to %s by Assignee %s\n", 
-			event.CreatedAt.Format(time.RFC3339), event.FromStatus, event.ToStatus, event.AssigneeID))
-	}
-	if len(data.Events) == 0 {
-		historyBuilder.WriteString("No previous events.\n")
+	templatePath := fmt.Sprintf("prompts/triage_%s.tmpl", g.promptVersion)
+	tmpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load prompt template %s: %w", templatePath, err)
 	}
 
-	prompt := fmt.Sprintf(`Analyze the following support ticket and provide triage information.
-Ticket ID: %d
-Title: %s
-Description: %s
-Priority: %s
-Requestor ID: %s
-Created At: %s
-
-Event History:
-%s
-
-SLA Policy & Daily Stats:
-%s
-%s`, data.Ticket.ID, data.Ticket.Title, data.Ticket.Description, data.Ticket.Priority, data.Ticket.RequestorID, data.Ticket.CreatedAt.Format(time.RFC3339), historyBuilder.String(), data.SLAPolicy, data.DailyStats)
+	var promptBuffer bytes.Buffer
+	if err := tmpl.Execute(&promptBuffer, data); err != nil {
+		return nil, fmt.Errorf("failed to render prompt template: %w", err)
+	}
+	prompt := promptBuffer.String()
 
 	// Define the strict JSON schema required by Task 2
 	schema := map[string]any{
@@ -68,7 +57,8 @@ SLA Policy & Daily Stats:
 		"properties": map[string]any{
 			"category": map[string]any{
 				"type":        "string",
-				"description": "The category of the ticket",
+				"enum":        []string{"IT", "HR", "Facilities"},
+				"description": "The category of the ticket: IT, HR, Facilities",
 			},
 			"urgency_level": map[string]any{
 				"type":        "string",
@@ -125,6 +115,8 @@ SLA Policy & Daily Stats:
 			},
 		},
 	}
+
+	fmt.Printf("Groq Request: %+v\n", reqBody)
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {

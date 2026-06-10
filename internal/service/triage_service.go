@@ -54,17 +54,22 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 		report, _ = s.reportRepo.GetByDate(now.Add(-24 * time.Hour))
 	}
 
-	dailyStats := "No recent SLA stats available in the system."
-	if report != nil {
-		dailyStats = fmt.Sprintf("Daily Report (%s) - Avg Resolution Time: %.1fh, Overdue Tickets: %d, SLA Breaches: %d",
-			report.ReportDate.Format("2006-01-02"), report.AvgResolutionTime, report.OverdueCount, report.SlaBreacheCount)
+	slaEvidence := "SLA not set."
+	if ticket.SLADueAt != nil {
+		timeLeft := ticket.SLADueAt.Sub(now).Round(time.Minute)
+		if timeLeft < 0 {
+			slaEvidence = fmt.Sprintf("CRITICAL: Ticket is already OVERDUE by %s", -timeLeft)
+		} else {
+			slaEvidence = fmt.Sprintf("Ticket has %s remaining before SLA breach", timeLeft)
+		}
 	}
 
 	promptData := ai.TriagePromptData{
-		Ticket:     *ticket,
-		Events:     ticket.Events,
-		SLAPolicy:  "Max resolution time is determined by priority: High (4h), Medium (24h), Low (48h).",
-		DailyStats: dailyStats,
+		Ticket:      *ticket,
+		Events:      ticket.Events,
+		SLAPolicy:   "Max resolution time is determined by priority: High (4h), Medium (24h), Low (48h).",
+		DailyReport: report,
+		TimeLeft:    slaEvidence,
 	}
 
 	return ticket, promptData, nil

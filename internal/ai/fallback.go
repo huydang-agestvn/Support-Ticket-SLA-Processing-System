@@ -30,16 +30,14 @@ func buildFallbackResult(ticket *model.Ticket) *TriageResult {
 	}
 
 	textToAnalyze := strings.ToLower(ticket.Title + " " + ticket.Description)
-	category := "General Support"
+	category := "IT" // Default to IT
 
-	if strings.Contains(textToAnalyze, "network") || strings.Contains(textToAnalyze, "wifi") || strings.Contains(textToAnalyze, "internet") || strings.Contains(textToAnalyze, "connection") {
-		category = "Network/Infrastructure"
-	} else if strings.Contains(textToAnalyze, "password") || strings.Contains(textToAnalyze, "account") || strings.Contains(textToAnalyze, "login") || strings.Contains(textToAnalyze, "access") {
-		category = "Access/Authentication"
-	} else if strings.Contains(textToAnalyze, "hardware") || strings.Contains(textToAnalyze, "mouse") || strings.Contains(textToAnalyze, "monitor") || strings.Contains(textToAnalyze, "printer") {
-		category = "Hardware"
-	} else if strings.Contains(textToAnalyze, "software") || strings.Contains(textToAnalyze, "install") || strings.Contains(textToAnalyze, "app") || strings.Contains(textToAnalyze, "crash") {
-		category = "Software"
+	// HR Keywords
+	if strings.Contains(textToAnalyze, "salary") || strings.Contains(textToAnalyze, "payroll") || strings.Contains(textToAnalyze, "leave") || strings.Contains(textToAnalyze, "contract") || strings.Contains(textToAnalyze, "benefits") || strings.Contains(textToAnalyze, "onboarding") || strings.Contains(textToAnalyze, "insurance") {
+		category = "HR"
+	// Facilities Keywords
+	} else if strings.Contains(textToAnalyze, "light") || strings.Contains(textToAnalyze, "aircon") || strings.Contains(textToAnalyze, "ac") || strings.Contains(textToAnalyze, "chair") || strings.Contains(textToAnalyze, "table") || strings.Contains(textToAnalyze, "desk") || strings.Contains(textToAnalyze, "door") || strings.Contains(textToAnalyze, "leak") || strings.Contains(textToAnalyze, "office") || strings.Contains(textToAnalyze, "building") {
+		category = "Facilities"
 	}
 
 	return &TriageResult{

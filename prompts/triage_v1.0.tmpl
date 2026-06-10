@@ -1,0 +1,22 @@
+Analyze the following support ticket and provide triage information.
+
+Ticket Information:
+- Title: {{.Ticket.Title}}
+- Description: {{.Ticket.Description}}
+- Requester Department: {{.Ticket.RequestorID}}
+- Priority: {{.Ticket.Priority}}
+- Created At: {{.Ticket.CreatedAt.Format "2006-01-02T15:04:05Z07:00"}}
+
+Ticket Event History:
+{{if .Events}}{{range .Events}}- [{{.CreatedAt.Format "2006-01-02T15:04:05Z07:00"}}] Status flow from {{.FromStatus}} to {{.ToStatus}}, assigned agent/team: {{.AssigneeID}}
+{{end}}{{else}}No event history.{{end}}
+
+SLA Policy Values & Daily Report Aggregates:
+- SLA Policy: {{.SLAPolicy}}
+- Deterministic SLA Evidence: {{.TimeLeft}}
+- Daily Stats: {{if .DailyReport}}Avg Resolution Time: {{printf "%.1f" .DailyReport.AvgResolutionTime}}h, Overdue Tickets: {{.DailyReport.OverdueCount}}, SLA Breaches: {{.DailyReport.SlaBreacheCount}}{{else}}No recent SLA stats available.{{end}}
+
+Optional Internal FAQ/Category Examples:
+- IT: Issues related to network, hardware, software, password, access, database, server.
+- HR: Issues related to salary, payroll, leave, contract, benefits, onboarding.
+- Facilities: Issues related to office, building, desk, chair, light, aircon, leak.
