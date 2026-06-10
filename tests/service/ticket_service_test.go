@@ -12,7 +12,7 @@ import (
 	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/request"
 	"support-ticket.com/internal/errmsgs"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 	"support-ticket.com/internal/service"
 	testmock "support-ticket.com/tests/mock"
 )
@@ -33,11 +33,11 @@ func TestTicketService_Create(t *testing.T) {
 				RequestorID: "user1",
 				Title:       "Test Ticket",
 				Description: "Description",
-				Priority:    domain.PriorityHigh,
+				Priority:    model.PriorityHigh,
 				SlaDueAt:    &dueAt,
 			},
 			mockRepo: func(m *testmock.MockTicketRepository) {
-				m.On("Create", ctx, mock.AnythingOfType("*domain.Ticket")).Return(nil)
+				m.On("Create", ctx, mock.AnythingOfType("*model.Ticket")).Return(nil)
 			},
 		},
 		{
@@ -46,7 +46,7 @@ func TestTicketService_Create(t *testing.T) {
 				RequestorID: "user1",
 				Title:       "Test Ticket",
 				Description: "Description",
-				Priority:    domain.PriorityHigh,
+				Priority:    model.PriorityHigh,
 				SlaDueAt:    &dueAt,
 			},
 			mockRepo: func(m *testmock.MockTicketRepository) {
@@ -59,7 +59,7 @@ func TestTicketService_Create(t *testing.T) {
 			req: request.CreateTicketReq{
 				RequestorID: "user1",
 				Description: "Description",
-				Priority:    domain.PriorityHigh,
+				Priority:    model.PriorityHigh,
 				SlaDueAt:    &dueAt,
 			},
 			mockRepo:      func(m *testmock.MockTicketRepository) {},
@@ -84,7 +84,7 @@ func TestTicketService_Create(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, res)
 				assert.Equal(t, tt.req.Title, res.Title)
-				assert.Equal(t, domain.StatusNew, res.Status)
+				assert.Equal(t, model.StatusNew, res.Status)
 				assert.NotNil(t, res.SLADueAt)
 			}
 			mockRepo.AssertExpectations(t)
@@ -93,14 +93,14 @@ func TestTicketService_Create(t *testing.T) {
 }
 
 func TestTicketService_FindById(t *testing.T) {
-	ticket := &domain.Ticket{ID: 1, Title: "Test", RequestorID: "user-123"}
+	ticket := &model.Ticket{ID: 1, Title: "Test", RequestorID: "user-123"}
 
 	tests := []struct {
 		name          string
 		id            uint
 		currentUser   auth.UserPrincipal
 		mockRepo      func(context.Context, *testmock.MockTicketRepository)
-		expectedRes   *domain.Ticket
+		expectedRes   *model.Ticket
 		expectedError error
 	}{
 		{
@@ -163,7 +163,7 @@ func TestTicketService_FindById(t *testing.T) {
 				Roles:  []string{auth.RoleRequestor},
 			},
 			mockRepo: func(ctx context.Context, m *testmock.MockTicketRepository) {
-				m.On("FindById", ctx, uint(1)).Return((*domain.Ticket)(nil), nil)
+				m.On("FindById", ctx, uint(1)).Return((*model.Ticket)(nil), nil)
 			},
 			expectedRes:   nil,
 			expectedError: errmsgs.ErrTicketNotFound,
@@ -221,13 +221,13 @@ func TestTicketService_UpdateTicketStatus(t *testing.T) {
 			name: "Success",
 			id:   1,
 			req: request.UpdateStatusReq{
-				Status:     domain.StatusInProgress,
+				Status:     model.StatusInProgress,
 				AssigneeID: "agent1",
 			},
 			mockRepo: func(m *testmock.MockTicketRepository) {
-				ticket := &domain.Ticket{
+				ticket := &model.Ticket{
 					ID:         1,
-					Status:     domain.StatusAssigned,
+					Status:     model.StatusAssigned,
 					AssigneeID: "agent1",
 				}
 				m.On("FindById", ctx, uint(1)).Return(ticket, nil)
@@ -239,13 +239,13 @@ func TestTicketService_UpdateTicketStatus(t *testing.T) {
 			name: "ValidationError_InvalidTransition",
 			id:   1,
 			req: request.UpdateStatusReq{
-				Status:     domain.StatusInProgress,
+				Status:     model.StatusInProgress,
 				AssigneeID: "agent1",
 			},
 			mockRepo: func(m *testmock.MockTicketRepository) {
-				ticket := &domain.Ticket{
+				ticket := &model.Ticket{
 					ID:         1,
-					Status:     domain.StatusNew,
+					Status:     model.StatusNew,
 					AssigneeID: "agent1",
 				}
 				m.On("FindById", ctx, uint(1)).Return(ticket, nil)
@@ -282,18 +282,18 @@ func TestTicketService_FindAll(t *testing.T) {
 		filter      request.TicketFilter
 		paging      common.PaginationQuery
 		mockRepo    func(*testmock.MockTicketRepository)
-		expectedRes *common.PaginatedResult[domain.Ticket]
+		expectedRes *common.PaginatedResult[model.Ticket]
 	}{
 		{
 			name:   "Success",
 			filter: request.TicketFilter{},
 			paging: common.PaginationQuery{Page: 1, Limit: 10},
 			mockRepo: func(m *testmock.MockTicketRepository) {
-				tickets := []domain.Ticket{{ID: 1, Title: "Test"}}
+				tickets := []model.Ticket{{ID: 1, Title: "Test"}}
 				m.On("FindAll", ctx, request.TicketFilter{}, 0, 10).Return(tickets, int64(1), nil)
 			},
-			expectedRes: &common.PaginatedResult[domain.Ticket]{
-				Items:      []domain.Ticket{{ID: 1, Title: "Test"}},
+			expectedRes: &common.PaginatedResult[model.Ticket]{
+				Items:      []model.Ticket{{ID: 1, Title: "Test"}},
 				Total:      1,
 				Page:       1,
 				Limit:      10,

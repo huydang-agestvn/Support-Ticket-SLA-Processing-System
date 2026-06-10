@@ -12,14 +12,14 @@ import (
 	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/request"
 	"support-ticket.com/internal/errmsgs"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 	"support-ticket.com/internal/repository"
 )
 
 type TicketService interface {
-	Create(ctx context.Context, req request.CreateTicketReq) (*domain.Ticket, error)
-	FindById(ctx context.Context, id uint) (*domain.Ticket, error)
-	FindAll(ctx context.Context, filter request.TicketFilter, paging common.PaginationQuery) (*common.PaginatedResult[domain.Ticket], error)
+	Create(ctx context.Context, req request.CreateTicketReq) (*model.Ticket, error)
+	FindById(ctx context.Context, id uint) (*model.Ticket, error)
+	FindAll(ctx context.Context, filter request.TicketFilter, paging common.PaginationQuery) (*common.PaginatedResult[model.Ticket], error)
 	UpdateTicketStatus(ctx context.Context, id uint, req request.UpdateStatusReq) error
 }
 
@@ -35,7 +35,7 @@ func NewTicketService(repo repository.TicketRepository, eventRepo repository.Tic
 	}
 }
 
-func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicketReq) (*domain.Ticket, error) {
+func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicketReq) (*model.Ticket, error) {
 	now := time.Now()
 
 	slog.InfoContext(ctx, "initiating ticket creation",
@@ -44,13 +44,13 @@ func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicket
 		slog.String("priority", string(req.Priority)),
 	)
 
-	ticket := &domain.Ticket{
+	ticket := &model.Ticket{
 		RequestorID: req.RequestorID,
 		Title:       req.Title,
 		Description: req.Description,
 		Priority:    req.Priority,
 		SLADueAt:    req.SlaDueAt,
-		Status:      domain.StatusNew,
+		Status:      model.StatusNew,
 		CreatedAt:   now,
 	}
 
@@ -79,7 +79,7 @@ func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicket
 	return ticket, nil
 }
 
-func (s *ticketServiceImpl) FindById(ctx context.Context, id uint) (*domain.Ticket, error) {
+func (s *ticketServiceImpl) FindById(ctx context.Context, id uint) (*model.Ticket, error) {
 	currentUser := auth.UserFromContext(ctx)
 	userId := currentUser.UserID
 	ticket, err := s.repo.FindById(ctx, id)
@@ -109,7 +109,7 @@ func (s *ticketServiceImpl) FindById(ctx context.Context, id uint) (*domain.Tick
 	return ticket, nil
 }
 
-func (s *ticketServiceImpl) FindAll(ctx context.Context, filter request.TicketFilter, paging common.PaginationQuery) (*common.PaginatedResult[domain.Ticket], error) {
+func (s *ticketServiceImpl) FindAll(ctx context.Context, filter request.TicketFilter, paging common.PaginationQuery) (*common.PaginatedResult[model.Ticket], error) {
 	limit := paging.GetLimit()
 	offset := paging.GetOffset()
 	page := paging.GetPage()
@@ -122,14 +122,14 @@ func (s *ticketServiceImpl) FindAll(ctx context.Context, filter request.TicketFi
 		return nil, fmt.Errorf("failed to list tickets: %w", err)
 	}
 	if tickets == nil {
-		tickets = []domain.Ticket{}
+		tickets = []model.Ticket{}
 	}
 
 	totalPages := int(math.Ceil(float64(total) / float64(limit)))
 
 	slog.InfoContext(ctx, "ticket fetched successfully")
 
-	result := &common.PaginatedResult[domain.Ticket]{
+	result := &common.PaginatedResult[model.Ticket]{
 		Items:      tickets,
 		Total:      total,
 		Page:       page,
@@ -156,7 +156,7 @@ func (s *ticketServiceImpl) UpdateTicketStatus(ctx context.Context, id uint, req
 		return errmsgs.ErrTicketNotFound
 	}
 
-	if ticket.Status == domain.StatusNew && req.Status == domain.StatusAssigned {
+	if ticket.Status == model.StatusNew && req.Status == model.StatusAssigned {
 		currentUser := auth.UserFromContext(ctx)
 		req.AssigneeID = strings.TrimSpace(currentUser.UserID)
 	}
@@ -171,7 +171,7 @@ func (s *ticketServiceImpl) UpdateTicketStatus(ctx context.Context, id uint, req
 		return err
 	}
 
-	event := &domain.TicketEvent{
+	event := &model.TicketEvent{
 		TicketID:   ticket.ID,
 		AssigneeID: ticket.AssigneeID,
 		FromStatus: ticket.Status,

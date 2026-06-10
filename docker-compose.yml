@@ -108,6 +108,8 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
       MANAGER_EMAIL: ${MANAGER_EMAIL}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_MODEL: ${GROQ_MODEL}
     volumes:
       - app_logs:/app/logs
     command: sh -c "mkdir -p /app/logs && ./ticket-sla-api 2>&1 | tee /app/logs/app.log"
