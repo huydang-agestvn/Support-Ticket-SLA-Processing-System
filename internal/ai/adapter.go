@@ -18,12 +18,12 @@ type TriageResult struct {
 	PromptVersion         string  `json:"prompt_version,omitempty"`
 }
 
-// TriagePromptData holds the context required for the AI to triage a ticket
 type TriagePromptData struct {
-	Ticket     model.Ticket
-	Events     []model.TicketEvent
-	SLAPolicy  string
-	DailyStats string
+	Ticket      model.Ticket
+	Events      []model.TicketEvent
+	SLAPolicy   string
+	DailyReport *model.TicketReport
+	TimeLeft    string
 }
 
 // TriageAdapter is the interface for the AI provider
