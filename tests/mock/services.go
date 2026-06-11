@@ -109,3 +109,11 @@ func (m *MockTriageService) ExecuteBatchTriage(ctx context.Context, ticketIDs []
 	}
 	return args.Get(0).([]*response.BatchTriageResponseItem), args.Error(1)
 }
+
+func (m *MockTriageService) GetLatestTriageResult(ctx context.Context, ticketID uint) (*response.TriageResponse, error) {
+	args := m.Called(ctx, ticketID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*response.TriageResponse), args.Error(1)
+}
