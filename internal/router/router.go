@@ -130,6 +130,17 @@ func InitRouter(
 				),
 				triageHandler.HandleTriageTicket,
 			)
+
+			// Agent / Manager: Lấy kết quả triage mới nhất của Ticket
+			aiGroup.GET(
+				"/tickets/:id/triage/latest",
+				authMiddleware.RequireAuth(),
+				authMiddleware.RequireRole(
+					auth.RoleAgent,
+					auth.RoleManager,
+				),
+				triageHandler.HandleGetLatestTriage,
+			)
 		}
 	}
 	return r

@@ -9,6 +9,7 @@ import (
 
 type TriageRepository interface {
 	Create(ctx context.Context, result *model.AITicketTriageResult) error
+	FindLatestByTicketID(ctx context.Context, ticketID uint) (*model.AITicketTriageResult, error)
 }
 
 type triageRepositoryImpl struct {
@@ -27,3 +28,20 @@ func (r *triageRepositoryImpl) Create(ctx context.Context, result *model.AITicke
 	return r.getDB(ctx).Create(result).Error
 }
 
+// FindLatestByTicketID trả về bản ghi ai_ticket_triage_result mới nhất của ticket theo created_at.
+// Trả về (nil, nil) nếu chưa có bản ghi nào.
+func (r *triageRepositoryImpl) FindLatestByTicketID(ctx context.Context, ticketID uint) (*model.AITicketTriageResult, error) {
+	var result model.AITicketTriageResult
+	err := r.getDB(ctx).
+		Where("ticket_id = ?", ticketID).
+		Order("created_at DESC").
+		First(&result).
+		Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}

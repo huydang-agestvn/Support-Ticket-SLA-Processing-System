@@ -7,6 +7,7 @@ import (
 var (
 	ErrNotFound                 = common.NewNotFound(common.ErrCodeNotFound, "resource not found")
 	ErrTicketNotFound           = common.NewNotFound(common.ErrCodeTicketNotFound, "ticket not found")
+	ErrTriageNotFound           = common.NewNotFound(common.ErrCodeTriageNotFound, "triage result not found for this ticket")
 	ErrUnauthorized             = common.NewUnauthorized(common.ErrCodeUnauthorized, "unauthorized")
 	ErrForbidden                = common.NewForbidden(common.ErrCodeForbidden, "forbidden")
 	ErrConflict                 = common.NewConflict(common.ErrCodeConflict, "conflict")
