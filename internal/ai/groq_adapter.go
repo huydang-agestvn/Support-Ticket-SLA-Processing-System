@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"text/template"
 	"time"
@@ -58,15 +59,17 @@ func (g *GroqAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) 
 			"category": map[string]any{
 				"type":        "string",
 				"enum":        []string{"IT", "HR", "Facilities"},
-				"description": "The category of the ticket: IT, HR, Facilities",
+				"description": "The category of the ticket",
 			},
 			"urgency_level": map[string]any{
 				"type":        "string",
-				"description": "Urgency level: low, medium, high",
+				"enum":        []string{"low", "medium", "high"},
+				"description": "Urgency level",
 			},
 			"sla_breach_risk": map[string]any{
 				"type":        "string",
-				"description": "Risk of SLA breach: low, medium, high",
+				"enum":        []string{"low", "medium", "high"},
+				"description": "Risk of SLA breach",
 			},
 			"reason_summary": map[string]any{
 				"type":        "string",
@@ -78,6 +81,8 @@ func (g *GroqAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) 
 			},
 			"confidence_score": map[string]any{
 				"type":        "number",
+				"minimum":     0.0,
+				"maximum":     1.0,
 				"description": "Confidence score between 0.0 and 1.0 based on the available context",
 			},
 			"fallback_used": map[string]any{
@@ -116,7 +121,7 @@ func (g *GroqAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) 
 		},
 	}
 
-	fmt.Printf("Groq Request: %+v\n", reqBody)
+	slog.DebugContext(ctx, "sending groq request", slog.Any("request_body", reqBody))
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
