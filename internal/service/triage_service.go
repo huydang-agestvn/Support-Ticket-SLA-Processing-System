@@ -9,7 +9,6 @@ import (
 
 	"support-ticket.com/internal/ai"
 	"support-ticket.com/internal/config"
-	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/response"
 	"support-ticket.com/internal/errmsgs"
 	"support-ticket.com/internal/model"

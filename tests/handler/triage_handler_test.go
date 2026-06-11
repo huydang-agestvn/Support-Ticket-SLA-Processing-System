@@ -72,7 +72,7 @@ func TestTriageHandler_HandleBatchTriageTickets(t *testing.T) {
 			name: "Invalid Flow Ticket (Terminal State)",
 			body: request.AIBatchTriageRequest{TicketIDs: []uint{1, 2}},
 			mockSetup: func(m *testmock.MockTriageService) {
-				m.On("ExecuteBatchTriage", mock.Anything, []uint{1, 2}).Return(([]*response.BatchTriageResponseItem)(nil), errmsgs.ErrInvalidFlowTicket)
+				m.On("ExecuteBatchTriage", mock.Anything, []uint{1, 2}).Return(([]*response.BatchTriageResponseItem)(nil), errmsgs.ErrTicketResolved)
 			},
 			expectedCode: http.StatusBadRequest,
 		},

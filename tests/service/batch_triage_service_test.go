@@ -217,7 +217,7 @@ func TestExecuteBatchTriage_TerminalState(t *testing.T) {
 
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	assert.Equal(t, errmsgs.ErrInvalidFlowTicket, err)
+	assert.Equal(t, errmsgs.ErrTicketResolved, err)
 
 	mockTicketRepo.AssertExpectations(t)
 }
