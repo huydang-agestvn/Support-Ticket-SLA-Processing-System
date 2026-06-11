@@ -88,3 +88,24 @@ func (m *MockAuthService) Login(input request.LoginRequest) (*response.LoginResp
 	}
 	return args.Get(0).(*response.LoginResponse), args.Error(1)
 }
+
+// MockTriageService
+type MockTriageService struct {
+	mock.Mock
+}
+
+func (m *MockTriageService) ExecuteTriage(ctx context.Context, ticketID uint) (*response.TriageResponse, error) {
+	args := m.Called(ctx, ticketID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*response.TriageResponse), args.Error(1)
+}
+
+func (m *MockTriageService) ExecuteBatchTriage(ctx context.Context, ticketIDs []uint) ([]*response.BatchTriageResponseItem, error) {
+	args := m.Called(ctx, ticketIDs)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*response.BatchTriageResponseItem), args.Error(1)
+}

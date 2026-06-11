@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"support-ticket.com/internal/ai"
+	"support-ticket.com/internal/config"
 	"support-ticket.com/internal/dto/response"
 	"support-ticket.com/internal/errmsgs"
 	"support-ticket.com/internal/model"
@@ -16,6 +17,7 @@ import (
 
 type TriageService interface {
 	ExecuteTriage(ctx context.Context, ticketID uint) (*response.TriageResponse, error)
+	ExecuteBatchTriage(ctx context.Context, ticketIDs []uint) ([]*response.BatchTriageResponseItem, error)
 }
 
 type triageServiceImpl struct {
@@ -23,6 +25,7 @@ type triageServiceImpl struct {
 	reportRepo repository.ReportRepository
 	triageRepo repository.TriageRepository
 	aiAdapter  ai.TriageAdapter
+	cfg        *config.Config
 }
 
 func NewTriageService(
@@ -30,12 +33,14 @@ func NewTriageService(
 	reportRepo repository.ReportRepository,
 	triageRepo repository.TriageRepository,
 	aiAdapter ai.TriageAdapter,
+	cfg *config.Config,
 ) TriageService {
 	return &triageServiceImpl{
 		ticketRepo: ticketRepo,
 		reportRepo: reportRepo,
 		triageRepo: triageRepo,
 		aiAdapter:  aiAdapter,
+		cfg:        cfg,
 	}
 }
 

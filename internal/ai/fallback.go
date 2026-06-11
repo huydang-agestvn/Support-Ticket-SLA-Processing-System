@@ -30,12 +30,10 @@ func buildFallbackResult(ticket *model.Ticket) *TriageResult {
 	}
 
 	textToAnalyze := strings.ToLower(ticket.Title + " " + ticket.Description)
-	category := "IT" // Default to IT
+	category := "IT"
 
-	// HR Keywords
 	if strings.Contains(textToAnalyze, "salary") || strings.Contains(textToAnalyze, "payroll") || strings.Contains(textToAnalyze, "leave") || strings.Contains(textToAnalyze, "contract") || strings.Contains(textToAnalyze, "benefits") || strings.Contains(textToAnalyze, "onboarding") || strings.Contains(textToAnalyze, "insurance") {
 		category = "HR"
-	// Facilities Keywords
 	} else if strings.Contains(textToAnalyze, "light") || strings.Contains(textToAnalyze, "aircon") || strings.Contains(textToAnalyze, "ac") || strings.Contains(textToAnalyze, "chair") || strings.Contains(textToAnalyze, "table") || strings.Contains(textToAnalyze, "desk") || strings.Contains(textToAnalyze, "door") || strings.Contains(textToAnalyze, "leak") || strings.Contains(textToAnalyze, "office") || strings.Contains(textToAnalyze, "building") {
 		category = "Facilities"
 	}

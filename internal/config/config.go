@@ -59,6 +59,12 @@ type Config struct {
 	AIMaxRetries    int
 	AIEnabled       bool
 	AIPromptVersion string
+	AIMaxBatchSize  int
+	AIWorkerPoolSize int
+}
+
+func init() {
+	_ = loadEnv()
 }
 
 // LoadConfig
@@ -94,6 +100,16 @@ func LoadConfig() *Config {
 	aiPromptVersion := getEnv("AI_PROMPT_VERSION")
 	if aiPromptVersion == "" {
 		aiPromptVersion = "v1.0"
+	}
+
+	aiMaxBatchSize := getEnvInt("AI_MAX_BATCH_SIZE")
+	if aiMaxBatchSize == 0 {
+		aiMaxBatchSize = 30
+	}
+
+	aiWorkerPoolSize := getEnvInt("AI_WORKER_POOL_SIZE")
+	if aiWorkerPoolSize == 0 {
+		aiWorkerPoolSize = 3
 	}
 
 	cfg := &Config{
@@ -138,6 +154,8 @@ func LoadConfig() *Config {
 		AIMaxRetries:    aiMaxRetries,
 		AIEnabled:       aiEnabled,
 		AIPromptVersion: aiPromptVersion,
+		AIMaxBatchSize:  aiMaxBatchSize,
+		AIWorkerPoolSize: aiWorkerPoolSize,
 	}
 
 	return cfg

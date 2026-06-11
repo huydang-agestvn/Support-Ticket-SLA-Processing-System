@@ -119,14 +119,13 @@ func (a *App) setupDependencies() {
 	ticketService := service.NewTicketService(ticketRepo, eventRepo)
 	eventService := service.NewTicketEventService(eventRepo, ticketRepo, auditLogger)
 	reportService := service.NewReportService(reportRepo)
-	triageService := service.NewTriageService(ticketRepo, reportRepo, triageRepo, aiAdapter)
+	triageService := service.NewTriageService(ticketRepo, reportRepo, triageRepo, aiAdapter, a.cfg)
 
 	ticketHandler := handler.NewTicketHandler(ticketService)
 	eventHandler := handler.NewTicketEventHandler(eventService)
 	reportHander := handler.NewReportHandler(reportService)
 	triageHandler := handler.NewTriageHandler(triageService)
 
-	//Auth: Login Keycloak third service
 	keycloakClient := service.NewClient(
 		a.cfg.KeycloakTokenURL,
 		a.cfg.KeycloakClientID,
@@ -136,7 +135,6 @@ func (a *App) setupDependencies() {
 	authService := service.NewAuthService(keycloakClient)
 	authHandler := handler.NewAuthHandler(authService)
 
-	// Auth middleware: dùng để verify access token
 	authenticator := auth.NewKeycloakAuthenticator(
 		a.cfg.KeycloakIssuer,
 		a.cfg.KeycloakClientID,
@@ -171,6 +169,5 @@ func (a *App) startServer() error {
 	slog.InfoContext(context.Background(), "worker pool size", slog.Int("worker_pool_size", a.cfg.WorkerPoolSize))
 	slog.InfoContext(context.Background(), "starting HTTP server on", slog.String("addr", addr))
 
-	// Khởi chạy server (blocking operation)
 	return a.router.Run(addr)
 }

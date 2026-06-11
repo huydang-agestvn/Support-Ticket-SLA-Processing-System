@@ -116,8 +116,6 @@ func (g *GroqAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) 
 		},
 	}
 
-	fmt.Printf("Groq Request: %+v\n", reqBody)
-
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal groq request: %w", err)
