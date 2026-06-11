@@ -36,6 +36,22 @@ func (h *TriageHandler) HandleTriageTicket(c *gin.Context) {
 	c.JSON(http.StatusOK, common.SuccessResponse(result))
 }
 
+func (h *TriageHandler) HandleGetLatestTriage(c *gin.Context) {
+	id, err := parseTicketID(c)
+	if err != nil {
+		HandleError(c, err)
+		return
+	}
+
+	result, err := h.triageService.GetLatestTriageResult(c.Request.Context(), id)
+	if err != nil {
+		HandleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, common.SuccessResponse(result))
+}
+
 func (h *TriageHandler) HandleBatchTriageTickets(c *gin.Context) {
 	var req request.AIBatchTriageRequest
 	if !BindJSONOrAbort(c, &req) {

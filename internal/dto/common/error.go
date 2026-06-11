@@ -10,6 +10,7 @@ const (
 	ErrCodeInvalidQuery          = "INVALID_QUERY_PARAMETERS"
 	ErrCodeNotFound              = "RESOURCE_NOT_FOUND"
 	ErrCodeTicketNotFound        = "TICKET_NOT_FOUND"
+	ErrCodeTriageNotFound        = "TRIAGE_RESULT_NOT_FOUND"
 	ErrCodeUnauthorized          = "UNAUTHORIZED"
 	ErrCodeForbidden             = "FORBIDDEN"
 	ErrCodeConflict              = "CONFLICT"
@@ -93,7 +94,7 @@ func HTTPStatusFromCode(code string) int {
 	switch code {
 	case ErrCodeInternal:
 		return http.StatusInternalServerError
-	case ErrCodeNotFound, ErrCodeTicketNotFound:
+	case ErrCodeNotFound, ErrCodeTicketNotFound, ErrCodeTriageNotFound:
 		return http.StatusNotFound
 	case ErrCodeUnauthorized:
 		return http.StatusUnauthorized

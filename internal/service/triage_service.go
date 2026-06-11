@@ -18,6 +18,7 @@ import (
 
 type TriageService interface {
 	ExecuteTriage(ctx context.Context, ticketID uint) (*response.TriageResponse, error)
+	GetLatestTriageResult(ctx context.Context, ticketID uint) (*response.TriageResponse, error)
 	ExecuteBatchTriage(ctx context.Context, ticketIDs []uint) ([]*response.BatchTriageResponseItem, error)
 }
 
@@ -179,4 +180,46 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 	}
 
 	return apiResponse, nil
+}
+
+func (s *triageServiceImpl) GetLatestTriageResult(ctx context.Context, ticketID uint) (*response.TriageResponse, error) {
+	slog.InfoContext(ctx, "fetching latest triage result", slog.Uint64("ticket_id", uint64(ticketID)))
+
+	// Xác minh ticket tồn tại
+	ticket, err := s.ticketRepo.FindById(ctx, ticketID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to fetch ticket",
+			slog.Uint64("ticket_id", uint64(ticketID)),
+			slog.Any("error", err),
+		)
+		return nil, fmt.Errorf("failed to fetch ticket: %w", err)
+	}
+	if ticket == nil {
+		return nil, errmsgs.ErrTicketNotFound
+	}
+
+	dbResult, err := s.triageRepo.FindLatestByTicketID(ctx, ticketID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to fetch latest triage result",
+			slog.Uint64("ticket_id", uint64(ticketID)),
+			slog.Any("error", err),
+		)
+		return nil, fmt.Errorf("failed to fetch latest triage result: %w", err)
+	}
+	if dbResult == nil {
+		return nil, errmsgs.ErrTriageNotFound
+	}
+
+	slog.InfoContext(ctx, "latest triage result fetched successfully", slog.Uint64("ticket_id", uint64(ticketID)))
+
+	return &response.TriageResponse{
+		Category:              dbResult.Category,
+		UrgencyLevel:          dbResult.UrgencyLevel,
+		SLABreachRisk:         dbResult.SLABreachRisk,
+		ReasonSummary:         dbResult.ReasonSummary,
+		RecommendedNextAction: dbResult.RecommendedNextAction,
+		ConfidenceScore:       dbResult.ConfidenceScore,
+		FallbackUsed:          dbResult.FallbackUsed,
+		PromptVersion:         dbResult.PromptVersion,
+	}, nil
 }

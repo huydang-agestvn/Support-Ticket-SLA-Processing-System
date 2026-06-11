@@ -131,6 +131,17 @@ func InitRouter(
 				triageHandler.HandleTriageTicket,
 			)
 
+			// Agent / Manager: Lấy kết quả triage mới nhất của Ticket
+			aiGroup.GET(
+				"/tickets/:id/triage/latest",
+				authMiddleware.RequireAuth(),
+				authMiddleware.RequireRole(
+					auth.RoleAgent,
+					auth.RoleManager,
+				),
+				triageHandler.HandleGetLatestTriage,
+			)
+
 			// Manager: AI Triage batch of Tickets
 			aiGroup.POST(
 				"/tickets/triage:batch",
