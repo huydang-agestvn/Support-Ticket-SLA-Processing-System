@@ -92,7 +92,7 @@ func (s *triageServiceImpl) fetchAndValidateTickets(ctx context.Context, ticketI
 				slog.Uint64("ticket_id", uint64(t.ID)),
 				slog.String("status", string(t.Status)),
 			)
-			return nil, errmsgs.ErrInvalidFlowTicket
+			return nil, errmsgs.ErrTicketResolved
 		}
 		fetchedMap[t.ID] = t
 	}
