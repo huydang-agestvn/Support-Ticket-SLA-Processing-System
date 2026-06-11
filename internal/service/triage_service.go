@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"support-ticket.com/internal/ai"
+	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/response"
 	"support-ticket.com/internal/errmsgs"
 	"support-ticket.com/internal/model"
@@ -47,8 +48,45 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 	if ticket == nil {
 		return nil, ai.TriagePromptData{}, errmsgs.ErrTicketNotFound
 	}
-
 	now := time.Now()
+
+	// Business Validations for AI Triage
+	// 1. Do not triage tickets that are already in a terminal state
+	if ticket.Status == model.StatusResolved || ticket.Status == model.StatusClosed || ticket.Status == model.StatusCancelled {
+		slog.WarnContext(ctx, "ticket is in terminal state, skipping triage",
+			slog.Uint64("ticket_id", uint64(ticketID)),
+			slog.String("status", string(ticket.Status)),
+		)
+		return nil, ai.TriagePromptData{}, common.NewBadRequest(
+			common.ErrCodeInvalidInput,
+			fmt.Sprintf("ticket is already %s and does not require AI triage", ticket.Status),
+		)
+	}
+
+	// 2. Do not triage tickets that are already overdue
+	if ticket.SLADueAt != nil && ticket.SLADueAt.Before(now) {
+		slog.WarnContext(ctx, "ticket is already overdue, skipping triage",
+			slog.Uint64("ticket_id", uint64(ticketID)),
+			slog.Time("sla_due_at", *ticket.SLADueAt),
+		)
+		return nil, ai.TriagePromptData{}, common.NewBadRequest(
+			common.ErrCodeInvalidInput,
+			"ticket is already overdue and requires immediate manual intervention",
+		)
+	}
+
+	// 3. Ensure ticket description is meaningful (preventing "garbage" inputs to AI)
+	if len(strings.TrimSpace(ticket.Description)) < 10 {
+		slog.WarnContext(ctx, "ticket description too short, skipping triage",
+			slog.Uint64("ticket_id", uint64(ticketID)),
+			slog.Int("description_length", len(strings.TrimSpace(ticket.Description))),
+		)
+		return nil, ai.TriagePromptData{}, common.NewBadRequest(
+			common.ErrCodeInvalidInput,
+			"ticket description is too short for meaningful AI triage (minimum 10 characters required)",
+		)
+	}
+
 	report, err := s.reportRepo.GetByDate(now)
 	if err != nil && strings.Contains(err.Error(), "report not found") {
 		report, _ = s.reportRepo.GetByDate(now.Add(-24 * time.Hour))
@@ -57,11 +95,7 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 	slaEvidence := "SLA not set."
 	if ticket.SLADueAt != nil {
 		timeLeft := ticket.SLADueAt.Sub(now).Round(time.Minute)
-		if timeLeft < 0 {
-			slaEvidence = fmt.Sprintf("CRITICAL: Ticket is already OVERDUE by %s", -timeLeft)
-		} else {
-			slaEvidence = fmt.Sprintf("Ticket has %s remaining before SLA breach", timeLeft)
-		}
+		slaEvidence = fmt.Sprintf("Ticket has %s remaining before SLA breach", timeLeft)
 	}
 
 	promptData := ai.TriagePromptData{
@@ -91,6 +125,13 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 		slog.WarnContext(ctx, "AI adapter failed, evaluating fallback",
 			slog.Uint64("ticket_id", uint64(ticketID)),
 			slog.Any("ai_error", aiErr),
+		)
+	} else if aiResult != nil && aiResult.ConfidenceScore < 0.5 {
+		slog.WarnContext(ctx, "AI returned low confidence, fallback will be triggered",
+			slog.Uint64("ticket_id", uint64(ticketID)),
+			slog.Float64("confidence_score", aiResult.ConfidenceScore),
+			slog.String("ai_category", aiResult.Category),
+			slog.String("ai_reason", aiResult.ReasonSummary),
 		)
 	}
 
