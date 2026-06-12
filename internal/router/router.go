@@ -141,7 +141,6 @@ func InitRouter(
 				),
 				triageHandler.HandleGetLatestTriage,
 			)
-
 			// Manager: AI Triage batch of Tickets
 			aiGroup.POST(
 				"/tickets/triage:batch",

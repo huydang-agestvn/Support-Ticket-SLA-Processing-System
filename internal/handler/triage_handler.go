@@ -70,4 +70,3 @@ func (h *TriageHandler) HandleBatchTriageTickets(c *gin.Context) {
 		Data:    results,
 	})
 }
-

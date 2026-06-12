@@ -9,6 +9,7 @@ import (
 
 	"support-ticket.com/internal/ai"
 	"support-ticket.com/internal/config"
+	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/response"
 	"support-ticket.com/internal/errmsgs"
 	"support-ticket.com/internal/model"
@@ -62,7 +63,10 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 			slog.Uint64("ticket_id", uint64(ticketID)),
 			slog.String("status", string(ticket.Status)),
 		)
-		return nil, ai.TriagePromptData{}, errmsgs.ErrTicketResolved
+		return nil, ai.TriagePromptData{}, common.NewBadRequest(
+			common.ErrCodeInvalidInput,
+			fmt.Sprintf("ticket is already %s and does not require AI triage", ticket.Status),
+		)
 	}
 
 	// 2. Do not triage tickets that are already overdue
@@ -71,7 +75,10 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 			slog.Uint64("ticket_id", uint64(ticketID)),
 			slog.Time("sla_due_at", *ticket.SLADueAt),
 		)
-		return nil, ai.TriagePromptData{}, errmsgs.ErrTicketOverdue
+		return nil, ai.TriagePromptData{}, common.NewBadRequest(
+			common.ErrCodeInvalidInput,
+			"ticket is already overdue and requires immediate manual intervention",
+		)
 	}
 
 	// 3. Ensure ticket description is meaningful (preventing "garbage" inputs to AI)
@@ -80,7 +87,10 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 			slog.Uint64("ticket_id", uint64(ticketID)),
 			slog.Int("description_length", len(strings.TrimSpace(ticket.Description))),
 		)
-		return nil, ai.TriagePromptData{}, errmsgs.ErrTicketDescriptionTooShort
+		return nil, ai.TriagePromptData{}, common.NewBadRequest(
+			common.ErrCodeInvalidInput,
+			"ticket description is too short for meaningful AI triage (minimum 10 characters required)",
+		)
 	}
 
 	report, err := s.reportRepo.GetByDate(now)

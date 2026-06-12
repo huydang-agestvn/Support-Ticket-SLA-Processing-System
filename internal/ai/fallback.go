@@ -80,7 +80,7 @@ func buildFallbackResult(ticket *model.Ticket, result *TriageResult) *TriageResu
 		UrgencyLevel:          string(ticket.Priority),
 		SLABreachRisk:         slaBreachRisk,
 		ReasonSummary:         strings.Join(reasonParts, " "),
-		RecommendedNextAction: "Review ticket manually and verify category and urgency.",
+		RecommendedNextAction: "Review ticket manually and verify category/urgency.",
 		ConfidenceScore:       confidenceScore,
 		FallbackUsed:          true,
 		PromptVersion:         "fallback",
