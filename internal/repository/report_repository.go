@@ -7,13 +7,13 @@ import (
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 )
 
 type ReportRepository interface {
-	AggregateByDate(date time.Time) (*domain.TicketReport, error)
-	Upsert(report *domain.TicketReport) error
-	GetByDate(date time.Time) (*domain.TicketReport, error)
+	AggregateByDate(date time.Time) (*model.TicketReport, error)
+	Upsert(report *model.TicketReport) error
+	GetByDate(date time.Time) (*model.TicketReport, error)
 }
 
 type reportRepository struct {
@@ -24,13 +24,15 @@ func NewReportRepository(db *gorm.DB) ReportRepository {
 	return &reportRepository{db: db}
 }
 
-func (r *reportRepository) AggregateByDate(date time.Time) (*domain.TicketReport, error) {
+func (r *reportRepository) AggregateByDate(date time.Time) (*model.TicketReport, error) {
 	start := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
 	end := start.Add(24 * time.Hour)
 
-	report := &domain.TicketReport{
+	report := &model.TicketReport{
 		ReportDate: start,
-		CreatedAt:  time.Now(),
+		AuditModel: model.AuditModel{
+			CreatedAt: time.Now(),
+		},
 	}
 
 	query := `
@@ -63,7 +65,7 @@ func (r *reportRepository) AggregateByDate(date time.Time) (*domain.TicketReport
 	return report, nil
 }
 
-func (r *reportRepository) Upsert(report *domain.TicketReport) error {
+func (r *reportRepository) Upsert(report *model.TicketReport) error {
 	err := r.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "report_date"}}, 
 		UpdateAll: true,                                  
@@ -75,10 +77,10 @@ func (r *reportRepository) Upsert(report *domain.TicketReport) error {
 	return nil
 }
 
-func (r *reportRepository) GetByDate(date time.Time) (*domain.TicketReport, error) {
+func (r *reportRepository) GetByDate(date time.Time) (*model.TicketReport, error) {
 	start := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
 
-	var report domain.TicketReport
+	var report model.TicketReport
 	result := r.db.Where("report_date = ?", start).First(&report)
 
 	if result.Error == gorm.ErrRecordNotFound {

@@ -49,6 +49,22 @@ type Config struct {
 	MinioSecretKey  string
 	MinioUseSSL     bool
 	MinioBucketName string
+
+	//AI Config
+	AIProvider      string
+	AIModel         string
+	AIBaseURL       string
+	AIAPIKey        string
+	AITimeoutSecs   int
+	AIMaxRetries    int
+	AIEnabled       bool
+	AIPromptVersion string
+	AIMaxBatchSize  int
+	AIWorkerPoolSize int
+}
+
+func init() {
+	_ = loadEnv()
 }
 
 // LoadConfig
@@ -58,15 +74,38 @@ func LoadConfig() *Config {
 		slog.WarnContext(context.Background(), "No .env file found, using system environment variables", slog.Any("error", err))
 	}
 
-	auditDir := getEnv("AUDIT_LOG_DIR")
-	if auditDir == "" {
-		auditDir = "logs/import_audit"
-	}
 
 	minioUseSSL, _ := strconv.ParseBool(getEnv("MINIO_USE_SSL"))
 	minioBucket := getEnv("MINIO_BUCKET_NAME")
 	if minioBucket == "" {
 		minioBucket = "audit-logs"
+	}
+
+	aiEnabled, _ := strconv.ParseBool(getEnv("AI_ENABLED"))
+
+	aiTimeoutSecs := getEnvInt("AI_TIMEOUT_SECS")
+	if aiTimeoutSecs == 0 {
+		aiTimeoutSecs = 30
+	}
+
+	aiMaxRetries := getEnvInt("AI_MAX_RETRIES")
+	if aiMaxRetries == 0 {
+		aiMaxRetries = 2
+	}
+
+	aiPromptVersion := getEnv("AI_PROMPT_VERSION")
+	if aiPromptVersion == "" {
+		aiPromptVersion = "v1.0"
+	}
+
+	aiMaxBatchSize := getEnvInt("AI_MAX_BATCH_SIZE")
+	if aiMaxBatchSize == 0 {
+		aiMaxBatchSize = 30
+	}
+
+	aiWorkerPoolSize := getEnvInt("AI_WORKER_POOL_SIZE")
+	if aiWorkerPoolSize == 0 {
+		aiWorkerPoolSize = 3
 	}
 
 	cfg := &Config{
@@ -95,13 +134,22 @@ func LoadConfig() *Config {
 		SMTPPass:     getEnv("SMTP_PASS"),
 		ManagerEmail: getEnv("MANAGER_EMAIL"),
 
-		AuditLogDir: auditDir,
-
 		MinioEndpoint:   getEnv("MINIO_ENDPOINT"),
 		MinioAccessKey:  getEnv("MINIO_ACCESS_KEY"),
 		MinioSecretKey:  getEnv("MINIO_SECRET_KEY"),
 		MinioUseSSL:     minioUseSSL,
 		MinioBucketName: minioBucket,
+
+		AIProvider:      getEnv("AI_PROVIDER"),
+		AIModel:         getEnv("AI_MODEL"),
+		AIBaseURL:       getEnv("AI_BASE_URL"),
+		AIAPIKey:        getEnv("AI_API_KEY"),
+		AITimeoutSecs:   aiTimeoutSecs,
+		AIMaxRetries:    aiMaxRetries,
+		AIEnabled:       aiEnabled,
+		AIPromptVersion: aiPromptVersion,
+		AIMaxBatchSize:  aiMaxBatchSize,
+		AIWorkerPoolSize: aiWorkerPoolSize,
 	}
 
 	return cfg

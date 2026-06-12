@@ -6,21 +6,21 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 	"support-ticket.com/internal/service"
 	testmock "support-ticket.com/tests/mock"
 )
 
 func TestReportService_GenerateReport(t *testing.T) {
 	now := time.Now()
-	validReport := &domain.TicketReport{ReportDate: now}
-	invalidReport := &domain.TicketReport{ReportDate: now, NewCount: -1} // Invalid count
+	validReport := &model.TicketReport{ReportDate: now}
+	invalidReport := &model.TicketReport{ReportDate: now, NewCount: -1} // Invalid count
 
 	tests := []struct {
 		name          string
 		mockRepo      func(*testmock.MockReportRepository)
 		expectedError string
-		expectedRes   *domain.TicketReport
+		expectedRes   *model.TicketReport
 	}{
 		{
 			name: "Success",
@@ -34,7 +34,7 @@ func TestReportService_GenerateReport(t *testing.T) {
 		{
 			name: "AggregateError",
 			mockRepo: func(m *testmock.MockReportRepository) {
-				m.On("AggregateByDate", now).Return((*domain.TicketReport)(nil), errors.New("db error"))
+				m.On("AggregateByDate", now).Return((*model.TicketReport)(nil), errors.New("db error"))
 			},
 			expectedError: "aggregate report",
 			expectedRes:   nil,
@@ -82,13 +82,13 @@ func TestReportService_GenerateReport(t *testing.T) {
 
 func TestReportService_GetReport(t *testing.T) {
 	now := time.Now()
-	validReport := &domain.TicketReport{ReportDate: now}
+	validReport := &model.TicketReport{ReportDate: now}
 
 	tests := []struct {
 		name          string
 		mockRepo      func(*testmock.MockReportRepository)
 		expectedError string
-		expectedRes   *domain.TicketReport
+		expectedRes   *model.TicketReport
 	}{
 		{
 			name: "Success_Cached",
@@ -101,7 +101,7 @@ func TestReportService_GetReport(t *testing.T) {
 		{
 			name: "Error_NotFound",
 			mockRepo: func(m *testmock.MockReportRepository) {
-				m.On("GetByDate", now).Return((*domain.TicketReport)(nil), errors.New("report not found"))
+				m.On("GetByDate", now).Return((*model.TicketReport)(nil), errors.New("report not found"))
 			},
 			expectedError: "report not found",
 			expectedRes:   nil,

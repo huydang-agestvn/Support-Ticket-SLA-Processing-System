@@ -5,34 +5,34 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 )
 
 func TestTicketEvent_Validate(t *testing.T) {
 	now := time.Now()
 
-	validEvent := func() *domain.TicketEvent {
-		return &domain.TicketEvent{
+	validEvent := func() *model.TicketEvent {
+		return &model.TicketEvent{
 			TicketID:   1,
-			FromStatus: domain.StatusNew,
-			ToStatus:   domain.StatusAssigned,
+			FromStatus: model.StatusNew,
+			ToStatus:   model.StatusAssigned,
 			CreatedAt:  now,
 		}
 	}
 
 	tests := []struct {
 		name        string
-		modify      func(*domain.TicketEvent)
+		modify      func(*model.TicketEvent)
 		expectError bool
 		errorMsg    string
 	}{
-		{"Valid", func(e *domain.TicketEvent) {}, false, ""},
-		{"Zero TicketID", func(e *domain.TicketEvent) { e.TicketID = 0 }, true, "ticket_id is required"},
-		{"Invalid FromStatus", func(e *domain.TicketEvent) { e.FromStatus = "invalid" }, true, "unknown from_status"},
-		{"Invalid ToStatus", func(e *domain.TicketEvent) { e.ToStatus = "invalid" }, true, "unknown to_status"},
-		{"Same Statuses", func(e *domain.TicketEvent) { e.ToStatus = domain.StatusNew }, true, "cannot be the same"},
-		{"Illegal Transition", func(e *domain.TicketEvent) { e.ToStatus = domain.StatusClosed }, true, "illegal event transition"},
-		{"Zero CreatedAt", func(e *domain.TicketEvent) { e.CreatedAt = time.Time{} }, true, "created_at is required"},
+		{"Valid", func(e *model.TicketEvent) {}, false, ""},
+		{"Zero TicketID", func(e *model.TicketEvent) { e.TicketID = 0 }, true, "ticket_id is required"},
+		{"Invalid FromStatus", func(e *model.TicketEvent) { e.FromStatus = "invalid" }, true, "unknown from_status"},
+		{"Invalid ToStatus", func(e *model.TicketEvent) { e.ToStatus = "invalid" }, true, "unknown to_status"},
+		{"Same Statuses", func(e *model.TicketEvent) { e.ToStatus = model.StatusNew }, true, "cannot be the same"},
+		{"Illegal Transition", func(e *model.TicketEvent) { e.ToStatus = model.StatusClosed }, true, "illegal event transition"},
+		{"Zero CreatedAt", func(e *model.TicketEvent) { e.CreatedAt = time.Time{} }, true, "created_at is required"},
 	}
 
 	for _, tt := range tests {
@@ -54,10 +54,10 @@ func TestTicketEvent_Validate(t *testing.T) {
 }
 
 func TestTicketEvent_HashKey(t *testing.T) {
-	event := &domain.TicketEvent{
+	event := &model.TicketEvent{
 		TicketID:   123,
-		FromStatus: domain.StatusAssigned,
-		ToStatus:   domain.StatusInProgress,
+		FromStatus: model.StatusAssigned,
+		ToStatus:   model.StatusInProgress,
 	}
 
 	expectedHash := "123|assigned|in_progress"

@@ -12,9 +12,12 @@ func RunMigrations(db *gorm.DB) error {
 	fmt.Println("Running database migrations...")
 
 	if err := db.AutoMigrate(
-		&domain.Ticket{},
-		&domain.TicketEvent{},
-		&domain.TicketReport{},
+		&model.Ticket{},
+		&model.TicketEvent{},
+		&model.TicketReport{},
+		&model.AITicketTriageResult{},
+		&model.AIEvaluationRun{},
+		&model.AIEvaluationCase{},
 	); err != nil {
 		return fmt.Errorf("failed to run auto migrations: %w", err)
 	}

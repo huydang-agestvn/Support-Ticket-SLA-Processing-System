@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"support-ticket.com/internal/handler"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 	testmock "support-ticket.com/tests/mock"
 )
 
@@ -29,7 +29,7 @@ func TestReportHandler_GetDaily(t *testing.T) {
 			dateQuery: now.Format("2006-01-02"),
 			mockSetup: func(m *testmock.MockReportService) {
 				date, _ := time.Parse("2006-01-02", now.Format("2006-01-02"))
-				m.On("GetReport", date).Return(&domain.TicketReport{ReportDate: date}, nil)
+				m.On("GetReport", date).Return(&model.TicketReport{ReportDate: date}, nil)
 			},
 			expectedCode: http.StatusOK,
 		},
@@ -44,7 +44,7 @@ func TestReportHandler_GetDaily(t *testing.T) {
 			dateQuery: now.Format("2006-01-02"),
 			mockSetup: func(m *testmock.MockReportService) {
 				date, _ := time.Parse("2006-01-02", now.Format("2006-01-02"))
-				m.On("GetReport", date).Return((*domain.TicketReport)(nil), errors.New("report not found"))
+				m.On("GetReport", date).Return((*model.TicketReport)(nil), errors.New("report not found"))
 			},
 			expectedCode: http.StatusNotFound,
 		},

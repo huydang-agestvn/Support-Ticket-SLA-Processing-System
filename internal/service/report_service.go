@@ -11,8 +11,8 @@ import (
 )
 
 type ReportService interface {
-	GenerateReport(date time.Time) (*domain.TicketReport, error)
-	GetReport(date time.Time) (*domain.TicketReport, error)
+	GenerateReport(date time.Time) (*model.TicketReport, error)
+	GetReport(date time.Time) (*model.TicketReport, error)
 }
 
 type reportService struct {
@@ -23,7 +23,7 @@ func NewReportService(repo repository.ReportRepository) ReportService {
 	return &reportService{repo: repo}
 }
 
-func (s *reportService) GenerateReport(date time.Time) (*domain.TicketReport, error) {
+func (s *reportService) GenerateReport(date time.Time) (*model.TicketReport, error) {
 	report, err := s.repo.AggregateByDate(date)
 	if err != nil {
 		slog.ErrorContext(context.Background(), "failed to aggregate report",
@@ -56,6 +56,6 @@ func (s *reportService) GenerateReport(date time.Time) (*domain.TicketReport, er
 	return report, nil
 }
 
-func (s *reportService) GetReport(date time.Time) (*domain.TicketReport, error) {
+func (s *reportService) GetReport(date time.Time) (*model.TicketReport, error) {
 	return s.repo.GetByDate(date)
 }

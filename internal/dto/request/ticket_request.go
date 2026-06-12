@@ -3,19 +3,19 @@ package request
 import (
 	"time"
 
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 )
 
 type CreateTicketReq struct {
 	RequestorID string          `json:"-" swaggerignore:"true"`
 	Title       string          `json:"title"`
 	Description string          `json:"description"`
-	Priority    domain.Priority `json:"priority"`
+	Priority    model.Priority `json:"priority"`
 	SlaDueAt    *time.Time      `json:"sla_due_at,omitempty"`
 }
 
 type UpdateStatusReq struct {
-	Status     domain.TicketStatus `json:"status"`
+	Status     model.TicketStatus `json:"status"`
 	Note       string              `json:"note,omitempty"`
 	AssigneeID string              `json:"-" swaggerignore:"true"`
 }

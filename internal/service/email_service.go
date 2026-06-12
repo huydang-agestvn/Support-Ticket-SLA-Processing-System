@@ -13,7 +13,7 @@ import (
 )
 
 type EmailService interface {
-	SendDailyReportEmail(report *domain.TicketReport) error
+	SendDailyReportEmail(report *model.TicketReport) error
 }
 
 type emailService struct {
@@ -24,7 +24,7 @@ func NewEmailService(cfg *config.Config) EmailService {
 	return &emailService{cfg: cfg}
 }
 
-func (s *emailService) SendDailyReportEmail(report *domain.TicketReport) error {
+func (s *emailService) SendDailyReportEmail(report *model.TicketReport) error {
 	if s.cfg.SMTPHost == "" || s.cfg.SMTPUser == "" {
 		return fmt.Errorf("SMTP configuration is incomplete, skipping email")
 	}

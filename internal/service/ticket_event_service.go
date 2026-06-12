@@ -12,13 +12,13 @@ import (
 	"support-ticket.com/internal/config"
 	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/errmsgs"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 	"support-ticket.com/internal/repository"
 	"support-ticket.com/internal/worker"
 )
 
 type TicketEventService interface {
-	Import(ctx context.Context, events []domain.TicketEvent) (domain.BatchImportResult, error)
+	Import(ctx context.Context, events []model.TicketEvent) (model.BatchImportResult, error)
 	GetAuditLogPath(filename string) (string, error)
 }
 
@@ -37,13 +37,13 @@ func NewTicketEventService(eventRepo repository.TicketEventRepository, ticketRep
 }
 
 type rejectedEventWithReason struct {
-	Event  domain.TicketEvent
+	Event  model.TicketEvent
 	Reason string
 }
 
 type updateJob struct {
 	TicketID    uint
-	Status      domain.TicketStatus
+	Status      model.TicketStatus
 	AssigneeID  string
 	CreatedAt   time.Time
 	ResolvedAt  *time.Time
@@ -53,18 +53,18 @@ type updateJob struct {
 var maxBatchSize = config.GetBatchSize("MAX_BATCH_SIZE")
 
 type parsedEvent struct {
-	Event domain.TicketEvent
+	Event model.TicketEvent
 	Err   error // nil = valid
 }
 
 type ticketWorkerJob struct {
 	TicketID uint
-	Events   []domain.TicketEvent
+	Events   []model.TicketEvent
 }
 
 type ticketJobResult struct {
-	AcceptedEvents []domain.TicketEvent
-	RejectedEvents []domain.TicketEvent
+	AcceptedEvents []model.TicketEvent
+	RejectedEvents []model.TicketEvent
 	RejectedError  string
 	DuplicateCount int
 	FinalUpdateJob *updateJob
@@ -72,14 +72,14 @@ type ticketJobResult struct {
 
 type importMetadata struct {
 	existingTickets         map[uint]bool
-	existingTicketStatuses  map[uint]domain.TicketStatus
+	existingTicketStatuses  map[uint]model.TicketStatus
 	ticketCreatedAt         map[uint]time.Time
 	existingDBEvents        map[string]bool
 	existingTicketAssignees map[uint]string
 }
 
 
-func (s *ticketEventService) buildParsedEvents(events []domain.TicketEvent) ([]parsedEvent, error) {
+func (s *ticketEventService) buildParsedEvents(events []model.TicketEvent) ([]parsedEvent, error) {
 	if len(events) == 0 {
 		return nil, errmsgs.ErrEmptyBatch
 	}
@@ -96,14 +96,14 @@ func (s *ticketEventService) buildParsedEvents(events []domain.TicketEvent) ([]p
 	return parsed, nil
 }
 
-func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketEvent) (domain.BatchImportResult, error) {
+func (s *ticketEventService) Import(ctx context.Context, events []model.TicketEvent) (model.BatchImportResult, error) {
 	slog.InfoContext(ctx, "initiating batch import",
 		slog.Int("total_events", len(events)),
 	)
 
 	parsedEvents, err := s.buildParsedEvents(events)
 	if err != nil {
-		return domain.BatchImportResult{}, err
+		return model.BatchImportResult{}, err
 	}
 
 	workerJobs, rejectedEvents, rejectedCount, ticketIDs, eventKeys := s.filterAndGroupEvents(parsedEvents)
@@ -113,14 +113,14 @@ func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketE
 		slog.ErrorContext(ctx, "failed to fetch metadata for import",
 			slog.Any("error", err),
 		)
-		return domain.BatchImportResult{}, err
+		return model.BatchImportResult{}, err
 	}
 
 	results := worker.Run(workerJobs, func(job ticketWorkerJob) ticketJobResult {
 		return s.simulateTicketFSM(job, meta)
 	})
 
-	finalResult := domain.BatchImportResult{
+	finalResult := model.BatchImportResult{
 		RejectedCount: rejectedCount,
 	}
 
@@ -135,7 +135,7 @@ func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketE
 		}
 	}
 
-	var eventsToInsert []domain.TicketEvent
+	var eventsToInsert []model.TicketEvent
 	var finalUpdates []updateJob
 
 	for _, res := range results {
@@ -166,7 +166,7 @@ func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketE
 		slog.ErrorContext(ctx, "failed to apply import db results",
 			slog.Any("error", err),
 		)
-		return domain.BatchImportResult{}, err
+		return model.BatchImportResult{}, err
 	}
 
 	currentUser := auth.UserFromContext(ctx)
@@ -187,7 +187,7 @@ func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketE
 			slog.ErrorContext(ctx, "failed to write audit log for rejected events",
 				slog.Any("error", err),
 			)
-			return domain.BatchImportResult{}, fmt.Errorf("failed to write audit log: %w", err)
+			return model.BatchImportResult{}, fmt.Errorf("failed to write audit log: %w", err)
 		}
 		finalResult.AuditLogFile = fileName
 	}
@@ -202,9 +202,9 @@ func (s *ticketEventService) Import(ctx context.Context, events []domain.TicketE
 	return finalResult, nil
 }
 
-func (s *ticketEventService) filterAndGroupEvents(parsedEvents []parsedEvent) ([]ticketWorkerJob, map[string][]domain.TicketEvent, int, []uint, []string) {
-	validEvents := make([]domain.TicketEvent, 0, len(parsedEvents))
-	rejectedEvents := make(map[string][]domain.TicketEvent)
+func (s *ticketEventService) filterAndGroupEvents(parsedEvents []parsedEvent) ([]ticketWorkerJob, map[string][]model.TicketEvent, int, []uint, []string) {
+	validEvents := make([]model.TicketEvent, 0, len(parsedEvents))
+	rejectedEvents := make(map[string][]model.TicketEvent)
 	rejectedCount := 0
 
 	for _, pe := range parsedEvents {
@@ -217,7 +217,7 @@ func (s *ticketEventService) filterAndGroupEvents(parsedEvents []parsedEvent) ([
 		validEvents = append(validEvents, pe.Event)
 	}
 
-	groupedEvents := make(map[uint][]domain.TicketEvent)
+	groupedEvents := make(map[uint][]model.TicketEvent)
 	var ticketIDs []uint
 	var eventKeys []string
 
@@ -283,11 +283,11 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 	localSeen := make(map[string]bool)
 	var finalJob *updateJob
 
-	ticket := &domain.Ticket{
-		ID:         ticketID,
-		Status:     currentStatus,
-		AssigneeID: currentAssigneeID,
-		CreatedAt:  ticketCreatedAt,
+	ticket := &model.Ticket{
+		ID:              ticketID,
+		Status:          currentStatus,
+		AssigneeID:      currentAssigneeID,
+		TicketCreatedAt: ticketCreatedAt,
 	}
 
 	for _, event := range job.Events {
@@ -302,7 +302,7 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 			return rejectJob(job, errmsgs.ErrInvalidFlowTicket)
 		}
 
-		if event.ToStatus == domain.StatusResolved || event.ToStatus == domain.StatusCancelled {
+		if event.ToStatus == model.StatusResolved || event.ToStatus == model.StatusCancelled {
 			if event.CreatedAt.Before(ticketCreatedAt) {
 				status := string(event.ToStatus)
 				if len(status) > 0 {
@@ -313,7 +313,7 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 		}
 
 		reqAssigneeId := strings.TrimSpace(event.AssigneeID)
-		if ticket.Status == domain.StatusNew && event.ToStatus == domain.StatusAssigned {
+		if ticket.Status == model.StatusNew && event.ToStatus == model.StatusAssigned {
 			if reqAssigneeId == "" {
 				return rejectJob(job, fmt.Errorf("%w: Assignee ID is required when assigning a ticket", errmsgs.ErrInvalidInput))
 			}
@@ -347,7 +347,7 @@ func rejectJob(job ticketWorkerJob, err error) ticketJobResult {
 	}
 }
 
-func (s *ticketEventService) applyDBResults(ctx context.Context, eventsToInsert []domain.TicketEvent, finalUpdates []updateJob) error {
+func (s *ticketEventService) applyDBResults(ctx context.Context, eventsToInsert []model.TicketEvent, finalUpdates []updateJob) error {
 	// Wrap DB operations inside a Database Transaction
 	return s.ticketRepo.Transaction(ctx, func(txCtx context.Context) error {
 		if len(eventsToInsert) > 0 {
@@ -359,7 +359,7 @@ func (s *ticketEventService) applyDBResults(ctx context.Context, eventsToInsert 
 		if len(finalUpdates) > 0 {
 			var closedTicketIDs []int
 			for _, u := range finalUpdates {
-				if u.Status == domain.StatusClosed && u.ResolvedAt == nil {
+				if u.Status == model.StatusClosed && u.ResolvedAt == nil {
 					closedTicketIDs = append(closedTicketIDs, int(u.TicketID))
 				}
 			}
@@ -374,25 +374,25 @@ func (s *ticketEventService) applyDBResults(ctx context.Context, eventsToInsert 
 				}
 			}
 
-			tickets := make([]domain.Ticket, len(finalUpdates))
+			tickets := make([]model.Ticket, len(finalUpdates))
 			for i, u := range finalUpdates {
 				var resolvedAt *time.Time = u.ResolvedAt
-				if u.Status == domain.StatusClosed && resolvedAt == nil {
+				if u.Status == model.StatusClosed && resolvedAt == nil {
 					if rTime, ok := resolvedAtByTicket[u.TicketID]; ok {
 						resolvedAt = &rTime
 					}
-				} else if u.Status == domain.StatusResolved && resolvedAt == nil {
+				} else if u.Status == model.StatusResolved && resolvedAt == nil {
 					t := u.CreatedAt
 					resolvedAt = &t
 				}
 
 				var cancelledAt *time.Time = u.CancelledAt
-				if u.Status == domain.StatusCancelled && cancelledAt == nil {
+				if u.Status == model.StatusCancelled && cancelledAt == nil {
 					t := u.CreatedAt
 					cancelledAt = &t
 				}
 
-				tickets[i] = domain.Ticket{
+				tickets[i] = model.Ticket{
 					ID:          u.TicketID,
 					Status:      u.Status,
 					AssigneeID:  u.AssigneeID,

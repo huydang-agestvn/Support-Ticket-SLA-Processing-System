@@ -14,7 +14,7 @@ import (
 	"support-ticket.com/internal/auth"
 	"support-ticket.com/internal/dto/request"
 	"support-ticket.com/internal/handler"
-	domain "support-ticket.com/internal/model"
+	"support-ticket.com/internal/model"
 	testmock "support-ticket.com/tests/mock"
 )
 
@@ -31,7 +31,7 @@ func TestTicketHandler_HandleGetTicket(t *testing.T) {
 			name:     "Success",
 			ticketID: "1",
 			mockSetup: func(m *testmock.MockTicketService) {
-				m.On("FindById", mock.Anything, uint(1)).Return(&domain.Ticket{ID: 1, Title: "Test"}, nil)
+				m.On("FindById", mock.Anything, uint(1)).Return(&model.Ticket{ID: 1, Title: "Test"}, nil)
 			},
 			expectedCode: http.StatusOK,
 		},
@@ -45,7 +45,7 @@ func TestTicketHandler_HandleGetTicket(t *testing.T) {
 			name:     "Not Found",
 			ticketID: "99",
 			mockSetup: func(m *testmock.MockTicketService) {
-				m.On("FindById", mock.Anything, uint(99)).Return((*domain.Ticket)(nil), errors.New("ticket not found"))
+				m.On("FindById", mock.Anything, uint(99)).Return((*model.Ticket)(nil), errors.New("ticket not found"))
 			},
 			expectedCode: http.StatusInternalServerError,
 		},
@@ -91,7 +91,7 @@ func TestTicketHandler_HandleCreateTicket(t *testing.T) {
 			name: "Success",
 			body: request.CreateTicketReq{Title: "Test", Description: "Test desc"},
 			mockSetup: func(m *testmock.MockTicketService) {
-				m.On("Create", mock.Anything, mock.AnythingOfType("request.CreateTicketReq")).Return(&domain.Ticket{ID: 1}, nil)
+				m.On("Create", mock.Anything, mock.AnythingOfType("request.CreateTicketReq")).Return(&model.Ticket{ID: 1}, nil)
 			},
 			expectedCode: http.StatusCreated,
 		},
