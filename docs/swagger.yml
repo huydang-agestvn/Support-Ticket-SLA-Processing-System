@@ -337,9 +337,11 @@ paths:
         - AI Assistant
       summary: Execute an automated batch evaluation run for ticket triage datasets
       description: |
-        Triggers an isolated testing pipeline sequence over predefined baseline ground-truth data cases. 
+        Run a batch evaluation against predefined ground-truth test cases for the ticket triage AI workflow.
         
-        Compiles analytical assessment indicators regarding operational classification accuracy, system performance latency milestones, structural model token payloads, and aggregated infrastructure billing cost schemas. This assists system maintainers in qualifying prompt design adjustments before production environment provisioning.
+        Returns classification accuracy metrics, latency stats, throughput, and a per-case breakdown comparing AI predictions against expected labels.
+
+        Use this endpoint to validate prompt changes and verify fallback behavior before deploying to production.
         
         **Required Roles**: Manager.
       operationId: runTriageEvaluation
@@ -1265,44 +1267,56 @@ components:
         - $ref: "#/components/schemas/SuccessResponseBase"
         - type: object
           properties:
-            message:
-              type: string
-              example: Batch triage job dispatched successfully to the worker pool
             data:
-              type: array
-              items:
-                $ref: "#/components/schemas/AITriageResult"
+              $ref: "#/components/schemas/BatchTriageResult"
           example:
             success: true
-            message: Batch triage job dispatched successfully to the worker pool
             data:
-              - ticket_id: 455
-                category: "IT"
-                urgency_level: "high"
-                sla_breach_risk: "high"
-                reason_summary: "This ticket has been stalled in In Progress status for 5 consecutive hours with no recent activity logs. Based on historical resolution times, the assigned agent is likely facing a technical roadblock. An SLA breach will occur in less than 45 minutes if not intervened."
-                recommended_next_action: "Please initiate an immediate supervisor intervention. I recommend assigning a secondary senior engineer to co-own this ticket with the primary agent to unblock the technical issue and prevent a breach."
-                confidence_score: 0.92
-                prompt_version: "v1.2.0"
-                fallback_used: false
-              - ticket_id: 456
-                category: "HR"
-                urgency_level: "medium"
-                sla_breach_risk: "medium"
-                reason_summary: "This onboarding request has been sitting unassigned in the HR backlog for over 24 hours since its creation. Delaying this further risks impacting the new hire's day-one readiness and overall employee experience."
-                recommended_next_action: "Kindly bypass the automated dispatch and route this ticket directly to the HR Operations Team Lead for immediate manual assignment to an available specialist."
-                confidence_score: 0.65
-                prompt_version: "v1.2.0"
-                fallback_used: false
-              - ticket_id: 457
-                category: "Facilities"
-                urgency_level: "low"
-                sla_breach_risk: "low"
-                reason_summary: "The employee's request text was highly ambiguous and caused an AI processing timeout. To ensure no disruption, I have successfully executed safety protocols and switched to Deterministic Keyword Matching Fallback to classify this ticket."
-                recommended_next_action: "Please have a coordinator perform a quick manual review of the ticket body and layout. Since the AI confidence is based on keyword matching, verifying the specific facility items or maintenance location with the requester is recommended before dispatching a technician."
-                confidence_score: 1.00
-                prompt_version: "v1.2.0"
-                fallback_used: true
+              processed:
+                - ticket_id: 455
+                  category: "IT"
+                  urgency_level: "low"
+                  sla_breach_risk: "low"
+                  reason_summary: "The ticket requests an iPhone X for QA testing, a clear IT device procurement request. No event history indicates work is already underway, so the urgency remains low. The SLA time left is 91 hours, which is not short, and there is no backlog information, so the risk of SLA breach is low. Confidence is high due to the clear domain keywords and lack of ambiguity."
+                  recommended_next_action: "Assign to IT device procurement team to check availability and arrange delivery"
+                  confidence_score: 0.9
+                  fallback_used: false
+                  prompt_version: "v1.1"
+              failed:
+                - ticket_id: 456
+                  reason: "ticket is overdue and cannot be triaged"
+                - ticket_id: 457
+                  reason: "ticket not found"
+
+    BatchTriageResult:
+      type: object
+      required:
+        - processed
+        - failed
+      properties:
+        processed:
+          type: array
+          items:
+            $ref: "#/components/schemas/AITriageResult"
+        failed:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchTriageFailedItem"
+
+    BatchTriageFailedItem:
+      type: object
+      required:
+        - ticket_id
+        - reason
+      properties:
+        ticket_id:
+          type: integer
+          description: Unique identifier of the ticket that failed validation.
+          example: 24
+        reason:
+          type: string
+          description: Reason why the ticket could not be triaged.
+          example: ticket is overdue and cannot be triaged
 
     AITriageResult:
       type: object
