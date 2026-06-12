@@ -17,6 +17,7 @@ func InitRouter(
 	ticketHandler *handler.TicketHandler,
 	authMiddleware *middleware.AuthMiddleware,
 	reportHandler *handler.ReportHandler,
+	triageHandler *handler.TriageHandler,
 ) *gin.Engine {
 
 	// Swagger UI reads the OpenAPI contract.
@@ -114,6 +115,40 @@ func InitRouter(
 				authMiddleware.RequireAuth(),
 				authMiddleware.RequireRole(auth.RoleManager),
 				reportHandler.GetDaily,
+			)
+		}
+
+		aiGroup := api.Group("/ai")
+		{
+			// Agent / Manager: AI Triage a Ticket
+			aiGroup.POST(
+				"/tickets/:id/triage",
+				authMiddleware.RequireAuth(),
+				authMiddleware.RequireRole(
+					auth.RoleAgent,
+					auth.RoleManager,
+				),
+				triageHandler.HandleTriageTicket,
+			)
+
+			// Agent / Manager: Lấy kết quả triage mới nhất của Ticket
+			aiGroup.GET(
+				"/tickets/:id/triage/latest",
+				authMiddleware.RequireAuth(),
+				authMiddleware.RequireRole(
+					auth.RoleAgent,
+					auth.RoleManager,
+				),
+				triageHandler.HandleGetLatestTriage,
+			)
+			// Manager: AI Triage batch of Tickets
+			aiGroup.POST(
+				"/tickets/triage:batch",
+				authMiddleware.RequireAuth(),
+				authMiddleware.RequireRole(
+					auth.RoleManager,
+				),
+				triageHandler.HandleBatchTriageTickets,
 			)
 		}
 	}

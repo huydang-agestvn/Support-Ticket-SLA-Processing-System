@@ -17,6 +17,7 @@ import (
 	"support-ticket.com/internal/migration"
 	"support-ticket.com/internal/repository"
 	"support-ticket.com/internal/router"
+	"support-ticket.com/internal/seeding"
 	"support-ticket.com/internal/service"
 )
 
@@ -54,7 +55,12 @@ func (a *App) Run() error {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	// 4. Setup Dependency Injection
+	// 4. Run Seeding
+	if err := seeding.SeedAIEvaluationCases(a.db); err != nil {
+		return fmt.Errorf("failed to run seeding: %w", err)
+	}
+
+	// 5. Setup Dependency Injection
 	a.setupDependencies()
 
 	// 5. Start Cron Scheduler
@@ -97,6 +103,7 @@ func (a *App) setupDependencies() {
 	ticketRepo := repository.NewTicketRepository(a.db)
 	eventRepo := repository.NewTicketEventRepository(a.db)
 	reportRepo := repository.NewReportRepository(a.db)
+	triageRepo := repository.NewTriageRepository(a.db)
 
 	auditLogger, err := service.NewMinIOAuditLogger(
 		a.cfg.MinioEndpoint,
@@ -112,12 +119,13 @@ func (a *App) setupDependencies() {
 	ticketService := service.NewTicketService(ticketRepo, eventRepo)
 	eventService := service.NewTicketEventService(eventRepo, ticketRepo, auditLogger)
 	reportService := service.NewReportService(reportRepo)
+	triageService := service.NewTriageService(ticketRepo, reportRepo, triageRepo, aiAdapter, a.cfg)
 
 	ticketHandler := handler.NewTicketHandler(ticketService)
 	eventHandler := handler.NewTicketEventHandler(eventService)
 	reportHander := handler.NewReportHandler(reportService)
+	triageHandler := handler.NewTriageHandler(triageService)
 
-	//Auth: Login Keycloak third service
 	keycloakClient := service.NewClient(
 		a.cfg.KeycloakTokenURL,
 		a.cfg.KeycloakClientID,
@@ -127,7 +135,6 @@ func (a *App) setupDependencies() {
 	authService := service.NewAuthService(keycloakClient)
 	authHandler := handler.NewAuthHandler(authService)
 
-	// Auth middleware: dùng để verify access token
 	authenticator := auth.NewKeycloakAuthenticator(
 		a.cfg.KeycloakIssuer,
 		a.cfg.KeycloakClientID,
@@ -144,6 +151,7 @@ func (a *App) setupDependencies() {
 		ticketHandler,
 		authMiddleware,
 		reportHander,
+		triageHandler,
 	)
 
 	// 6. Initialize EmailService and Cron Scheduler
@@ -161,6 +169,5 @@ func (a *App) startServer() error {
 	slog.InfoContext(context.Background(), "worker pool size", slog.Int("worker_pool_size", a.cfg.WorkerPoolSize))
 	slog.InfoContext(context.Background(), "starting HTTP server on", slog.String("addr", addr))
 
-	// Khởi chạy server (blocking operation)
 	return a.router.Run(addr)
 }

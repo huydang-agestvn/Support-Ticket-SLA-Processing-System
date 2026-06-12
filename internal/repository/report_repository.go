@@ -30,7 +30,9 @@ func (r *reportRepository) AggregateByDate(date time.Time) (*model.TicketReport,
 
 	report := &model.TicketReport{
 		ReportDate: start,
-		CreatedAt:  time.Now(),
+		AuditModel: model.AuditModel{
+			CreatedAt: time.Now(),
+		},
 	}
 
 	query := `

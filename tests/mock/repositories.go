@@ -71,6 +71,15 @@ func (m *MockTicketRepository) UpdateStatusesBatch(ctx context.Context, tickets 
 	return args.Error(0)
 }
 
+func (m *MockTicketRepository) FindByIds(ctx context.Context, ids []uint) ([]model.Ticket, error) {
+	args := m.Called(ctx, ids)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]model.Ticket), args.Error(1)
+}
+
+
 // MockTicketEventRepository
 type MockTicketEventRepository struct {
 	mock.Mock
@@ -134,4 +143,22 @@ func (m *MockReportRepository) GetByDate(date time.Time) (*model.TicketReport, e
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*model.TicketReport), args.Error(1)
+}
+
+// MockTriageRepository
+type MockTriageRepository struct {
+	mock.Mock
+}
+
+func (m *MockTriageRepository) Create(ctx context.Context, result *model.AITicketTriageResult) error {
+	args := m.Called(ctx, result)
+	return args.Error(0)
+}
+
+func (m *MockTriageRepository) FindLatestByTicketID(ctx context.Context, ticketID uint) (*model.AITicketTriageResult, error) {
+	args := m.Called(ctx, ticketID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.AITicketTriageResult), args.Error(1)
 }

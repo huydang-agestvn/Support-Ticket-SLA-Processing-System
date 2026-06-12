@@ -16,7 +16,8 @@ services:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
 
   keycloak-db:
     image: postgres:16-alpine
@@ -35,7 +36,8 @@ services:
       test: [ "CMD-SHELL", "pg_isready -U ${KEYCLOAK_DB_USER} -d ${KEYCLOAK_DB_NAME}" ]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
@@ -108,8 +110,15 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
       MANAGER_EMAIL: ${MANAGER_EMAIL}
-      GROQ_API_KEY: ${GROQ_API_KEY}
-      GROQ_MODEL: ${GROQ_MODEL}
+
+      AI_ENABLED: ${AI_ENABLED}
+      AI_PROVIDER: ${AI_PROVIDER}
+      AI_BASE_URL: ${AI_BASE_URL}
+      AI_API_KEY: ${AI_API_KEY}
+      AI_MODEL: ${AI_MODEL}
+      AI_TIMEOUT_SECS: ${AI_TIMEOUT_SECS}
+      AI_MAX_RETRIES: ${AI_MAX_RETRIES}
+      AI_PROMPT_VERSION: ${AI_PROMPT_VERSION}
     volumes:
       - app_logs:/app/logs
     command: sh -c "mkdir -p /app/logs && ./ticket-sla-api 2>&1 | tee /app/logs/app.log"

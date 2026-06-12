@@ -95,7 +95,6 @@ func (c *ClientRequest) Login(username, password string) (*response.KeycloakToke
 func newServiceUnavailable(message string) *common.Error {
 	return &common.Error{
 		Code:    "SERVICE_UNAVAILABLE",
-		Status:  http.StatusServiceUnavailable,
 		Message: message,
 	}
 }

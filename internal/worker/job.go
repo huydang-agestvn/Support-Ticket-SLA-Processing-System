@@ -14,11 +14,18 @@ type JobResult[R any] struct {
 var worker = config.GetPoolSize("WORKER_POOL_SIZE")
 
 func Run[T any, R any](items []T, job func(T) R) []R {
+	return RunWithPoolSize(items, worker, job)
+}
+
+func RunWithPoolSize[T any, R any](items []T, poolSize int, job func(T) R) []R {
+	if poolSize <= 0 {
+		poolSize = 1
+	}
 	jobs := make(chan T, len(items))
 	results := make(chan R, len(items))
 	var wg sync.WaitGroup
 
-	for i := 0; i < worker; i++ {
+	for i := 0; i < poolSize; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

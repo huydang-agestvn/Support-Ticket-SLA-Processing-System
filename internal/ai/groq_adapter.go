@@ -6,7 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"text/template"
 	"time"
+
+	"support-ticket.com/internal/dto/request"
+	"support-ticket.com/internal/dto/response"
 )
 
 // GroqAdapter implements the TriageAdapter using the Groq API.
@@ -33,63 +37,19 @@ func NewGroqAdapter(baseURL, apiKey, model string, timeoutSecs int, maxRetries i
 	}
 }
 
-// groqRequest represents the payload for the Groq API
-type groqRequest struct {
-	Model          string         `json:"model"`
-	Messages       []groqMessage  `json:"messages"`
-	Temperature    float64        `json:"temperature"`
-	ResponseFormat responseFormat `json:"response_format"`
-}
-
-type groqMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type responseFormat struct {
-	Type       string      `json:"type"`
-	JSONSchema *jsonSchema `json:"json_schema,omitempty"`
-}
-
-type jsonSchema struct {
-	Name   string         `json:"name"`
-	Strict bool           `json:"strict"`
-	Schema map[string]any `json:"schema"`
-}
-
-type groqResponse struct {
-	Choices []struct {
-		Message struct {
-			Content string `json:"content"`
-		} `json:"message"`
-	} `json:"choices"`
-}
-
 // AnalyzeTicket sends the ticket details to Groq and enforces strict JSON schema output.
 func (g *GroqAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) (*TriageResult, error) {
-	var historyBuilder bytes.Buffer
-	for _, event := range data.Events {
-		historyBuilder.WriteString(fmt.Sprintf("- [%s] Status changed from %s to %s by Assignee %s\n", 
-			event.CreatedAt.Format(time.RFC3339), event.FromStatus, event.ToStatus, event.AssigneeID))
-	}
-	if len(data.Events) == 0 {
-		historyBuilder.WriteString("No previous events.\n")
+	templatePath := fmt.Sprintf("internal/ai/prompts/triage_%s.tmpl", g.promptVersion)
+	tmpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load prompt template %s: %w", templatePath, err)
 	}
 
-	prompt := fmt.Sprintf(`Analyze the following support ticket and provide triage information.
-Ticket ID: %d
-Title: %s
-Description: %s
-Priority: %s
-Requestor ID: %s
-Created At: %s
-
-Event History:
-%s
-
-SLA Policy & Daily Stats:
-%s
-%s`, data.Ticket.ID, data.Ticket.Title, data.Ticket.Description, data.Ticket.Priority, data.Ticket.RequestorID, data.Ticket.CreatedAt.Format(time.RFC3339), historyBuilder.String(), data.SLAPolicy, data.DailyStats)
+	var promptBuffer bytes.Buffer
+	if err := tmpl.Execute(&promptBuffer, data); err != nil {
+		return nil, fmt.Errorf("failed to render prompt template: %w", err)
+	}
+	prompt := promptBuffer.String()
 
 	// Define the strict JSON schema required by Task 2
 	schema := map[string]any{
@@ -97,15 +57,18 @@ SLA Policy & Daily Stats:
 		"properties": map[string]any{
 			"category": map[string]any{
 				"type":        "string",
+				"enum":        []string{"IT", "HR", "Facilities"},
 				"description": "The category of the ticket",
 			},
 			"urgency_level": map[string]any{
 				"type":        "string",
-				"description": "Urgency level: low, medium, high",
+				"enum":        []string{"low", "medium", "high"},
+				"description": "Urgency level",
 			},
 			"sla_breach_risk": map[string]any{
 				"type":        "string",
-				"description": "Risk of SLA breach: low, medium, high",
+				"enum":        []string{"low", "medium", "high"},
+				"description": "Risk of SLA breach",
 			},
 			"reason_summary": map[string]any{
 				"type":        "string",
@@ -117,6 +80,8 @@ SLA Policy & Daily Stats:
 			},
 			"confidence_score": map[string]any{
 				"type":        "number",
+				"minimum":     0.0,
+				"maximum":     1.0,
 				"description": "Confidence score between 0.0 and 1.0 based on the available context",
 			},
 			"fallback_used": map[string]any{
@@ -132,10 +97,10 @@ SLA Policy & Daily Stats:
 		"additionalProperties": false,
 	}
 
-	reqBody := groqRequest{
+	reqBody := request.GroqRequest{
 		Model:       g.model,
 		Temperature: 0.0, // Use 0.0 for deterministic output required in Triage
-		Messages: []groqMessage{
+		Messages: []request.GroqMessage{
 			{
 				Role:    "system",
 				Content: "You are an AI Service Desk Triage Assistant. You must extract and infer details strictly following the JSON schema format.",
@@ -145,15 +110,16 @@ SLA Policy & Daily Stats:
 				Content: prompt,
 			},
 		},
-		ResponseFormat: responseFormat{
+		ResponseFormat: request.ResponseFormat{
 			Type: "json_schema", // Enforce strict JSON output
-			JSONSchema: &jsonSchema{
+			JSONSchema: &request.JSONSchema{
 				Name:   "triage_result",
 				Strict: true,
 				Schema: schema,
 			},
 		},
 	}
+
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
@@ -189,7 +155,7 @@ SLA Policy & Daily Stats:
 			continue
 		}
 
-		var groqResp groqResponse
+		var groqResp response.GroqResponse
 		if err := json.NewDecoder(resp.Body).Decode(&groqResp); err != nil {
 			resp.Body.Close()
 			lastErr = fmt.Errorf("failed to decode groq response: %w", err)
