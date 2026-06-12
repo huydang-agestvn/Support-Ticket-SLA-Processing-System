@@ -102,6 +102,9 @@ func (t *Ticket) Validate() error {
 	if !t.Status.IsValid() {
 		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("unknown status '%s'", t.Status))
 	}
+	if t.CreatedAt.IsZero() {
+		return common.NewBadRequest(common.ErrCodeInvalidInput, "created_at is required")
+	}
 	if t.SLADueAt == nil || t.SLADueAt.IsZero() {
 		return common.NewBadRequest(common.ErrCodeInvalidInput, "sla_due_at is required for SLA tracking")
 	}

@@ -11,6 +11,7 @@ import (
 
 	"support-ticket.com/internal/ai"
 	"support-ticket.com/internal/config"
+	"support-ticket.com/internal/dto/response"
 	"support-ticket.com/internal/errmsgs"
 	"support-ticket.com/internal/model"
 	"support-ticket.com/internal/service"
@@ -103,17 +104,28 @@ func TestExecuteBatchTriage_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, res, 2)
 
+	var res1, res2 *response.BatchTriageResponseItem
+	for i := range res {
+		if res[i].TicketID == 1 {
+			res1 = res[i]
+		} else if res[i].TicketID == 2 {
+			res2 = res[i]
+		}
+	}
+	assert.NotNil(t, res1)
+	assert.NotNil(t, res2)
+
 	// Check ticket 1 result
-	assert.Equal(t, uint(1), res[0].TicketID)
-	assert.Equal(t, "IT", res[0].Category)
-	assert.Equal(t, "high", res[0].UrgencyLevel)
-	assert.False(t, res[0].FallbackUsed)
+	assert.Equal(t, uint(1), res1.TicketID)
+	assert.Equal(t, "IT", res1.Category)
+	assert.Equal(t, "high", res1.UrgencyLevel)
+	assert.False(t, res1.FallbackUsed)
 
 	// Check ticket 2 result
-	assert.Equal(t, uint(2), res[1].TicketID)
-	assert.Equal(t, "HR", res[1].Category)
-	assert.Equal(t, "low", res[1].UrgencyLevel)
-	assert.False(t, res[1].FallbackUsed)
+	assert.Equal(t, uint(2), res2.TicketID)
+	assert.Equal(t, "HR", res2.Category)
+	assert.Equal(t, "low", res2.UrgencyLevel)
+	assert.False(t, res2.FallbackUsed)
 
 	mockTicketRepo.AssertExpectations(t)
 	mockReportRepo.AssertExpectations(t)

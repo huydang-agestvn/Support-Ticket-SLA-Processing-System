@@ -70,13 +70,18 @@ func buildFallbackResult(ticket *model.Ticket, result *TriageResult) *TriageResu
 		reasonParts = append(reasonParts, "SLA Risk is LOW because there is still plenty of time.")
 	}
 
+	confidenceScore := 0.0
+	if result != nil {
+		confidenceScore = result.ConfidenceScore
+	}
+
 	return &TriageResult{
 		Category:              category,
 		UrgencyLevel:          string(ticket.Priority),
 		SLABreachRisk:         slaBreachRisk,
 		ReasonSummary:         strings.Join(reasonParts, " "),
 		RecommendedNextAction: "Review ticket manually and verify category and urgency.",
-		ConfidenceScore:       result.ConfidenceScore,
+		ConfidenceScore:       confidenceScore,
 		FallbackUsed:          true,
 		PromptVersion:         "fallback",
 	}
