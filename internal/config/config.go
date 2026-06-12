@@ -74,10 +74,6 @@ func LoadConfig() *Config {
 		slog.WarnContext(context.Background(), "No .env file found, using system environment variables", slog.Any("error", err))
 	}
 
-	auditDir := getEnv("AUDIT_LOG_DIR")
-	if auditDir == "" {
-		auditDir = "logs/import_audit"
-	}
 
 	minioUseSSL, _ := strconv.ParseBool(getEnv("MINIO_USE_SSL"))
 	minioBucket := getEnv("MINIO_BUCKET_NAME")
@@ -137,8 +133,6 @@ func LoadConfig() *Config {
 		SMTPUser:     getEnv("SMTP_USER"),
 		SMTPPass:     getEnv("SMTP_PASS"),
 		ManagerEmail: getEnv("MANAGER_EMAIL"),
-
-		AuditLogDir: auditDir,
 
 		MinioEndpoint:   getEnv("MINIO_ENDPOINT"),
 		MinioAccessKey:  getEnv("MINIO_ACCESS_KEY"),

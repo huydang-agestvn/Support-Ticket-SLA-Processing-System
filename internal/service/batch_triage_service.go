@@ -33,16 +33,13 @@ func (s *triageServiceImpl) ExecuteBatchTriage(ctx context.Context, ticketIDs []
 		slog.Int("worker_pool_size", s.cfg.AIWorkerPoolSize),
 	)
 
-	// Fetch Daily Report once for the batch
 	now := time.Now()
 	report := s.fetchDailyReport(now)
 
-	// 3. Process tickets concurrently using the worker pool
 	results := worker.RunWithPoolSize(tickets, s.cfg.AIWorkerPoolSize, func(t model.Ticket) *response.BatchTriageResponseItem {
 		return s.triageSingleTicket(ctx, t, now, report)
 	})
 
-	// Count fallbacks used
 	fallbackCount := 0
 	for _, res := range results {
 		if res.FallbackUsed {
@@ -84,6 +81,7 @@ func (s *triageServiceImpl) fetchAndValidateTickets(ctx context.Context, ticketI
 		return nil, fmt.Errorf("failed to fetch tickets: %w", err)
 	}
 
+	now := time.Now()
 	fetchedMap := make(map[uint]*model.Ticket)
 	for i := range tickets {
 		t := &tickets[i]
@@ -93,6 +91,13 @@ func (s *triageServiceImpl) fetchAndValidateTickets(ctx context.Context, ticketI
 				slog.String("status", string(t.Status)),
 			)
 			return nil, errmsgs.ErrTicketResolved
+		}
+		if t.SLADueAt != nil && t.SLADueAt.Before(now) {
+			slog.WarnContext(ctx, "batch triage validation failed: ticket is already overdue, skipping triage",
+				slog.Uint64("ticket_id", uint64(t.ID)),
+				slog.Time("sla_due_at", *t.SLADueAt),
+			)
+			return nil, errmsgs.ErrTicketOverdue
 		}
 		fetchedMap[t.ID] = t
 	}

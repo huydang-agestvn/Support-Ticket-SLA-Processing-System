@@ -19,7 +19,8 @@ type TicketReport struct {
 	MediumPriorityCount int64     `json:"medium_priority_count" gorm:"column:medium_priority_count;not null;default:0"`
 	LowPriorityCount    int64     `json:"low_priority_count" gorm:"column:low_priority_count;not null;default:0"`
 	SlaBreacheCount     int64     `json:"sla_breache_count" gorm:"column:sla_breache_count;not null;default:0"`
-	CreatedAt           time.Time `json:"created_at" gorm:"column:created_at;not null;autoCreateTime:milli"`
+
+	AuditModel
 }
 
 func (r *TicketReport) Validate() error {

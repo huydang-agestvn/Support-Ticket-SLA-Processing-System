@@ -28,17 +28,18 @@ const (
 )
 
 type Ticket struct {
-	ID          uint         `json:"id" gorm:"primaryKey"`
-	AssigneeID  string       `json:"assignee_id" gorm:"column:assignee_id;type:varchar(255)"`
-	RequestorID string       `json:"requestor_id" gorm:"column:requestor_id;type:varchar(255);not null"`
-	Title       string       `json:"title" gorm:"column:title;type:varchar(255);not null"`
-	Description string       `json:"description" gorm:"column:description;type:text"`
-	Priority    Priority     `json:"priority" gorm:"column:priority;type:varchar(20);not null"`
-	Status      TicketStatus `json:"status" gorm:"column:status;type:varchar(20);not null"`
-	CreatedAt   time.Time    `json:"created_at" gorm:"column:created_at;not null;autoCreateTime:milli"`
-	ResolvedAt  *time.Time   `json:"resolved_at" gorm:"column:resolved_at"`
-	SLADueAt    *time.Time   `json:"sla_due_at" gorm:"column:sla_due_at"`
-	CancelledAt *time.Time   `json:"cancelled_at" gorm:"column:cancelled_at"`
+	ID              uint         `json:"id" gorm:"primaryKey"`
+	AssigneeID      string       `json:"assignee_id" gorm:"column:assignee_id;type:varchar(255)"`
+	RequestorID     string       `json:"requestor_id" gorm:"column:requestor_id;type:varchar(255);not null"`
+	Title           string       `json:"title" gorm:"column:title;type:varchar(255);not null"`
+	Description     string       `json:"description" gorm:"column:description;type:text"`
+	Priority        Priority     `json:"priority" gorm:"column:priority;type:varchar(20);not null"`
+	Status          TicketStatus `json:"status" gorm:"column:status;type:varchar(20);not null"`
+	ResolvedAt      *time.Time   `json:"resolved_at" gorm:"column:resolved_at"`
+	SLADueAt        *time.Time   `json:"sla_due_at" gorm:"column:sla_due_at"`
+	CancelledAt     *time.Time   `json:"cancelled_at" gorm:"column:cancelled_at"`
+	TicketCreatedAt time.Time    `json:"ticket_created_at" gorm:"column:ticket_created_at"`
+	AuditModel
 
 	// TODO:Relations
 	Events []TicketEvent `json:"events" gorm:"foreignKey:TicketID;constraint:OnDelete:CASCADE"`
@@ -101,9 +102,6 @@ func (t *Ticket) Validate() error {
 	if !t.Status.IsValid() {
 		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("unknown status '%s'", t.Status))
 	}
-	if t.CreatedAt.IsZero() {
-		return common.NewBadRequest(common.ErrCodeInvalidInput, "created_at is required")
-	}
 	if t.SLADueAt == nil || t.SLADueAt.IsZero() {
 		return common.NewBadRequest(common.ErrCodeInvalidInput, "sla_due_at is required for SLA tracking")
 	}
@@ -143,7 +141,7 @@ func (t *Ticket) ValidateStatusTransition(newStatus TicketStatus, reqAssigneeId 
 		t.AssigneeID = reqAssigneeId
 	} else if reqAssigneeId != "" && reqAssigneeId != t.AssigneeID {
 		return common.NewBadRequest(common.ErrCodeInvalidInput,
-			fmt.Sprintf("cannot change assignee during status transition to '%s'",newStatus))
+			fmt.Sprintf("cannot change assignee during status transition to '%s'", newStatus))
 	}
 
 	if t.Status == newStatus {

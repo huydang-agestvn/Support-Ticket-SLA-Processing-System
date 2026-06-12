@@ -284,10 +284,10 @@ func (s *ticketEventService) simulateTicketFSM(job ticketWorkerJob, meta importM
 	var finalJob *updateJob
 
 	ticket := &model.Ticket{
-		ID:         ticketID,
-		Status:     currentStatus,
-		AssigneeID: currentAssigneeID,
-		CreatedAt:  ticketCreatedAt,
+		ID:              ticketID,
+		Status:          currentStatus,
+		AssigneeID:      currentAssigneeID,
+		TicketCreatedAt: ticketCreatedAt,
 	}
 
 	for _, event := range job.Events {

@@ -51,7 +51,7 @@ func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicket
 		Priority:    req.Priority,
 		SLADueAt:    req.SlaDueAt,
 		Status:      model.StatusNew,
-		CreatedAt:   now,
+		TicketCreatedAt: now,
 	}
 
 	if err := ticket.Validate(); err != nil {

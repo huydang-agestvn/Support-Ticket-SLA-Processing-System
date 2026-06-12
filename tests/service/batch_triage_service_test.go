@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -269,4 +270,36 @@ func TestExecuteBatchTriage_Fallback(t *testing.T) {
 	mockReportRepo.AssertExpectations(t)
 	mockTriageRepo.AssertExpectations(t)
 	mockAI.AssertExpectations(t)
+}
+
+func TestExecuteBatchTriage_TicketOverdue(t *testing.T) {
+	mockTicketRepo := new(testmock.MockTicketRepository)
+	mockReportRepo := new(testmock.MockReportRepository)
+	mockTriageRepo := new(testmock.MockTriageRepository)
+	mockAI := new(mockAIAdapter)
+
+	cfg := &config.Config{
+		AIMaxBatchSize:   5,
+		AIWorkerPoolSize: 2,
+	}
+
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+
+	ticketIDs := []uint{1, 2}
+
+	overdueTime := time.Now().Add(-1 * time.Hour)
+	tickets := []model.Ticket{
+		{ID: 1, Status: model.StatusNew},
+		{ID: 2, Status: model.StatusNew, SLADueAt: &overdueTime},
+	}
+
+	mockTicketRepo.On("FindByIds", mock.Anything, ticketIDs).Return(tickets, nil)
+
+	res, err := svc.ExecuteBatchTriage(context.Background(), ticketIDs)
+
+	assert.Nil(t, res)
+	assert.Error(t, err)
+	assert.Equal(t, errmsgs.ErrTicketOverdue, err)
+
+	mockTicketRepo.AssertExpectations(t)
 }
