@@ -4,14 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
 
 	"support-ticket.com/internal/ai"
 	"support-ticket.com/internal/auth"
+	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/request"
 	"support-ticket.com/internal/dto/response"
+	"support-ticket.com/internal/errmsgs"
 	"support-ticket.com/internal/model"
 	"support-ticket.com/internal/repository"
 )
@@ -39,50 +42,182 @@ func NewEvaluationService(
 }
 
 func (s *evaluationServiceImpl) RunTriageEvaluation(ctx context.Context, req request.AIEvaluationRequest) (*response.AIEvaluationResponse, error) {
-	// 1. Verify prompt version template exists on disk
-	templatePath := fmt.Sprintf("prompts/triage_%s.tmpl", req.PromptVersion)
-	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("prompt version template %s not found", templatePath)
+	if err := s.validateRequest(req); err != nil {
+		slog.WarnContext(ctx, "invalid evaluation request", slog.Any("error", err))
+		return nil, err
 	}
 
-	// 2. Load test cases from DB
+	templatePath := fmt.Sprintf("prompts/triage_%s.tmpl", req.PromptVersion)
+	if err := s.validateTemplateExists(templatePath); err != nil {
+		slog.WarnContext(ctx, "prompt template validation failed", slog.Any("template_path", templatePath), slog.Any("error", err))
+		return nil, err
+	}
+
 	cases, err := s.evaluationRepo.GetCases(ctx, req.EvaluationCaseIDs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch evaluation cases: %w", err)
+		slog.ErrorContext(ctx, "failed to fetch evaluation cases", slog.Any("error", err), slog.Any("case_ids", req.EvaluationCaseIDs))
+		return nil, fmt.Errorf("%w: failed to fetch evaluation cases", errmsgs.ErrInternal)
 	}
 	if len(cases) == 0 {
-		return nil, fmt.Errorf("no evaluation cases found")
+		slog.WarnContext(ctx, "evaluation case list empty", slog.Any("case_ids", req.EvaluationCaseIDs))
+		return nil, common.NewBadRequest(common.ErrCodeInvalidInput, "no evaluation cases found")
 	}
 
 	evalRefTime := time.Date(2026, 6, 10, 9, 0, 0, 0, time.FixedZone("ICT", 7*3600))
+	report := s.loadDailyReport(ctx, evalRefTime)
 
-	report, err := s.reportRepo.GetByDate(evalRefTime)
+	startTime := time.Now()
+	caseResults, passedCases, failedCases, totalLatencyMs, err := s.evaluateCases(ctx, cases, report, evalRefTime, req.PromptVersion)
 	if err != nil {
-		report, _ = s.reportRepo.GetByDate(evalRefTime.Add(-24 * time.Hour))
+		return nil, err
 	}
 
+	totalDurationMs := time.Since(startTime).Milliseconds()
+	avgLatency := int64(0)
+	if len(cases) > 0 {
+		avgLatency = totalLatencyMs / int64(len(cases))
+	}
+	throughput := float64(0)
+	if totalDurationMs > 0 {
+		throughput = float64(len(cases)) / (float64(totalDurationMs) / 1000.0)
+	}
+
+	accuracyRate := float64(0)
+	if len(cases) > 0 {
+		accuracyRate = (float64(passedCases) / float64(len(cases))) * 100.0
+	}
+
+	detailsBytes, err := json.Marshal(caseResults)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to marshal evaluation results", slog.Any("error", err))
+		return nil, fmt.Errorf("%w: failed to marshal case results", errmsgs.ErrInternal)
+	}
+
+	createdBy := "system"
+	if userVal := ctx.Value("current_user"); userVal != nil {
+		if u, ok := userVal.(auth.UserPrincipal); ok && u.Username != "" {
+			createdBy = u.Username
+		}
+	}
+
+	runModel := &model.AIEvaluationRun{
+		Name:          fmt.Sprintf("Evaluation Run %s - %s", req.PromptVersion, time.Now().Format("2006-01-02 15:04:05")),
+		ModelUsed:     s.aiAdapter.Model(),
+		PromptVersion: req.PromptVersion,
+		TotalCases:    len(cases),
+		PassedCases:   passedCases,
+		FailedCases:   failedCases,
+		AccuracyRate:  accuracyRate,
+		AvgLatencyMs:  avgLatency,
+		FallbackUsed:  false,
+		DetailsRaw:    json.RawMessage(detailsBytes),
+		AuditModel: model.AuditModel{
+			CreatedBy: createdBy,
+			UpdatedBy: createdBy,
+		},
+	}
+
+	if err := s.evaluationRepo.CreateRun(ctx, runModel); err != nil {
+		slog.ErrorContext(ctx, "failed to save evaluation run", slog.Any("error", err))
+		return nil, fmt.Errorf("%w: failed to save evaluation run", errmsgs.ErrInternal)
+	}
+
+	resp := &response.AIEvaluationResponse{
+		RunID:         runModel.ID,
+		RunDate:       runModel.CreatedAt,
+		PromptVersion: runModel.PromptVersion,
+		DetailRaw:     runModel.DetailsRaw,
+		Metrics: response.AIEvaluationMetrics{
+			Accuracy: response.AccuracyMetrics{
+				TotalCases:   runModel.TotalCases,
+				PassedCases:  runModel.PassedCases,
+				FailedCases:  runModel.FailedCases,
+				AccuracyRate: runModel.AccuracyRate,
+			},
+			Performance: response.PerformanceMetrics{
+				TotalDurationMs: totalDurationMs,
+				AvgLatencyMs:    runModel.AvgLatencyMs,
+				ThroughputCPS:   throughput,
+			},
+			// ResourceUsage: response.ResourceUsageMetrics{
+			// 	TotalPromptTokens:     0,
+			// 	TotalCompletionTokens: 0,
+			// 	TotalTokens:           0,
+			// 	EstimatedCostUSD:      0.0,
+			// },
+		},
+	}
+
+	return resp, nil
+}
+
+func (s *evaluationServiceImpl) validateRequest(req request.AIEvaluationRequest) error {
+	if strings.TrimSpace(req.PromptVersion) == "" {
+		return errmsgs.ErrPromptVersionRequired
+	}
+	if len(req.EvaluationCaseIDs) == 0 {
+		return errmsgs.ErrEvaluationCaseIDsRequired
+	}
+	return nil
+}
+
+func (s *evaluationServiceImpl) validateTemplateExists(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("prompt version template %s not found", path))
+	}
+	return nil
+}
+
+func (s *evaluationServiceImpl) loadDailyReport(ctx context.Context, evalRefTime time.Time) *model.TicketReport {
+	report, err := s.reportRepo.GetByDate(evalRefTime)
+	if err == nil {
+		return report
+	}
+
+	report, err = s.reportRepo.GetByDate(evalRefTime.Add(-24 * time.Hour))
+	if err == nil {
+		return report
+	}
+
+	return nil
+}
+
+func (s *evaluationServiceImpl) evaluateCases(
+	ctx context.Context,
+	cases []model.AIEvaluationCase,
+	report *model.TicketReport,
+	evalRefTime time.Time,
+	promptVersion string,
+) ([]model.EvaluationCaseResult, int, int, int64, error) {
 	var caseResults []model.EvaluationCaseResult
 	passedCases := 0
 	failedCases := 0
-	var totalLatencyMs int64 = 0
-
-	startTime := time.Now()
+	var totalLatencyMs int64
 
 	for _, caseItem := range cases {
 		var ticket model.Ticket
 		if err := json.Unmarshal([]byte(caseItem.InputSnapshot), &ticket); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal input snapshot for case %d: %w", caseItem.ID, err)
+			return nil, 0, 0, 0, common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("failed to parse input snapshot for case %d", caseItem.ID))
+		}
+		ticketNow := evalRefTime
+		var meta struct {
+			EvaluationCurrentTime string `json:"evaluation_current_time"`
+		}
+		if err := json.Unmarshal([]byte(caseItem.InputSnapshot), &meta); err == nil && strings.TrimSpace(meta.EvaluationCurrentTime) != "" {
+			if t, err := time.Parse(time.RFC3339, meta.EvaluationCurrentTime); err == nil {
+				ticketNow = t
+			} else {
+				slog.WarnContext(ctx, "failed to parse evaluation_current_time in snapshot", slog.Any("case_id", caseItem.ID), slog.Any("value", meta.EvaluationCurrentTime), slog.Any("error", err))
+			}
 		}
 
-		ticketNow := evalRefTime
 		if ticketNow.Before(ticket.CreatedAt) {
 			ticketNow = ticket.CreatedAt
 		}
 
-		slaEvidence := "SLA not set."
-		if ticket.SLADueAt != nil {
-			timeLeft := ticket.SLADueAt.Sub(ticketNow).Round(time.Minute)
-			slaEvidence = fmt.Sprintf("Ticket has %s remaining before SLA breach", timeLeft)
+		if err := s.validateDueDate(ctx, ticket, ticketNow, caseItem.ID); err != nil {
+			slog.WarnContext(ctx, "ticket SLA due date validation failed", slog.Any("case_id", uint(caseItem.ID)), slog.Any("error", err))
+			return nil, 0, 0, 0, err
 		}
 
 		promptData := ai.TriagePromptData{
@@ -90,11 +225,11 @@ func (s *evaluationServiceImpl) RunTriageEvaluation(ctx context.Context, req req
 			Events:      ticket.Events,
 			SLAPolicy:   "Max resolution time is determined by priority: High (4h), Medium (24h), Low (48h).",
 			DailyReport: report,
-			TimeLeft:    slaEvidence,
+			TimeLeft:    s.buildSLAEvidence(ticket, ticketNow),
 		}
 
 		caseStartTime := time.Now()
-		triageRes, err := s.aiAdapter.AnalyzeTicketWithVersion(ctx, promptData, req.PromptVersion)
+		triageRes, err := s.aiAdapter.AnalyzeTicketWithVersion(ctx, promptData, promptVersion)
 		latency := time.Since(caseStartTime).Milliseconds()
 		totalLatencyMs += latency
 
@@ -112,13 +247,11 @@ func (s *evaluationServiceImpl) RunTriageEvaluation(ctx context.Context, req req
 			continue
 		}
 
-		// Compare predictions with expectations
 		categoryPassed := strings.EqualFold(triageRes.Category, caseItem.ExpectedCategory)
 		urgencyPassed := strings.EqualFold(triageRes.UrgencyLevel, caseItem.ExpectedUrgency)
 		slaPassed := strings.EqualFold(triageRes.SLABreachRisk, caseItem.ExpectedSLABreachRisk)
 
 		isPassed := categoryPassed && urgencyPassed && slaPassed
-
 		var failureReason string
 		if !isPassed {
 			var mismatches []string
@@ -152,80 +285,25 @@ func (s *evaluationServiceImpl) RunTriageEvaluation(ctx context.Context, req req
 		})
 	}
 
-	totalDurationMs := time.Since(startTime).Milliseconds()
-	avgLatency := int64(0)
-	if len(cases) > 0 {
-		avgLatency = totalLatencyMs / int64(len(cases))
+	return caseResults, passedCases, failedCases, totalLatencyMs, nil
+}
+
+func (s *evaluationServiceImpl) validateDueDate(ctx context.Context, ticket model.Ticket, referenceTime time.Time, caseID uint) error {
+	if ticket.SLADueAt == nil {
+		return nil
 	}
-	throughput := float64(0)
-	if totalDurationMs > 0 {
-		throughput = float64(len(cases)) / (float64(totalDurationMs) / 1000.0)
+	if referenceTime.After(*ticket.SLADueAt) {
+		slog.WarnContext(ctx, "ticket SLA due date expired", slog.Any("case_id", uint(caseID)), slog.Time("due_at", *ticket.SLADueAt), slog.Time("reference_time", referenceTime))
+		return errmsgs.ErrEvaluationCaseExpired
+	}
+	return nil
+}
+
+func (s *evaluationServiceImpl) buildSLAEvidence(ticket model.Ticket, referenceTime time.Time) string {
+	if ticket.SLADueAt == nil {
+		return "SLA not set."
 	}
 
-	accuracyRate := float64(0)
-	if len(cases) > 0 {
-		accuracyRate = (float64(passedCases) / float64(len(cases))) * 100.0
-	}
-
-	// 5. Save evaluation run to DB
-	detailsBytes, err := json.Marshal(caseResults)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal case results: %w", err)
-	}
-
-	createdBy := "system"
-	if userVal := ctx.Value("current_user"); userVal != nil {
-		if u, ok := userVal.(auth.UserPrincipal); ok && u.Username != "" {
-			createdBy = u.Username
-		}
-	}
-
-	runModel := &model.AIEvaluationRun{
-		Name:          fmt.Sprintf("Evaluation Run %s - %s", req.PromptVersion, time.Now().Format("2006-01-02 15:04:05")),
-		ModelUsed:     s.aiAdapter.Model(),
-		PromptVersion: req.PromptVersion,
-		TotalCases:    len(cases),
-		PassedCases:   passedCases,
-		FailedCases:   failedCases,
-		AccuracyRate:  accuracyRate,
-		AvgLatencyMs:  avgLatency,
-		FallbackUsed:  false,
-		DetailsRaw:    json.RawMessage(detailsBytes),
-		AuditModel: model.AuditModel{
-			CreatedBy: createdBy,
-			UpdatedBy: createdBy,
-		},
-	}
-
-	if err := s.evaluationRepo.CreateRun(ctx, runModel); err != nil {
-		return nil, fmt.Errorf("failed to save evaluation run: %w", err)
-	}
-
-	resp := &response.AIEvaluationResponse{
-		RunID:         runModel.ID,
-		RunDate:       runModel.CreatedAt,
-		PromptVersion: runModel.PromptVersion,
-		DetailRaw:     runModel.DetailsRaw,
-		Metrics: response.AIEvaluationMetrics{
-			Accuracy: response.AccuracyMetrics{
-				TotalCases:   runModel.TotalCases,
-				PassedCases:  runModel.PassedCases,
-				FailedCases:  runModel.FailedCases,
-				AccuracyRate: runModel.AccuracyRate,
-			},
-			Performance: response.PerformanceMetrics{
-				TotalDurationMs: totalDurationMs,
-				AvgLatencyMs:    runModel.AvgLatencyMs,
-				ThroughputCPS:   throughput,
-			},
-			ResourceUsage: response.ResourceUsageMetrics{
-				TotalPromptTokens:     0,
-				TotalCompletionTokens: 0,
-				TotalTokens:           0,
-				EstimatedCostUSD:      0.0,
-			},
-		},
-	}
-
-	return resp, nil
+	timeLeft := ticket.SLADueAt.Sub(referenceTime).Round(time.Minute)
+	return fmt.Sprintf("Ticket has %s remaining before SLA breach", timeLeft)
 }

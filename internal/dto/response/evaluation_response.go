@@ -16,7 +16,7 @@ type AIEvaluationResponse struct {
 type AIEvaluationMetrics struct {
 	Accuracy      AccuracyMetrics      `json:"accuracy"`
 	Performance   PerformanceMetrics   `json:"performance"`
-	ResourceUsage ResourceUsageMetrics `json:"resource_usage"`
+	// ResourceUsage ResourceUsageMetrics `json:"resource_usage"`
 }
 
 type AccuracyMetrics struct {
@@ -32,9 +32,9 @@ type PerformanceMetrics struct {
 	ThroughputCPS   float64 `json:"throughput_cps"`
 }
 
-type ResourceUsageMetrics struct {
-	TotalPromptTokens     int     `json:"total_prompt_tokens"`
-	TotalCompletionTokens int     `json:"total_completion_tokens"`
-	TotalTokens           int     `json:"total_tokens"`
-	EstimatedCostUSD      float64 `json:"estimated_cost_usd"`
-}
+// type ResourceUsageMetrics struct {
+// 	TotalPromptTokens     int     `json:"total_prompt_tokens"`
+// 	TotalCompletionTokens int     `json:"total_completion_tokens"`
+// 	TotalTokens           int     `json:"total_tokens"`
+// 	EstimatedCostUSD      float64 `json:"estimated_cost_usd"`
+// }
