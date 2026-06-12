@@ -47,7 +47,7 @@ func (s *evaluationServiceImpl) RunTriageEvaluation(ctx context.Context, req req
 		return nil, err
 	}
 
-	templatePath := fmt.Sprintf("prompts/triage_%s.tmpl", req.PromptVersion)
+	templatePath := fmt.Sprintf("internal/ai/prompts/triage_%s.tmpl", req.PromptVersion)
 	if err := s.validateTemplateExists(templatePath); err != nil {
 		slog.WarnContext(ctx, "prompt template validation failed", slog.Any("template_path", templatePath), slog.Any("error", err))
 		return nil, err
