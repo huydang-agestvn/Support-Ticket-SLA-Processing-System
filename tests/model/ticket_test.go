@@ -86,7 +86,9 @@ func TestTicket_Validate(t *testing.T) {
 			RequestorID: "req-1",
 			Priority:    model.PriorityHigh,
 			Status:      model.StatusNew,
-			CreatedAt:   now,
+			AuditModel: model.AuditModel{
+				CreatedAt: now,
+			},
 			SLADueAt:    &later,
 		}
 	}
@@ -146,7 +148,9 @@ func TestTicket_ValidateStatusTransition(t *testing.T) {
 	validTicket := func() *model.Ticket {
 		return &model.Ticket{
 			Status:    model.StatusNew,
-			CreatedAt: now,
+			AuditModel: model.AuditModel{
+				CreatedAt: now,
+			},
 		}
 	}
 

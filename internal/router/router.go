@@ -141,6 +141,15 @@ func InitRouter(
 				),
 				triageHandler.HandleGetLatestTriage,
 			)
+			// Manager: AI Triage batch of Tickets
+			aiGroup.POST(
+				"/tickets/triage:batch",
+				authMiddleware.RequireAuth(),
+				authMiddleware.RequireRole(
+					auth.RoleManager,
+				),
+				triageHandler.HandleBatchTriageTickets,
+			)
 		}
 	}
 	return r

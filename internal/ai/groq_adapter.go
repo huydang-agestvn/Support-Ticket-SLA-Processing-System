@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"text/template"
 	"time"
@@ -40,7 +39,7 @@ func NewGroqAdapter(baseURL, apiKey, model string, timeoutSecs int, maxRetries i
 
 // AnalyzeTicket sends the ticket details to Groq and enforces strict JSON schema output.
 func (g *GroqAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) (*TriageResult, error) {
-	templatePath := fmt.Sprintf("prompts/triage_%s.tmpl", g.promptVersion)
+	templatePath := fmt.Sprintf("internal/ai/prompts/triage_%s.tmpl", g.promptVersion)
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load prompt template %s: %w", templatePath, err)
@@ -121,7 +120,6 @@ func (g *GroqAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) 
 		},
 	}
 
-	slog.DebugContext(ctx, "sending groq request", slog.Any("request_body", reqBody))
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {

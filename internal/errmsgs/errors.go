@@ -21,4 +21,7 @@ var (
 	ErrUnauthorizedToViewTicket = common.NewUnauthorized(common.ErrCodeUnauthorized, "unauthorized to view this ticket")
 	ErrInternal                 = common.NewInternal("internal server error")
 	ErrValidation               = common.NewBadRequest(common.ErrCodeValidation, "ticket validation failed")
+	ErrTicketResolved           = common.NewBadRequest(common.ErrCodeInvalidInput, "ticket already resolved and does not require AI triage")
+	ErrTicketOverdue            = common.NewBadRequest(common.ErrCodeInvalidInput, "ticket is overdue and cannot be triaged")
+	ErrTicketDescriptionTooShort = common.NewBadRequest(common.ErrCodeInvalidInput, "ticket description is too short for meaningful AI triage (minimum 10 characters required)")
 )

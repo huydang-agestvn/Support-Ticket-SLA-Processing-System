@@ -85,3 +85,26 @@ func TestWorkerRun(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkerRunWithPoolSize(t *testing.T) {
+	items := []int{1, 2, 3, 4, 5}
+	poolSize := 3
+
+	results := worker.RunWithPoolSize(items, poolSize, func(val int) string {
+		time.Sleep(5 * time.Millisecond)
+		return strconv.Itoa(val * 2)
+	})
+
+	assert.Len(t, results, 5)
+
+	valuesMap := make(map[string]bool)
+	for _, r := range results {
+		valuesMap[r] = true
+	}
+
+	assert.True(t, valuesMap["2"])
+	assert.True(t, valuesMap["4"])
+	assert.True(t, valuesMap["6"])
+	assert.True(t, valuesMap["8"])
+	assert.True(t, valuesMap["10"])
+}

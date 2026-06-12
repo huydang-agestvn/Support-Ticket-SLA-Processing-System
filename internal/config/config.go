@@ -59,6 +59,12 @@ type Config struct {
 	AIMaxRetries    int
 	AIEnabled       bool
 	AIPromptVersion string
+	AIMaxBatchSize  int
+	AIWorkerPoolSize int
+}
+
+func init() {
+	_ = loadEnv()
 }
 
 // LoadConfig
@@ -68,10 +74,6 @@ func LoadConfig() *Config {
 		slog.WarnContext(context.Background(), "No .env file found, using system environment variables", slog.Any("error", err))
 	}
 
-	auditDir := getEnv("AUDIT_LOG_DIR")
-	if auditDir == "" {
-		auditDir = "logs/import_audit"
-	}
 
 	minioUseSSL, _ := strconv.ParseBool(getEnv("MINIO_USE_SSL"))
 	minioBucket := getEnv("MINIO_BUCKET_NAME")
@@ -94,6 +96,16 @@ func LoadConfig() *Config {
 	aiPromptVersion := getEnv("AI_PROMPT_VERSION")
 	if aiPromptVersion == "" {
 		aiPromptVersion = "v1.0"
+	}
+
+	aiMaxBatchSize := getEnvInt("AI_MAX_BATCH_SIZE")
+	if aiMaxBatchSize == 0 {
+		aiMaxBatchSize = 30
+	}
+
+	aiWorkerPoolSize := getEnvInt("AI_WORKER_POOL_SIZE")
+	if aiWorkerPoolSize == 0 {
+		aiWorkerPoolSize = 3
 	}
 
 	cfg := &Config{
@@ -122,8 +134,6 @@ func LoadConfig() *Config {
 		SMTPPass:     getEnv("SMTP_PASS"),
 		ManagerEmail: getEnv("MANAGER_EMAIL"),
 
-		AuditLogDir: auditDir,
-
 		MinioEndpoint:   getEnv("MINIO_ENDPOINT"),
 		MinioAccessKey:  getEnv("MINIO_ACCESS_KEY"),
 		MinioSecretKey:  getEnv("MINIO_SECRET_KEY"),
@@ -138,6 +148,8 @@ func LoadConfig() *Config {
 		AIMaxRetries:    aiMaxRetries,
 		AIEnabled:       aiEnabled,
 		AIPromptVersion: aiPromptVersion,
+		AIMaxBatchSize:  aiMaxBatchSize,
+		AIWorkerPoolSize: aiWorkerPoolSize,
 	}
 
 	return cfg

@@ -13,12 +13,12 @@ const confidenceThreshold = 0.5
 
 func ApplyFallbackIfNeeded(result *TriageResult, err error, ticket *model.Ticket) *TriageResult {
 	if err != nil || result == nil || result.ConfidenceScore < confidenceThreshold {
-		return buildFallbackResult(ticket)
+		return buildFallbackResult(ticket, result)
 	}
 	return result
 }
 
-func buildFallbackResult(ticket *model.Ticket) *TriageResult {
+func buildFallbackResult(ticket *model.Ticket, result *TriageResult) *TriageResult {
 	now := time.Now()
 
 	slaBreachRisk := "low"
@@ -43,7 +43,7 @@ func buildFallbackResult(ticket *model.Ticket) *TriageResult {
 	}
 
 	textToAnalyze := strings.ToLower(ticket.Title + " " + ticket.Description)
-	category := "IT" // Default to IT
+	category := "IT"
 
 	hrRegex := regexp.MustCompile(`\b(salary|payroll|leave|contract|benefits|onboarding|insurance)\b`)
 	facilitiesRegex := regexp.MustCompile(`\b(light|aircon|ac|chair|table|desk|door|leak|office|building)\b`)
@@ -70,13 +70,18 @@ func buildFallbackResult(ticket *model.Ticket) *TriageResult {
 		reasonParts = append(reasonParts, "SLA Risk is LOW because there is still plenty of time.")
 	}
 
+	confidenceScore := 0.0
+	if result != nil {
+		confidenceScore = result.ConfidenceScore
+	}
+
 	return &TriageResult{
 		Category:              category,
 		UrgencyLevel:          string(ticket.Priority),
 		SLABreachRisk:         slaBreachRisk,
 		ReasonSummary:         strings.Join(reasonParts, " "),
 		RecommendedNextAction: "Review ticket manually and verify category/urgency.",
-		ConfidenceScore:       0.0,
+		ConfidenceScore:       confidenceScore,
 		FallbackUsed:          true,
 		PromptVersion:         "fallback",
 	}

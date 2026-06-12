@@ -21,6 +21,7 @@ type TicketRepository interface {
 	GetTicketStatusAndCreatedAt(ctx context.Context, ticketIDs []uint) (map[uint]model.TicketStatus, map[uint]time.Time, map[uint]string, error)
 	Transaction(ctx context.Context, fn func(ctx context.Context) error) error
 	UpdateStatusesBatch(ctx context.Context, tickets []model.Ticket) error
+	FindByIds(ctx context.Context, ids []uint) ([]model.Ticket, error)
 }
 
 type ticketRepositoryImpl struct {
@@ -176,6 +177,18 @@ func (r *ticketRepositoryImpl) GetTicketStatusAndCreatedAt(ctx context.Context, 
 	}
 
 	return statuses, createdAt, assignees, nil
+}
+
+func (r *ticketRepositoryImpl) FindByIds(ctx context.Context, ids []uint) ([]model.Ticket, error) {
+	if len(ids) == 0 {
+		return []model.Ticket{}, nil
+	}
+	var tickets []model.Ticket
+	err := r.getDB(ctx).Preload("Events").Where("id IN ?", ids).Find(&tickets).Error
+	if err != nil {
+		return nil, err
+	}
+	return tickets, nil
 }
 
 

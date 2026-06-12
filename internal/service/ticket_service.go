@@ -50,8 +50,11 @@ func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicket
 		Description: req.Description,
 		Priority:    req.Priority,
 		SLADueAt:    req.SlaDueAt,
-		Status:      model.StatusNew,
-		CreatedAt:   now,
+		Status:          model.StatusNew,
+		TicketCreatedAt: now,
+		AuditModel: model.AuditModel{
+			CreatedAt: now,
+		},
 	}
 
 	if err := ticket.Validate(); err != nil {
