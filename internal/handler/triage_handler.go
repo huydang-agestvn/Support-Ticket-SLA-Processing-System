@@ -64,9 +64,5 @@ func (h *TriageHandler) HandleBatchTriageTickets(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, common.APIResponse[any]{
-		Success: true,
-		Message: "Batch triage job dispatched successfully to the worker pool",
-		Data:    results,
-	})
+	c.JSON(http.StatusOK, common.SuccessResponse(results))
 }

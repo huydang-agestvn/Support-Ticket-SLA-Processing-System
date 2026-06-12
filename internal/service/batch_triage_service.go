@@ -14,17 +14,11 @@ import (
 	"support-ticket.com/internal/worker"
 )
 
-func (s *triageServiceImpl) ExecuteBatchTriage(ctx context.Context, ticketIDs []uint) ([]*response.BatchTriageResponseItem, error) {
+func (s *triageServiceImpl) ExecuteBatchTriage(ctx context.Context, ticketIDs []uint) (*response.BatchTriageResponse, error) {
 	startTime := time.Now()
 
 	// 1. Validate request parameters
 	if err := s.validateBatchRequest(ctx, ticketIDs); err != nil {
-		return nil, err
-	}
-
-	// 2. Fetch and validate tickets (ensure existence and non-terminal state)
-	tickets, err := s.fetchAndValidateTickets(ctx, ticketIDs)
-	if err != nil {
 		return nil, err
 	}
 
@@ -33,28 +27,106 @@ func (s *triageServiceImpl) ExecuteBatchTriage(ctx context.Context, ticketIDs []
 		slog.Int("worker_pool_size", s.cfg.AIWorkerPoolSize),
 	)
 
+	tickets, err := s.ticketRepo.FindByIds(ctx, ticketIDs)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to fetch tickets for batch triage", slog.Any("error", err))
+		return nil, fmt.Errorf("failed to fetch tickets: %w", err)
+	}
+
 	now := time.Now()
-	report := s.fetchDailyReport(now)
+	fetchedMap := make(map[uint]*model.Ticket)
+	for i := range tickets {
+		fetchedMap[tickets[i].ID] = &tickets[i]
+	}
 
-	results := worker.RunWithPoolSize(tickets, s.cfg.AIWorkerPoolSize, func(t model.Ticket) *response.BatchTriageResponseItem {
-		return s.triageSingleTicket(ctx, t, now, report)
-	})
+	var validTickets []model.Ticket
+	var failedItems []response.BatchTriageFailedItem
 
+	for _, id := range ticketIDs {
+		t, exists := fetchedMap[id]
+		if !exists {
+			slog.WarnContext(ctx, "batch triage validation failed: ticket not found",
+				slog.Uint64("ticket_id", uint64(id)),
+			)
+			failedItems = append(failedItems, response.BatchTriageFailedItem{
+				TicketID: id,
+				Reason:   errmsgs.ErrTicketNotFound.Message,
+			})
+			continue
+		}
+
+		if t.Status == model.StatusResolved || t.Status == model.StatusCancelled || t.Status == model.StatusClosed {
+			slog.WarnContext(ctx, "batch triage validation failed: ticket residing in terminal status boundary",
+				slog.Uint64("ticket_id", uint64(t.ID)),
+				slog.String("status", string(t.Status)),
+			)
+			failedItems = append(failedItems, response.BatchTriageFailedItem{
+				TicketID: id,
+				Reason:   errmsgs.ErrTicketResolved.Message,
+			})
+			continue
+		}
+
+		if t.SLADueAt != nil && t.SLADueAt.Before(now) {
+			slog.WarnContext(ctx, "batch triage validation failed: ticket is already overdue, skipping triage",
+				slog.Uint64("ticket_id", uint64(t.ID)),
+				slog.Time("sla_due_at", *t.SLADueAt),
+			)
+			failedItems = append(failedItems, response.BatchTriageFailedItem{
+				TicketID: id,
+				Reason:   errmsgs.ErrTicketOverdue.Message,
+			})
+			continue
+		}
+
+		if len(strings.TrimSpace(t.Description)) < 10 {
+			slog.WarnContext(ctx, "batch triage validation failed: ticket description too short, skipping triage",
+				slog.Uint64("ticket_id", uint64(t.ID)),
+				slog.Int("description_length", len(strings.TrimSpace(t.Description))),
+			)
+			failedItems = append(failedItems, response.BatchTriageFailedItem{
+				TicketID: id,
+				Reason:   errmsgs.ErrTicketDescriptionTooShort.Message,
+			})
+			continue
+		}
+
+		validTickets = append(validTickets, *t)
+	}
+
+	var processedItems []response.BatchTriageResponseItem
 	fallbackCount := 0
-	for _, res := range results {
-		if res.FallbackUsed {
-			fallbackCount++
+
+	if len(validTickets) > 0 {
+		report := s.fetchDailyReport(now)
+
+		results := worker.RunWithPoolSize(validTickets, s.cfg.AIWorkerPoolSize, func(t model.Ticket) *response.BatchTriageResponseItem {
+			return s.triageSingleTicket(ctx, t, now, report)
+		})
+
+		for _, item := range results {
+			if item != nil {
+				processedItems = append(processedItems, *item)
+				if item.FallbackUsed {
+					fallbackCount++
+				}
+			}
 		}
 	}
 
 	duration := time.Since(startTime)
-	slog.InfoContext(ctx, "batch triage completed successfully",
-		slog.Int("total_tickets", len(ticketIDs)),
+	slog.InfoContext(ctx, "batch triage completed",
+		slog.Int("total_requested", len(ticketIDs)),
+		slog.Int("processed_count", len(processedItems)),
+		slog.Int("failed_count", len(failedItems)),
 		slog.Int("fallback_count", fallbackCount),
 		slog.Duration("duration", duration),
 	)
 
-	return results, nil
+	return &response.BatchTriageResponse{
+		Processed: processedItems,
+		Failed:    failedItems,
+	}, nil
 }
 
 func (s *triageServiceImpl) validateBatchRequest(ctx context.Context, ticketIDs []uint) error {
@@ -72,46 +144,6 @@ func (s *triageServiceImpl) validateBatchRequest(ctx context.Context, ticketIDs 
 	}
 
 	return nil
-}
-
-func (s *triageServiceImpl) fetchAndValidateTickets(ctx context.Context, ticketIDs []uint) ([]model.Ticket, error) {
-	tickets, err := s.ticketRepo.FindByIds(ctx, ticketIDs)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to fetch tickets for batch triage", slog.Any("error", err))
-		return nil, fmt.Errorf("failed to fetch tickets: %w", err)
-	}
-
-	now := time.Now()
-	fetchedMap := make(map[uint]*model.Ticket)
-	for i := range tickets {
-		t := &tickets[i]
-		if t.Status == model.StatusResolved || t.Status == model.StatusCancelled || t.Status == model.StatusClosed {
-			slog.WarnContext(ctx, "batch triage validation failed: ticket residing in terminal status boundary",
-				slog.Uint64("ticket_id", uint64(t.ID)),
-				slog.String("status", string(t.Status)),
-			)
-			return nil, errmsgs.ErrTicketResolved
-		}
-		if t.SLADueAt != nil && t.SLADueAt.Before(now) {
-			slog.WarnContext(ctx, "batch triage validation failed: ticket is already overdue, skipping triage",
-				slog.Uint64("ticket_id", uint64(t.ID)),
-				slog.Time("sla_due_at", *t.SLADueAt),
-			)
-			return nil, errmsgs.ErrTicketOverdue
-		}
-		fetchedMap[t.ID] = t
-	}
-
-	for _, id := range ticketIDs {
-		if _, exists := fetchedMap[id]; !exists {
-			slog.WarnContext(ctx, "batch triage validation failed: ticket not found",
-				slog.Uint64("ticket_id", uint64(id)),
-			)
-			return nil, errmsgs.ErrTicketNotFound
-		}
-	}
-
-	return tickets, nil
 }
 
 func (s *triageServiceImpl) fetchDailyReport(now time.Time) *model.TicketReport {
