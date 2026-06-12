@@ -19,7 +19,7 @@ import (
 type TriageService interface {
 	ExecuteTriage(ctx context.Context, ticketID uint) (*response.TriageResponse, error)
 	GetLatestTriageResult(ctx context.Context, ticketID uint) (*response.TriageResponse, error)
-	ExecuteBatchTriage(ctx context.Context, ticketIDs []uint) ([]*response.BatchTriageResponseItem, error)
+	ExecuteBatchTriage(ctx context.Context, ticketIDs []uint) (*response.BatchTriageResponse, error)
 }
 
 type triageServiceImpl struct {
