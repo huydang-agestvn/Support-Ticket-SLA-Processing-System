@@ -1386,24 +1386,27 @@ components:
             success: true
             message: Evaluation run completed successfully
             data:
-              run_id: 42
-              run_date: "2026-06-09T16:15:00Z"
-              prompt_version: "v2.1.0-triage-assistant"
+              run_id: 17
+              run_date: "2026-06-12T10:23:31.390636683+07:00"
+              prompt_version: "v1.2"
               metrics:
                 accuracy:
-                  total_cases: 20
-                  passed_cases: 18
-                  failed_cases: 2
-                  accuracy_rate: 90.00
+                  total_cases: 1
+                  passed_cases: 1
+                  failed_cases: 0
+                  accuracy_rate: 100
                 performance:
-                  total_duration_ms: 15600
-                  avg_latency_ms: 780
-                  throughput_cps: 1.28
-                resource_usage:
-                  total_prompt_tokens: 12450
-                  total_completion_tokens: 3420
-                  total_tokens: 15870
-                  estimated_cost_usd: 0.047610
+                  total_duration_ms: 6389
+                  avg_latency_ms: 6389
+                  throughput_cps: 0.15651901706057286
+              detail_raw:
+                - test_case_id: 2
+                  actual_category: "HR"
+                  actual_urgency: "low"
+                  actual_sla_breach_risk: "low"
+                  is_overall_passed: true
+                  risk_explanation: "The request is for a performance evaluation template, which falls under HR. The ticket priority is low, and the SLA has 97 hours remaining, giving ample time. The issue is straightforward and not complex, and there is no backlog, so the risk of SLA breach is low."
+                  latency_ms: 6389
 
     AIEvaluationData:
       type: object
@@ -1412,29 +1415,34 @@ components:
         - run_date
         - prompt_version
         - metrics
+        - detail_raw
       properties:
         run_id:
           type: integer
           description: Auto-incrementing relational tracking index assigned to this evaluation job pipeline.
-          example: 42
+          example: 17
         run_date:
           type: string
           format: date-time
           description: Generated system timestamp layout recording exact execution start window.
-          example: "2026-06-09T16:15:00Z"
+          example: "2026-06-12T10:23:31.390636683+07:00"
         prompt_version:
           type: string
           description: The evaluated template config state tracking label.
-          example: "v2.1.0-triage-assistant"
+          example: "v1.2"
         metrics:
           $ref: "#/components/schemas/AIEvaluationMetrics"
+        detail_raw:
+          type: array
+          description: Detailed array tracking individual test cases from the evaluation sequence execution.
+          items:
+            $ref: "#/components/schemas/AIEvaluationDetailRaw"
 
     AIEvaluationMetrics:
       type: object
       required:
         - accuracy
         - performance
-        - resource_usage
       properties:
         accuracy:
           type: object
@@ -1446,17 +1454,16 @@ components:
           properties:
             total_cases:
               type: integer
-              example: 20
+              example: 1
             passed_cases:
               type: integer
-              example: 18
+              example: 1
             failed_cases:
               type: integer
-              example: 2
+              example: 0
             accuracy_rate:
               type: number
-              format: float
-              example: 90.00
+              example: 100
         performance:
           type: object
           required:
@@ -1466,36 +1473,48 @@ components:
           properties:
             total_duration_ms:
               type: integer
-              example: 15600
+              example: 6389
             avg_latency_ms:
               type: integer
-              example: 780
+              example: 6389
             throughput_cps:
               type: number
               format: float
-              example: 1.28
-        resource_usage:
-          type: object
-          required:
-            - total_prompt_tokens
-            - total_completion_tokens
-            - total_tokens
-            - estimated_cost_usd
-          properties:
-            total_prompt_tokens:
-              type: integer
-              example: 12450
-            total_completion_tokens:
-              type: integer
-              example: 3420
-            total_tokens:
-              type: integer
-              example: 15870
-            estimated_cost_usd:
-              type: number
-              format: double
-              example: 0.047610
+              example: 0.15651901706057286
 
+    AIEvaluationDetailRaw:
+      type: object
+      required:
+        - test_case_id
+        - actual_category
+        - actual_urgency
+        - actual_sla_breach_risk
+        - is_overall_passed
+        - risk_explanation
+        - latency_ms
+      properties:
+        test_case_id:
+          type: integer
+          example: 2
+        actual_category:
+          type: string
+          example: "HR"
+        actual_urgency:
+          type: string
+          example: "low"
+        actual_sla_breach_risk:
+          type: string
+          example: "low"
+        is_overall_passed:
+          type: boolean
+          example: true
+        risk_explanation:
+          type: string
+          example: "The request is for a performance evaluation template, which falls under HR. The ticket priority is low, and the SLA has 97 hours remaining, giving ample time. The issue is straightforward and not complex, and there is no backlog, so the risk of SLA breach is low."
+        latency_ms:
+          type: integer
+          example: 6389
+          
     SuccessResponseBase:
       type: object
       properties:
