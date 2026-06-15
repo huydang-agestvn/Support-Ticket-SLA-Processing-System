@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/mock"
+	"support-ticket.com/internal/ai"
 	"support-ticket.com/internal/dto/request"
 	"support-ticket.com/internal/model"
 )
@@ -162,3 +163,49 @@ func (m *MockTriageRepository) FindLatestByTicketID(ctx context.Context, ticketI
 	}
 	return args.Get(0).(*model.AITicketTriageResult), args.Error(1)
 }
+
+// MockEvaluationRepository
+type MockEvaluationRepository struct {
+	mock.Mock
+}
+
+func (m *MockEvaluationRepository) GetCases(ctx context.Context, caseIDs []uint) ([]model.AIEvaluationCase, error) {
+	args := m.Called(ctx, caseIDs)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]model.AIEvaluationCase), args.Error(1)
+}
+
+func (m *MockEvaluationRepository) CreateRun(ctx context.Context, run *model.AIEvaluationRun) error {
+	args := m.Called(ctx, run)
+	return args.Error(0)
+}
+
+// MockTriageAdapter
+type MockTriageAdapter struct {
+	mock.Mock
+}
+
+func (m *MockTriageAdapter) AnalyzeTicket(ctx context.Context, data ai.TriagePromptData) (*ai.TriageResult, error) {
+	args := m.Called(ctx, data)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*ai.TriageResult), args.Error(1)
+}
+
+func (m *MockTriageAdapter) AnalyzeTicketWithVersion(ctx context.Context, data ai.TriagePromptData, promptVersion string) (*ai.TriageResult, error) {
+	args := m.Called(ctx, data, promptVersion)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*ai.TriageResult), args.Error(1)
+}
+
+func (m *MockTriageAdapter) Model() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+

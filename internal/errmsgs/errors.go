@@ -24,4 +24,7 @@ var (
 	ErrTicketResolved           = common.NewBadRequest(common.ErrCodeInvalidInput, "ticket already resolved and does not require AI triage")
 	ErrTicketOverdue            = common.NewBadRequest(common.ErrCodeInvalidInput, "ticket is overdue and cannot be triaged")
 	ErrTicketDescriptionTooShort = common.NewBadRequest(common.ErrCodeInvalidInput, "ticket description is too short for meaningful AI triage (minimum 10 characters required)")
+	ErrPromptVersionRequired     = common.NewBadRequest(common.ErrCodeInvalidInput, "prompt version is required")
+	ErrEvaluationCaseIDsRequired = common.NewBadRequest(common.ErrCodeInvalidInput, "evaluation case ids cannot be empty")
+	ErrEvaluationCaseExpired     = common.NewBadRequest(common.ErrCodeInvalidInput, "one or more evaluation cases has SLA due_date expired")
 )

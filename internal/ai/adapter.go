@@ -29,4 +29,7 @@ type TriagePromptData struct {
 // TriageAdapter is the interface for the AI provider
 type TriageAdapter interface {
 	AnalyzeTicket(ctx context.Context, data TriagePromptData) (*TriageResult, error)
+	AnalyzeTicketWithVersion(ctx context.Context, data TriagePromptData, promptVersion string) (*TriageResult, error)
+	Model() string
 }
+

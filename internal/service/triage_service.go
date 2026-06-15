@@ -86,7 +86,10 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 		slog.WarnContext(ctx, "ticket description too short, skipping triage",
 			slog.Uint64("ticket_id", uint64(ticketID)),
 			slog.Int("description_length", len(strings.TrimSpace(ticket.Description))),
-		)
+		)	// 3. Setup logical evaluation time
+	// For evaluation runs on seed data, the tickets are set around 2026-06-10.
+	// We use 2026-06-10T09:00:00+07:00 as the evaluation reference time to align
+	// with the expected SLA/breach timelines (e.g. 2 hours left for Case 4, 3 days overdue for Case 5).
 		return nil, ai.TriagePromptData{}, common.NewBadRequest(
 			common.ErrCodeInvalidInput,
 			"ticket description is too short for meaningful AI triage (minimum 10 characters required)",
@@ -153,7 +156,7 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 		ConfidenceScore:       finalResult.ConfidenceScore,
 		FallbackUsed:          finalResult.FallbackUsed,
 		PromptVersion:         finalResult.PromptVersion,
-	}
+	}	
 
 	if err := s.triageRepo.Create(ctx, dbResult); err != nil {
 		slog.ErrorContext(ctx, "failed to save triage result",

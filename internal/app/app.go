@@ -104,6 +104,7 @@ func (a *App) setupDependencies() {
 	eventRepo := repository.NewTicketEventRepository(a.db)
 	reportRepo := repository.NewReportRepository(a.db)
 	triageRepo := repository.NewTriageRepository(a.db)
+	evaluationRepo := repository.NewEvaluationRepository(a.db)
 
 	auditLogger, err := service.NewMinIOAuditLogger(
 		a.cfg.MinioEndpoint,
@@ -120,11 +121,13 @@ func (a *App) setupDependencies() {
 	eventService := service.NewTicketEventService(eventRepo, ticketRepo, auditLogger)
 	reportService := service.NewReportService(reportRepo)
 	triageService := service.NewTriageService(ticketRepo, reportRepo, triageRepo, aiAdapter, a.cfg)
+	evaluationService := service.NewEvaluationService(evaluationRepo, reportRepo, aiAdapter)
 
 	ticketHandler := handler.NewTicketHandler(ticketService)
 	eventHandler := handler.NewTicketEventHandler(eventService)
 	reportHander := handler.NewReportHandler(reportService)
 	triageHandler := handler.NewTriageHandler(triageService)
+	evaluationHandler := handler.NewEvaluationHandler(evaluationService)
 
 	keycloakClient := service.NewClient(
 		a.cfg.KeycloakTokenURL,
@@ -152,6 +155,7 @@ func (a *App) setupDependencies() {
 		authMiddleware,
 		reportHander,
 		triageHandler,
+		evaluationHandler,
 	)
 
 	// 6. Initialize EmailService and Cron Scheduler

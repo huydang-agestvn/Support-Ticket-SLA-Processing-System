@@ -18,6 +18,7 @@ func InitRouter(
 	authMiddleware *middleware.AuthMiddleware,
 	reportHandler *handler.ReportHandler,
 	triageHandler *handler.TriageHandler,
+	evaluationHandler *handler.EvaluationHandler,
 ) *gin.Engine {
 
 	// Swagger UI reads the OpenAPI contract.
@@ -149,6 +150,14 @@ func InitRouter(
 					auth.RoleManager,
 				),
 				triageHandler.HandleBatchTriageTickets,
+			)
+
+			// Manager: Run Triage Evaluation
+			aiGroup.POST(
+				"/evaluations/ticket-triage",
+				authMiddleware.RequireAuth(),
+				authMiddleware.RequireRole(auth.RoleManager),
+				evaluationHandler.HandleRunTriageEvaluation,
 			)
 		}
 	}

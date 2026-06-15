@@ -37,8 +37,18 @@ func NewGroqAdapter(baseURL, apiKey, model string, timeoutSecs int, maxRetries i
 	}
 }
 
+// Model returns the configured LLM model name.
+func (g *GroqAdapter) Model() string {
+	return g.model
+}
+
 // AnalyzeTicket sends the ticket details to Groq and enforces strict JSON schema output.
 func (g *GroqAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) (*TriageResult, error) {
+	return g.AnalyzeTicketWithVersion(ctx, data, g.promptVersion)
+}
+
+// AnalyzeTicketWithVersion sends the ticket details to Groq using a specific prompt version.
+func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriagePromptData, promptVersion string) (*TriageResult, error) {
 	templatePath := fmt.Sprintf("internal/ai/prompts/triage_%s.tmpl", g.promptVersion)
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
@@ -179,10 +189,11 @@ func (g *GroqAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) 
 
 		// Double-check the fallback flag
 		result.FallbackUsed = false
-		result.PromptVersion = g.promptVersion
+		result.PromptVersion = promptVersion
 
 		return &result, nil
 	}
 
 	return nil, fmt.Errorf("max retries exceeded, last error: %w", lastErr)
 }
+

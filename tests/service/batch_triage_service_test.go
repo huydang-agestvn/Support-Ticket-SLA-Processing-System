@@ -31,6 +31,17 @@ func (m *mockAIAdapter) AnalyzeTicket(ctx context.Context, data ai.TriagePromptD
 	return args.Get(0).(*ai.TriageResult), args.Error(1)
 }
 
+func (m *mockAIAdapter) AnalyzeTicketWithVersion(ctx context.Context, data ai.TriagePromptData, promptVersion string) (*ai.TriageResult, error) {
+	args := m.Called(ctx, data, promptVersion)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*ai.TriageResult), args.Error(1)
+}
+
+func (m *mockAIAdapter) Model() string {
+	return "fake-model"
+}	
 func TestExecuteBatchTriage_Success(t *testing.T) {
 	mockTicketRepo := new(testmock.MockTicketRepository)
 	mockReportRepo := new(testmock.MockReportRepository)
