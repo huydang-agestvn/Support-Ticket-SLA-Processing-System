@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"text/template"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 
 // GroqAdapter implements the TriageAdapter using the Groq API.
 type GroqAdapter struct {
+	providerName  string
 	apiKey        string
 	model         string
 	httpClient    *http.Client
@@ -25,13 +27,20 @@ type GroqAdapter struct {
 
 // NewGroqAdapter initializes a new adapter for Groq.
 func NewGroqAdapter(baseURL, apiKey, model string, timeoutSecs int, maxRetries int, promptVersion string) *GroqAdapter {
+	return NewOpenAICompatibleAdapter("groq", baseURL, apiKey, model, timeoutSecs, maxRetries, promptVersion)
+}
+
+// NewOpenAICompatibleAdapter initializes an adapter for providers exposing
+// an OpenAI-compatible chat completions endpoint.
+func NewOpenAICompatibleAdapter(providerName, baseURL, apiKey, model string, timeoutSecs int, maxRetries int, promptVersion string) *GroqAdapter {
 	return &GroqAdapter{
-		apiKey: apiKey,
-		model:  model,
+		providerName: providerName,
+		apiKey:       apiKey,
+		model:        model,
 		httpClient: &http.Client{
 			Timeout: time.Duration(timeoutSecs) * time.Second,
 		},
-		baseURL:       baseURL,
+		baseURL:       normalizeChatCompletionsURL(baseURL),
 		maxRetries:    maxRetries,
 		promptVersion: promptVersion,
 	}
@@ -49,7 +58,7 @@ func (g *GroqAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) 
 
 // AnalyzeTicketWithVersion sends the ticket details to Groq using a specific prompt version.
 func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriagePromptData, promptVersion string) (*TriageResult, error) {
-	templatePath := fmt.Sprintf("internal/ai/prompts/triage_%s.tmpl", g.promptVersion)
+	templatePath := fmt.Sprintf("internal/ai/prompts/triage_%s.tmpl", promptVersion)
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load prompt template %s: %w", templatePath, err)
@@ -130,7 +139,6 @@ func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriageP
 		},
 	}
 
-
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal groq request: %w", err)
@@ -153,7 +161,7 @@ func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriageP
 		// Call the LLM Provider
 		resp, err := g.httpClient.Do(req)
 		if err != nil {
-			lastErr = fmt.Errorf("groq api request failed: %w", err)
+			lastErr = fmt.Errorf("%s api request failed: %w", g.providerName, err)
 			continue
 		}
 
@@ -161,7 +169,7 @@ func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriageP
 			var errResp map[string]any
 			_ = json.NewDecoder(resp.Body).Decode(&errResp)
 			resp.Body.Close()
-			lastErr = fmt.Errorf("groq api returned error: status %d, details: %v", resp.StatusCode, errResp)
+			lastErr = fmt.Errorf("%s api returned error: status %d, details: %v", g.providerName, resp.StatusCode, errResp)
 			continue
 		}
 
@@ -174,7 +182,7 @@ func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriageP
 		resp.Body.Close()
 
 		if len(groqResp.Choices) == 0 {
-			lastErr = fmt.Errorf("groq returned no choices")
+			lastErr = fmt.Errorf("%s returned no choices", g.providerName)
 			continue
 		}
 
@@ -197,3 +205,10 @@ func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriageP
 	return nil, fmt.Errorf("max retries exceeded, last error: %w", lastErr)
 }
 
+func normalizeChatCompletionsURL(baseURL string) string {
+	baseURL = strings.TrimSpace(baseURL)
+	if baseURL == "" || strings.HasSuffix(baseURL, "/chat/completions") {
+		return baseURL
+	}
+	return strings.TrimRight(baseURL, "/") + "/chat/completions"
+}
