@@ -119,7 +119,7 @@ func TestEvaluationService_RunTriageEvaluation(t *testing.T) {
 				assert.Equal(t, 0, run.FailedCases)
 				assert.Equal(t, 100.0, run.AccuracyRate)
 				assert.Equal(t, "llama-3-test", run.ModelUsed)
-				
+
 				var details []model.EvaluationCaseResult
 				err := json.Unmarshal([]byte(run.DetailsRaw), &details)
 				assert.NoError(t, err)
@@ -154,7 +154,7 @@ func TestEvaluationService_RunTriageEvaluation(t *testing.T) {
 				assert.Equal(t, 0, run.PassedCases)
 				assert.Equal(t, 1, run.FailedCases)
 				assert.Equal(t, 0.0, run.AccuracyRate)
-				
+
 				var details []model.EvaluationCaseResult
 				err := json.Unmarshal([]byte(run.DetailsRaw), &details)
 				assert.NoError(t, err)
@@ -190,7 +190,7 @@ func TestEvaluationService_RunTriageEvaluation(t *testing.T) {
 			tt.mockAdapter(mockAdapter)
 
 			svc := service.NewEvaluationService(mockEvalRepo, mockReportRepo, mockAdapter)
-			
+
 			req := request.AIEvaluationRequest{
 				PromptVersion:     tt.promptVersion,
 				EvaluationCaseIDs: tt.caseIDs,

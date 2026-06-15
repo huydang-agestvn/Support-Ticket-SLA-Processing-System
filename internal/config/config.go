@@ -51,15 +51,15 @@ type Config struct {
 	MinioBucketName string
 
 	//AI Config
-	AIProvider      string
-	AIModel         string
-	AIBaseURL       string
-	AIAPIKey        string
-	AITimeoutSecs   int
-	AIMaxRetries    int
-	AIEnabled       bool
-	AIPromptVersion string
-	AIMaxBatchSize  int
+	AIProvider       string
+	AIModel          string
+	AIBaseURL        string
+	AIAPIKey         string
+	AITimeoutSecs    int
+	AIMaxRetries     int
+	AIEnabled        bool
+	AIPromptVersion  string
+	AIMaxBatchSize   int
 	AIWorkerPoolSize int
 }
 
@@ -73,7 +73,6 @@ func LoadConfig() *Config {
 	if err != nil {
 		slog.WarnContext(context.Background(), "No .env file found, using system environment variables", slog.Any("error", err))
 	}
-
 
 	minioUseSSL, _ := strconv.ParseBool(getEnv("MINIO_USE_SSL"))
 	minioBucket := getEnv("MINIO_BUCKET_NAME")
@@ -140,15 +139,15 @@ func LoadConfig() *Config {
 		MinioUseSSL:     minioUseSSL,
 		MinioBucketName: minioBucket,
 
-		AIProvider:      getEnv("AI_PROVIDER"),
-		AIModel:         getEnv("AI_MODEL"),
-		AIBaseURL:       getEnv("AI_BASE_URL"),
-		AIAPIKey:        getEnv("AI_API_KEY"),
-		AITimeoutSecs:   aiTimeoutSecs,
-		AIMaxRetries:    aiMaxRetries,
-		AIEnabled:       aiEnabled,
-		AIPromptVersion: aiPromptVersion,
-		AIMaxBatchSize:  aiMaxBatchSize,
+		AIProvider:       getEnv("AI_PROVIDER"),
+		AIModel:          getEnv("AI_MODEL"),
+		AIBaseURL:        getEnv("AI_BASE_URL"),
+		AIAPIKey:         getEnv("AI_API_KEY"),
+		AITimeoutSecs:    aiTimeoutSecs,
+		AIMaxRetries:     aiMaxRetries,
+		AIEnabled:        aiEnabled,
+		AIPromptVersion:  aiPromptVersion,
+		AIMaxBatchSize:   aiMaxBatchSize,
 		AIWorkerPoolSize: aiWorkerPoolSize,
 	}
 
