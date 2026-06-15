@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -47,7 +48,13 @@ func (s *evaluationServiceImpl) RunTriageEvaluation(ctx context.Context, req req
 		return nil, err
 	}
 
-	templatePath := fmt.Sprintf("internal/ai/prompts/triage_%s.tmpl", req.PromptVersion)
+	relativeTemplatePath := fmt.Sprintf("internal/ai/prompts/triage_%s.tmpl", req.PromptVersion)
+	templatePath, err := s.resolveTemplatePath(relativeTemplatePath)
+	if err != nil {
+		slog.WarnContext(ctx, "prompt template validation failed", slog.Any("template_path", relativeTemplatePath), slog.Any("error", err))
+		return nil, common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("prompt version template %s not found", relativeTemplatePath))
+	}
+
 	if err := s.validateTemplateExists(templatePath); err != nil {
 		slog.WarnContext(ctx, "prompt template validation failed", slog.Any("template_path", templatePath), slog.Any("error", err))
 		return nil, err
@@ -159,6 +166,28 @@ func (s *evaluationServiceImpl) validateRequest(req request.AIEvaluationRequest)
 		return errmsgs.ErrEvaluationCaseIDsRequired
 	}
 	return nil
+}
+
+func (s *evaluationServiceImpl) resolveTemplatePath(relativePath string) (string, error) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		candidate := filepath.Join(currentDir, relativePath)
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate, nil
+		}
+
+		parentDir := filepath.Dir(currentDir)
+		if parentDir == currentDir {
+			break
+		}
+		currentDir = parentDir
+	}
+
+	return "", fmt.Errorf("template path not found")
 }
 
 func (s *evaluationServiceImpl) validateTemplateExists(path string) error {

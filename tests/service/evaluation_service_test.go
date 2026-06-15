@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,25 +18,27 @@ import (
 )
 
 func TestEvaluationService_RunTriageEvaluation(t *testing.T) {
-	// Navigate up to the project root directory where the "prompts" directory is located
+	// Locate the repository root where internal/ai/prompts exists.
 	origWD, err := os.Getwd()
 	assert.NoError(t, err)
-	
+
+	repoRoot := origWD
 	for {
-		if _, err := os.Stat("prompts"); err == nil {
+		candidate := filepath.Join(repoRoot, "internal", "ai", "prompts")
+		if stat, err := os.Stat(candidate); err == nil && stat.IsDir() {
 			break
 		}
-		err := os.Chdir("..")
-		if err != nil {
-			break
+		parent := filepath.Dir(repoRoot)
+		if parent == repoRoot {
+			t.Fatal("unable to locate repo root containing internal/ai/prompts")
 		}
+		repoRoot = parent
 	}
-	defer os.Chdir(origWD)
 
 	// Setup a dummy prompt file for testing
 	dummyPromptVersion := "test_v1.0"
-	dummyPromptPath := "prompts/triage_test_v1.0.tmpl"
-	
+	dummyPromptPath := filepath.Join(repoRoot, "internal", "ai", "prompts", "triage_test_v1.0.tmpl")
+
 	err = os.WriteFile(dummyPromptPath, []byte("Title: {{.Ticket.Title}}\nTimeLeft: {{.TimeLeft}}"), 0644)
 	assert.NoError(t, err)
 	defer os.Remove(dummyPromptPath)
@@ -78,7 +81,7 @@ func TestEvaluationService_RunTriageEvaluation(t *testing.T) {
 			caseIDs:       []uint{1},
 			mockRepo:      func(e *testmock.MockEvaluationRepository, r *testmock.MockReportRepository) {},
 			mockAdapter:   func(a *testmock.MockTriageAdapter) {},
-			expectedError: "prompt version template prompts/triage_nonexistent_v1.0.tmpl not found",
+			expectedError: "prompt version template internal/ai/prompts/triage_nonexistent_v1.0.tmpl not found",
 		},
 		{
 			name:          "No Cases Found Error",

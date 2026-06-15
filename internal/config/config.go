@@ -194,7 +194,7 @@ func getEnv(key string) string {
 }
 
 func GetPoolSize(key string) int {
-	value := os.Getenv(key)
+	value := getEnv(key)
 	intVal, err := strconv.Atoi(value)
 	if err != nil {
 		slog.WarnContext(context.Background(), "Error converting %s to integer: %v. Using default value 5", key, err)
@@ -203,7 +203,7 @@ func GetPoolSize(key string) int {
 	return intVal
 }
 func GetBatchSize(key string) int {
-	value := os.Getenv(key)
+	value := getEnv(key)
 	intVal, err := strconv.Atoi(value)
 	if err != nil {
 		slog.WarnContext(context.Background(), "Error converting %s to integer: %v. Using default value 1000", key, err)
@@ -213,7 +213,7 @@ func GetBatchSize(key string) int {
 }
 
 func getEnvInt(key string) int {
-	value := os.Getenv(key)
+	value := getEnv(key)
 	intVal, err := strconv.Atoi(value)
 	if err != nil {
 		slog.ErrorContext(context.Background(), "Error converting %s to integer: %v", key, err)
