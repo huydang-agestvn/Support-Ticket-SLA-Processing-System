@@ -1,10 +1,15 @@
-package ai
+package factory
 
 import (
 	"context"
 	"log/slog"
 	"strings"
 
+	"support-ticket.com/internal/ai"
+	"support-ticket.com/internal/ai/provider"
+	"support-ticket.com/internal/ai/provider/gemini"
+	"support-ticket.com/internal/ai/provider/groq"
+	"support-ticket.com/internal/ai/provider/openrouter"
 	"support-ticket.com/internal/config"
 )
 
@@ -13,24 +18,24 @@ type fallbackTarget struct {
 	model    string
 }
 
-func NewAdapterFromConfig(cfg *config.Config) TriageAdapter {
+func NewAdapterFromConfig(cfg *config.Config) ai.TriageAdapter {
 	if cfg == nil || !cfg.AIEnabled {
 		promptVersion := ""
 		if cfg != nil {
 			promptVersion = cfg.AIPromptVersion
 		}
-		return NewFakeAdapter(promptVersion)
+		return ai.NewFakeAdapter(promptVersion)
 	}
 
 	adapters := fallbackAdapters(cfg)
-	return NewFallbackChainAdapter(adapters...)
+	return ai.NewFallbackChainAdapter(adapters...)
 }
 
-func fallbackAdapters(cfg *config.Config) []TriageAdapter {
+func fallbackAdapters(cfg *config.Config) []ai.TriageAdapter {
 	targets := fallbackTargets(cfg)
-	adapters := make([]TriageAdapter, 0, len(targets))
+	adapters := make([]ai.TriageAdapter, 0, len(targets))
 	for _, target := range targets {
-		baseURL, apiKey, ok := providerCredentials(cfg, target.provider)
+		providerCfg, ok := providerConfig(cfg, target)
 		if !ok {
 			slog.WarnContext(context.Background(), "skipping AI fallback provider because credentials are not configured",
 				slog.String("provider", target.provider),
@@ -38,17 +43,30 @@ func fallbackAdapters(cfg *config.Config) []TriageAdapter {
 			)
 			continue
 		}
-		adapters = append(adapters, NewOpenAICompatibleAdapter(
-			target.provider,
-			baseURL,
-			apiKey,
-			target.model,
-			cfg.AITimeoutSecs,
-			cfg.AIMaxRetries,
-			cfg.AIPromptVersion,
-		))
+		adapter, ok := newProviderAdapter(providerCfg)
+		if !ok {
+			slog.WarnContext(context.Background(), "skipping unsupported AI fallback provider",
+				slog.String("provider", target.provider),
+				slog.String("model", target.model),
+			)
+			continue
+		}
+		adapters = append(adapters, adapter)
 	}
 	return adapters
+}
+
+func newProviderAdapter(providerCfg provider.Config) (ai.TriageAdapter, bool) {
+	switch normalizeProvider(providerCfg.ProviderName) {
+	case "groq":
+		return groq.NewAdapter(providerCfg), true
+	case "openrouter":
+		return openrouter.NewAdapter(providerCfg), true
+	case "gemini":
+		return gemini.NewAdapter(providerCfg), true
+	default:
+		return nil, false
+	}
 }
 
 func fallbackTargets(cfg *config.Config) []fallbackTarget {
@@ -65,7 +83,7 @@ func fallbackTargets(cfg *config.Config) []fallbackTarget {
 		provider = "groq"
 	}
 
-	targets := make([]fallbackTarget, 0, 3)
+	targets := make([]fallbackTarget, 0, 1)
 	seen := make(map[string]struct{})
 
 	addModel := func(model string) {
@@ -107,7 +125,7 @@ func parseFallbackChain(rawChain string) []fallbackTarget {
 			continue
 		}
 
-		provider = strings.ToLower(strings.TrimSpace(provider))
+		provider = normalizeProvider(provider)
 		model = strings.TrimSpace(model)
 		if provider == "" || model == "" {
 			continue
@@ -127,8 +145,26 @@ func parseFallbackChain(rawChain string) []fallbackTarget {
 	return targets
 }
 
+func providerConfig(cfg *config.Config, target fallbackTarget) (provider.Config, bool) {
+	providerName := normalizeProvider(target.provider)
+	baseURL, apiKey, ok := providerCredentials(cfg, providerName)
+	if !ok {
+		return provider.Config{}, false
+	}
+
+	return provider.Config{
+		ProviderName:  providerName,
+		BaseURL:       baseURL,
+		APIKey:        apiKey,
+		Model:         strings.TrimSpace(target.model),
+		TimeoutSecs:   cfg.AITimeoutSecs,
+		MaxRetries:    cfg.AIMaxRetries,
+		PromptVersion: cfg.AIPromptVersion,
+	}, true
+}
+
 func providerCredentials(cfg *config.Config, provider string) (string, string, bool) {
-	provider = strings.ToLower(strings.TrimSpace(provider))
+	provider = normalizeProvider(provider)
 	switch provider {
 	case "groq":
 		baseURL := firstNonEmpty(cfg.AIGroqBaseURL, providerSpecificValue(cfg, provider, cfg.AIBaseURL), providerDefaultBaseURL(provider))
@@ -147,8 +183,18 @@ func providerCredentials(cfg *config.Config, provider string) (string, string, b
 	}
 }
 
+func normalizeProvider(provider string) string {
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	switch provider {
+	case "google", "google-studio":
+		return "gemini"
+	default:
+		return provider
+	}
+}
+
 func providerSpecificValue(cfg *config.Config, provider string, value string) string {
-	if strings.EqualFold(cfg.AIProvider, provider) {
+	if normalizeProvider(cfg.AIProvider) == normalizeProvider(provider) {
 		return value
 	}
 	return ""

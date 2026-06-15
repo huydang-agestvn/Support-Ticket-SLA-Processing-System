@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
-	"support-ticket.com/internal/ai"
+	aifactory "support-ticket.com/internal/ai/factory"
 	"support-ticket.com/internal/auth"
 	"support-ticket.com/internal/config"
 	"support-ticket.com/internal/cron"
@@ -84,7 +84,7 @@ func (a *App) initDB() error {
 }
 
 func (a *App) setupDependencies() {
-	aiAdapter := ai.NewAdapterFromConfig(a.cfg)
+	aiAdapter := aifactory.NewAdapterFromConfig(a.cfg)
 
 	_ = aiAdapter
 

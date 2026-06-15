@@ -1,4 +1,4 @@
-package ai
+package ai_test
 
 import (
 	"context"
@@ -8,21 +8,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"support-ticket.com/internal/ai"
 	"support-ticket.com/internal/model"
 )
 
 type stubTriageAdapter struct {
-	result *TriageResult
+	result *ai.TriageResult
 	err    error
 	calls  int
 }
 
-func (s *stubTriageAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) (*TriageResult, error) {
+func (s *stubTriageAdapter) AnalyzeTicket(ctx context.Context, data ai.TriagePromptData) (*ai.TriageResult, error) {
 	s.calls++
 	return s.result, s.err
 }
 
-func (s *stubTriageAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriagePromptData, promptVersion string) (*TriageResult, error) {
+func (s *stubTriageAdapter) AnalyzeTicketWithVersion(ctx context.Context, data ai.TriagePromptData, promptVersion string) (*ai.TriageResult, error) {
 	return s.AnalyzeTicket(ctx, data)
 }
 
@@ -32,19 +33,19 @@ func (s *stubTriageAdapter) Model() string {
 
 func TestFallbackChainAdapter_PrimarySuccessSkipsBackup(t *testing.T) {
 	primary := &stubTriageAdapter{
-		result: &TriageResult{
+		result: &ai.TriageResult{
 			Category:        "IT",
 			ConfidenceScore: 0.9,
 		},
 	}
 	backup := &stubTriageAdapter{
-		result: &TriageResult{
+		result: &ai.TriageResult{
 			Category:        "HR",
 			ConfidenceScore: 0.9,
 		},
 	}
 
-	result, err := NewFallbackChainAdapter(primary, backup).AnalyzeTicket(context.Background(), TriagePromptData{})
+	result, err := ai.NewFallbackChainAdapter(primary, backup).AnalyzeTicket(context.Background(), ai.TriagePromptData{})
 
 	require.NoError(t, err)
 	assert.Equal(t, "IT", result.Category)
@@ -55,13 +56,13 @@ func TestFallbackChainAdapter_PrimarySuccessSkipsBackup(t *testing.T) {
 func TestFallbackChainAdapter_PrimaryErrorUsesBackup(t *testing.T) {
 	primary := &stubTriageAdapter{err: errors.New("primary unavailable")}
 	backup := &stubTriageAdapter{
-		result: &TriageResult{
+		result: &ai.TriageResult{
 			Category:        "Facilities",
 			ConfidenceScore: 0.8,
 		},
 	}
 
-	result, err := NewFallbackChainAdapter(primary, backup).AnalyzeTicket(context.Background(), TriagePromptData{})
+	result, err := ai.NewFallbackChainAdapter(primary, backup).AnalyzeTicket(context.Background(), ai.TriagePromptData{})
 
 	require.NoError(t, err)
 	assert.Equal(t, "Facilities", result.Category)
@@ -71,19 +72,19 @@ func TestFallbackChainAdapter_PrimaryErrorUsesBackup(t *testing.T) {
 
 func TestFallbackChainAdapter_PrimaryLowConfidenceSkipsBackup(t *testing.T) {
 	primary := &stubTriageAdapter{
-		result: &TriageResult{
+		result: &ai.TriageResult{
 			Category:        "IT",
 			ConfidenceScore: 0.2,
 		},
 	}
 	backup := &stubTriageAdapter{
-		result: &TriageResult{
+		result: &ai.TriageResult{
 			Category:        "HR",
 			ConfidenceScore: 0.75,
 		},
 	}
 
-	result, err := NewFallbackChainAdapter(primary, backup).AnalyzeTicket(context.Background(), TriagePromptData{})
+	result, err := ai.NewFallbackChainAdapter(primary, backup).AnalyzeTicket(context.Background(), ai.TriagePromptData{})
 
 	require.NoError(t, err)
 	assert.Equal(t, "IT", result.Category)
@@ -95,19 +96,19 @@ func TestFallbackChainAdapter_PrimaryLowConfidenceSkipsBackup(t *testing.T) {
 func TestFallbackChainAdapter_MultipleFallbackModels(t *testing.T) {
 	primary := &stubTriageAdapter{err: errors.New("primary timeout")}
 	firstBackup := &stubTriageAdapter{
-		result: &TriageResult{
+		result: &ai.TriageResult{
 			Category:        "IT",
 			ConfidenceScore: 0.1,
 		},
 	}
 	secondBackup := &stubTriageAdapter{
-		result: &TriageResult{
+		result: &ai.TriageResult{
 			Category:        "Facilities",
 			ConfidenceScore: 0.8,
 		},
 	}
 
-	result, err := NewFallbackChainAdapter(primary, firstBackup, secondBackup).AnalyzeTicket(context.Background(), TriagePromptData{})
+	result, err := ai.NewFallbackChainAdapter(primary, firstBackup, secondBackup).AnalyzeTicket(context.Background(), ai.TriagePromptData{})
 
 	require.NoError(t, err)
 	assert.Equal(t, "IT", result.Category)
@@ -119,13 +120,13 @@ func TestFallbackChainAdapter_MultipleFallbackModels(t *testing.T) {
 
 func TestFallbackChainAdapter_LowConfidenceThenSafeDefaultApplies(t *testing.T) {
 	primary := &stubTriageAdapter{
-		result: &TriageResult{
+		result: &ai.TriageResult{
 			Category:        "IT",
 			ConfidenceScore: 0.2,
 		},
 	}
 	backup := &stubTriageAdapter{
-		result: &TriageResult{
+		result: &ai.TriageResult{
 			Category:        "HR",
 			ConfidenceScore: 0.9,
 		},
@@ -137,11 +138,11 @@ func TestFallbackChainAdapter_LowConfidenceThenSafeDefaultApplies(t *testing.T) 
 		Priority:    model.PriorityMedium,
 	}
 
-	result, err := NewFallbackChainAdapter(primary, backup).AnalyzeTicket(
+	result, err := ai.NewFallbackChainAdapter(primary, backup).AnalyzeTicket(
 		context.Background(),
-		TriagePromptData{Ticket: *ticket},
+		ai.TriagePromptData{Ticket: *ticket},
 	)
-	finalResult := ApplyFallbackIfNeeded(result, err, ticket)
+	finalResult := ai.ApplyFallbackIfNeeded(result, err, ticket)
 
 	require.NoError(t, err)
 	assert.True(t, finalResult.FallbackUsed)
@@ -161,11 +162,11 @@ func TestFallbackChainAdapter_BothModelsFailThenSafeDefaultApplies(t *testing.T)
 		Priority:    model.PriorityMedium,
 	}
 
-	result, err := NewFallbackChainAdapter(primary, backup).AnalyzeTicket(
+	result, err := ai.NewFallbackChainAdapter(primary, backup).AnalyzeTicket(
 		context.Background(),
-		TriagePromptData{Ticket: *ticket},
+		ai.TriagePromptData{Ticket: *ticket},
 	)
-	finalResult := ApplyFallbackIfNeeded(result, err, ticket)
+	finalResult := ai.ApplyFallbackIfNeeded(result, err, ticket)
 
 	require.Error(t, err)
 	assert.True(t, finalResult.FallbackUsed)
