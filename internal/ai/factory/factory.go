@@ -74,10 +74,6 @@ func fallbackTargets(cfg *config.Config) []fallbackTarget {
 		return nil
 	}
 
-	if strings.TrimSpace(cfg.AIFallbackChain) != "" {
-		return parseFallbackChain(cfg.AIFallbackChain)
-	}
-
 	provider := strings.ToLower(strings.TrimSpace(cfg.AIProvider))
 	if provider == "" {
 		provider = "groq"
@@ -86,9 +82,10 @@ func fallbackTargets(cfg *config.Config) []fallbackTarget {
 	targets := make([]fallbackTarget, 0, 1)
 	seen := make(map[string]struct{})
 
-	addModel := func(model string) {
+	addTarget := func(provider, model string) {
+		provider = normalizeProvider(provider)
 		model = strings.TrimSpace(model)
-		if model == "" {
+		if provider == "" || model == "" {
 			return
 		}
 		key := provider + ":" + model
@@ -102,7 +99,11 @@ func fallbackTargets(cfg *config.Config) []fallbackTarget {
 		})
 	}
 
-	addModel(cfg.AIModel)
+	addTarget(provider, cfg.AIModel)
+
+	for _, target := range parseFallbackChain(cfg.AIFallbackChain) {
+		addTarget(target.provider, target.model)
+	}
 
 	return targets
 }
