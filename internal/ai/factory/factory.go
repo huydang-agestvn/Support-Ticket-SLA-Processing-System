@@ -64,6 +64,14 @@ func newProviderAdapter(providerCfg provider.Config) (ai.TriageAdapter, bool) {
 		return openrouter.NewAdapter(providerCfg), true
 	case "gemini":
 		return gemini.NewAdapter(providerCfg), true
+	case "ollama":
+		return ai.NewOllamaAdapter(
+			providerCfg.BaseURL,
+			providerCfg.Model,
+			providerCfg.TimeoutSecs,
+			providerCfg.MaxRetries,
+			providerCfg.PromptVersion,
+		), true
 	default:
 		return nil, false
 	}
@@ -179,6 +187,9 @@ func providerCredentials(cfg *config.Config, provider string) (string, string, b
 		baseURL := firstNonEmpty(cfg.AIGeminiBaseURL, providerSpecificValue(cfg, provider, cfg.AIBaseURL), providerDefaultBaseURL(provider))
 		apiKey := firstNonEmpty(cfg.AIGeminiAPIKey, providerSpecificValue(cfg, provider, cfg.AIAPIKey))
 		return baseURL, apiKey, baseURL != "" && apiKey != ""
+	case "ollama":
+		baseURL := firstNonEmpty(providerSpecificValue(cfg, provider, cfg.AIBaseURL), providerDefaultBaseURL(provider))
+		return baseURL, "", baseURL != ""
 	default:
 		return "", "", false
 	}
@@ -209,6 +220,8 @@ func providerDefaultBaseURL(provider string) string {
 		return "https://openrouter.ai/api/v1/chat/completions"
 	case "gemini", "google", "google-studio":
 		return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+	case "ollama":
+		return "http://localhost:11434/api/chat"
 	default:
 		return ""
 	}

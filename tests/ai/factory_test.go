@@ -53,6 +53,27 @@ func TestFactoryUsesPrimaryBeforeFallbackChain(t *testing.T) {
 	assert.Equal(t, "openai/gpt-oss-20bsad", adapter.Model())
 }
 
+func TestFactorySupportsOllamaAsPrimary(t *testing.T) {
+	adapter := aifactory.NewAdapterFromConfig(&config.Config{
+		AIEnabled:  true,
+		AIProvider: "ollama",
+		AIModel:    "qwen2.5:0.5b",
+		AIBaseURL:  "http://localhost:11434/api/chat",
+	})
+
+	assert.Equal(t, "qwen2.5:0.5b", adapter.Model())
+}
+
+func TestFactorySupportsOllamaInFallbackChain(t *testing.T) {
+	adapter := aifactory.NewAdapterFromConfig(&config.Config{
+		AIEnabled:       true,
+		AIFallbackChain: "ollama:qwen2.5:0.5b,groq:openai/gpt-oss-20b",
+		AIGroqAPIKey:    "groq-key",
+	})
+
+	assert.Equal(t, "qwen2.5:0.5b", adapter.Model())
+}
+
 func TestFactorySkipsFallbackProvidersWithoutCredentials(t *testing.T) {
 	adapter := aifactory.NewAdapterFromConfig(&config.Config{
 		AIEnabled:       true,
