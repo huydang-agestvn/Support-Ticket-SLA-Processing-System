@@ -115,8 +115,6 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 		TimeLeft:    slaEvidence,
 	}
 
-	fmt.Println(promptData)
-
 	return ticket, promptData, nil
 }
 

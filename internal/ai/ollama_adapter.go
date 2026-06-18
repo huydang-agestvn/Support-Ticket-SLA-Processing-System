@@ -119,6 +119,8 @@ func (o *OllamaAdapter) AnalyzeTicketWithVersion(ctx context.Context, data Triag
 		Stream: false,
 	}
 
+	fmt.Println(reqBody)
+
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal ollama request: %w", err)
