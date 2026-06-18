@@ -22,3 +22,13 @@ type BatchTriageResponseItem struct {
 	FallbackUsed          bool    `json:"fallback_used"`
 	PromptVersion         string  `json:"prompt_version"`
 }
+
+type BatchTriageResponse struct {
+	Processed []BatchTriageResponseItem `json:"processed"`
+	Failed    []BatchTriageFailedItem   `json:"failed"`
+}
+
+type BatchTriageFailedItem struct {
+	TicketID uint   `json:"ticket_id"`
+	Reason   string `json:"reason"`
+}
