@@ -337,9 +337,11 @@ paths:
         - AI Assistant
       summary: Execute an automated batch evaluation run for ticket triage datasets
       description: |
-        Triggers an isolated testing pipeline sequence over predefined baseline ground-truth data cases. 
+        Run a batch evaluation against predefined ground-truth test cases for the ticket triage AI workflow.
         
-        Compiles analytical assessment indicators regarding operational classification accuracy, system performance latency milestones, structural model token payloads, and aggregated infrastructure billing cost schemas. This assists system maintainers in qualifying prompt design adjustments before production environment provisioning.
+        Returns classification accuracy metrics, latency stats, throughput, and a per-case breakdown comparing AI predictions against expected labels.
+
+        Use this endpoint to validate prompt changes and verify fallback behavior before deploying to production.
         
         **Required Roles**: Manager.
       operationId: runTriageEvaluation
@@ -1265,44 +1267,56 @@ components:
         - $ref: "#/components/schemas/SuccessResponseBase"
         - type: object
           properties:
-            message:
-              type: string
-              example: Batch triage job dispatched successfully to the worker pool
             data:
-              type: array
-              items:
-                $ref: "#/components/schemas/AITriageResult"
+              $ref: "#/components/schemas/BatchTriageResult"
           example:
             success: true
-            message: Batch triage job dispatched successfully to the worker pool
             data:
-              - ticket_id: 455
-                category: "IT"
-                urgency_level: "high"
-                sla_breach_risk: "high"
-                reason_summary: "This ticket has been stalled in In Progress status for 5 consecutive hours with no recent activity logs. Based on historical resolution times, the assigned agent is likely facing a technical roadblock. An SLA breach will occur in less than 45 minutes if not intervened."
-                recommended_next_action: "Please initiate an immediate supervisor intervention. I recommend assigning a secondary senior engineer to co-own this ticket with the primary agent to unblock the technical issue and prevent a breach."
-                confidence_score: 0.92
-                prompt_version: "v1.2.0"
-                fallback_used: false
-              - ticket_id: 456
-                category: "HR"
-                urgency_level: "medium"
-                sla_breach_risk: "medium"
-                reason_summary: "This onboarding request has been sitting unassigned in the HR backlog for over 24 hours since its creation. Delaying this further risks impacting the new hire's day-one readiness and overall employee experience."
-                recommended_next_action: "Kindly bypass the automated dispatch and route this ticket directly to the HR Operations Team Lead for immediate manual assignment to an available specialist."
-                confidence_score: 0.65
-                prompt_version: "v1.2.0"
-                fallback_used: false
-              - ticket_id: 457
-                category: "Facilities"
-                urgency_level: "low"
-                sla_breach_risk: "low"
-                reason_summary: "The employee's request text was highly ambiguous and caused an AI processing timeout. To ensure no disruption, I have successfully executed safety protocols and switched to Deterministic Keyword Matching Fallback to classify this ticket."
-                recommended_next_action: "Please have a coordinator perform a quick manual review of the ticket body and layout. Since the AI confidence is based on keyword matching, verifying the specific facility items or maintenance location with the requester is recommended before dispatching a technician."
-                confidence_score: 1.00
-                prompt_version: "v1.2.0"
-                fallback_used: true
+              processed:
+                - ticket_id: 455
+                  category: "IT"
+                  urgency_level: "low"
+                  sla_breach_risk: "low"
+                  reason_summary: "The ticket requests an iPhone X for QA testing, a clear IT device procurement request. No event history indicates work is already underway, so the urgency remains low. The SLA time left is 91 hours, which is not short, and there is no backlog information, so the risk of SLA breach is low. Confidence is high due to the clear domain keywords and lack of ambiguity."
+                  recommended_next_action: "Assign to IT device procurement team to check availability and arrange delivery"
+                  confidence_score: 0.9
+                  fallback_used: false
+                  prompt_version: "v1.1"
+              failed:
+                - ticket_id: 456
+                  reason: "ticket is overdue and cannot be triaged"
+                - ticket_id: 457
+                  reason: "ticket not found"
+
+    BatchTriageResult:
+      type: object
+      required:
+        - processed
+        - failed
+      properties:
+        processed:
+          type: array
+          items:
+            $ref: "#/components/schemas/AITriageResult"
+        failed:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchTriageFailedItem"
+
+    BatchTriageFailedItem:
+      type: object
+      required:
+        - ticket_id
+        - reason
+      properties:
+        ticket_id:
+          type: integer
+          description: Unique identifier of the ticket that failed validation.
+          example: 24
+        reason:
+          type: string
+          description: Reason why the ticket could not be triaged.
+          example: ticket is overdue and cannot be triaged
 
     AITriageResult:
       type: object
@@ -1386,24 +1400,27 @@ components:
             success: true
             message: Evaluation run completed successfully
             data:
-              run_id: 42
-              run_date: "2026-06-09T16:15:00Z"
-              prompt_version: "v2.1.0-triage-assistant"
+              run_id: 17
+              run_date: "2026-06-12T10:23:31.390636683+07:00"
+              prompt_version: "v1.2"
               metrics:
                 accuracy:
-                  total_cases: 20
-                  passed_cases: 18
-                  failed_cases: 2
-                  accuracy_rate: 90.00
+                  total_cases: 1
+                  passed_cases: 1
+                  failed_cases: 0
+                  accuracy_rate: 100
                 performance:
-                  total_duration_ms: 15600
-                  avg_latency_ms: 780
-                  throughput_cps: 1.28
-                resource_usage:
-                  total_prompt_tokens: 12450
-                  total_completion_tokens: 3420
-                  total_tokens: 15870
-                  estimated_cost_usd: 0.047610
+                  total_duration_ms: 6389
+                  avg_latency_ms: 6389
+                  throughput_cps: 0.15651901706057286
+              detail_raw:
+                - test_case_id: 2
+                  actual_category: "HR"
+                  actual_urgency: "low"
+                  actual_sla_breach_risk: "low"
+                  is_overall_passed: true
+                  risk_explanation: "The request is for a performance evaluation template, which falls under HR. The ticket priority is low, and the SLA has 97 hours remaining, giving ample time. The issue is straightforward and not complex, and there is no backlog, so the risk of SLA breach is low."
+                  latency_ms: 6389
 
     AIEvaluationData:
       type: object
@@ -1412,29 +1429,34 @@ components:
         - run_date
         - prompt_version
         - metrics
+        - detail_raw
       properties:
         run_id:
           type: integer
           description: Auto-incrementing relational tracking index assigned to this evaluation job pipeline.
-          example: 42
+          example: 17
         run_date:
           type: string
           format: date-time
           description: Generated system timestamp layout recording exact execution start window.
-          example: "2026-06-09T16:15:00Z"
+          example: "2026-06-12T10:23:31.390636683+07:00"
         prompt_version:
           type: string
           description: The evaluated template config state tracking label.
-          example: "v2.1.0-triage-assistant"
+          example: "v1.2"
         metrics:
           $ref: "#/components/schemas/AIEvaluationMetrics"
+        detail_raw:
+          type: array
+          description: Detailed array tracking individual test cases from the evaluation sequence execution.
+          items:
+            $ref: "#/components/schemas/AIEvaluationDetailRaw"
 
     AIEvaluationMetrics:
       type: object
       required:
         - accuracy
         - performance
-        - resource_usage
       properties:
         accuracy:
           type: object
@@ -1446,17 +1468,16 @@ components:
           properties:
             total_cases:
               type: integer
-              example: 20
+              example: 1
             passed_cases:
               type: integer
-              example: 18
+              example: 1
             failed_cases:
               type: integer
-              example: 2
+              example: 0
             accuracy_rate:
               type: number
-              format: float
-              example: 90.00
+              example: 100
         performance:
           type: object
           required:
@@ -1466,36 +1487,48 @@ components:
           properties:
             total_duration_ms:
               type: integer
-              example: 15600
+              example: 6389
             avg_latency_ms:
               type: integer
-              example: 780
+              example: 6389
             throughput_cps:
               type: number
               format: float
-              example: 1.28
-        resource_usage:
-          type: object
-          required:
-            - total_prompt_tokens
-            - total_completion_tokens
-            - total_tokens
-            - estimated_cost_usd
-          properties:
-            total_prompt_tokens:
-              type: integer
-              example: 12450
-            total_completion_tokens:
-              type: integer
-              example: 3420
-            total_tokens:
-              type: integer
-              example: 15870
-            estimated_cost_usd:
-              type: number
-              format: double
-              example: 0.047610
+              example: 0.15651901706057286
 
+    AIEvaluationDetailRaw:
+      type: object
+      required:
+        - test_case_id
+        - actual_category
+        - actual_urgency
+        - actual_sla_breach_risk
+        - is_overall_passed
+        - risk_explanation
+        - latency_ms
+      properties:
+        test_case_id:
+          type: integer
+          example: 2
+        actual_category:
+          type: string
+          example: "HR"
+        actual_urgency:
+          type: string
+          example: "low"
+        actual_sla_breach_risk:
+          type: string
+          example: "low"
+        is_overall_passed:
+          type: boolean
+          example: true
+        risk_explanation:
+          type: string
+          example: "The request is for a performance evaluation template, which falls under HR. The ticket priority is low, and the SLA has 97 hours remaining, giving ample time. The issue is straightforward and not complex, and there is no backlog, so the risk of SLA breach is low."
+        latency_ms:
+          type: integer
+          example: 6389
+          
     SuccessResponseBase:
       type: object
       properties:
@@ -1518,9 +1551,6 @@ components:
         code:
           type: string
           example: INVALID_INPUT
-        status:
-          type: integer
-          example: 400
         message:
           type: string
           example: invalid input

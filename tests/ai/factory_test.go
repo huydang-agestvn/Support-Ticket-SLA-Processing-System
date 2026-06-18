@@ -1,0 +1,52 @@
+package ai_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	aifactory "support-ticket.com/internal/ai/factory"
+	"support-ticket.com/internal/config"
+)
+
+func TestFactoryReturnsFakeAdapterWhenAIDisabled(t *testing.T) {
+	adapter := aifactory.NewAdapterFromConfig(&config.Config{
+		AIEnabled:       false,
+		AIPromptVersion: "v1.1",
+	})
+
+	assert.Equal(t, "fake-model", adapter.Model())
+}
+
+func TestFactoryBuildsPrimaryOnlyWhenFallbackChainIsEmpty(t *testing.T) {
+	adapter := aifactory.NewAdapterFromConfig(&config.Config{
+		AIEnabled:  true,
+		AIProvider: "groq",
+		AIModel:    "openai/gpt-oss-20b",
+		AIAPIKey:   "test-key",
+	})
+
+	assert.Equal(t, "openai/gpt-oss-20b", adapter.Model())
+}
+
+func TestFactoryFallbackChainPreservesColonInModelID(t *testing.T) {
+	adapter := aifactory.NewAdapterFromConfig(&config.Config{
+		AIEnabled:           true,
+		AIFallbackChain:     "openrouter:nex-agi/nex-n2-pro:free,groq:openai/gpt-oss-20b",
+		AIOpenRouterAPIKey:  "openrouter-key",
+		AIOpenRouterBaseURL: "https://openrouter.ai/api/v1/chat/completions",
+		AIGroqAPIKey:        "groq-key",
+	})
+
+	assert.Equal(t, "nex-agi/nex-n2-pro:free", adapter.Model())
+}
+
+func TestFactorySkipsFallbackProvidersWithoutCredentials(t *testing.T) {
+	adapter := aifactory.NewAdapterFromConfig(&config.Config{
+		AIEnabled:       true,
+		AIFallbackChain: "openrouter:nex-agi/nex-n2-pro:free,groq:openai/gpt-oss-20b",
+		AIGroqAPIKey:    "groq-key",
+	})
+
+	assert.Equal(t, "openai/gpt-oss-20b", adapter.Model())
+}

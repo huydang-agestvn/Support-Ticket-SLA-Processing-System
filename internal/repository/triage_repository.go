@@ -28,8 +28,6 @@ func (r *triageRepositoryImpl) Create(ctx context.Context, result *model.AITicke
 	return r.getDB(ctx).Create(result).Error
 }
 
-// FindLatestByTicketID trả về bản ghi ai_ticket_triage_result mới nhất của ticket theo created_at.
-// Trả về (nil, nil) nếu chưa có bản ghi nào.
 func (r *triageRepositoryImpl) FindLatestByTicketID(ctx context.Context, ticketID uint) (*model.AITicketTriageResult, error) {
 	var result model.AITicketTriageResult
 	err := r.getDB(ctx).

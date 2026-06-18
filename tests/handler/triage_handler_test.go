@@ -31,17 +31,20 @@ func TestTriageHandler_HandleBatchTriageTickets(t *testing.T) {
 			name: "Success",
 			body: request.AIBatchTriageRequest{TicketIDs: []uint{1, 2}},
 			mockSetup: func(m *testmock.MockTriageService) {
-				m.On("ExecuteBatchTriage", mock.Anything, []uint{1, 2}).Return([]*response.BatchTriageResponseItem{
-					{
-						TicketID:     1,
-						Category:     "IT",
-						UrgencyLevel: "high",
+				m.On("ExecuteBatchTriage", mock.Anything, []uint{1, 2}).Return(&response.BatchTriageResponse{
+					Processed: []response.BatchTriageResponseItem{
+						{
+							TicketID:     1,
+							Category:     "IT",
+							UrgencyLevel: "high",
+						},
+						{
+							TicketID:     2,
+							Category:     "HR",
+							UrgencyLevel: "low",
+						},
 					},
-					{
-						TicketID:     2,
-						Category:     "HR",
-						UrgencyLevel: "low",
-					},
+					Failed: []response.BatchTriageFailedItem{},
 				}, nil)
 			},
 			expectedCode: http.StatusOK,
@@ -56,25 +59,53 @@ func TestTriageHandler_HandleBatchTriageTickets(t *testing.T) {
 			name: "Empty Ticket IDs",
 			body: request.AIBatchTriageRequest{TicketIDs: []uint{}},
 			mockSetup: func(m *testmock.MockTriageService) {
-				m.On("ExecuteBatchTriage", mock.Anything, []uint{}).Return(([]*response.BatchTriageResponseItem)(nil), errmsgs.ErrEmptyBatch)
+				m.On("ExecuteBatchTriage", mock.Anything, []uint{}).Return((*response.BatchTriageResponse)(nil), errmsgs.ErrEmptyBatch)
 			},
 			expectedCode: http.StatusBadRequest,
 		},
 		{
-			name: "Ticket Not Found",
+			name: "Ticket Not Found (Partial Success)",
 			body: request.AIBatchTriageRequest{TicketIDs: []uint{1, 99}},
 			mockSetup: func(m *testmock.MockTriageService) {
-				m.On("ExecuteBatchTriage", mock.Anything, []uint{1, 99}).Return(([]*response.BatchTriageResponseItem)(nil), errmsgs.ErrTicketNotFound)
+				m.On("ExecuteBatchTriage", mock.Anything, []uint{1, 99}).Return(&response.BatchTriageResponse{
+					Processed: []response.BatchTriageResponseItem{
+						{
+							TicketID:     1,
+							Category:     "IT",
+							UrgencyLevel: "high",
+						},
+					},
+					Failed: []response.BatchTriageFailedItem{
+						{
+							TicketID: 99,
+							Reason:   errmsgs.ErrTicketNotFound.Message,
+						},
+					},
+				}, nil)
 			},
-			expectedCode: http.StatusNotFound,
+			expectedCode: http.StatusOK,
 		},
 		{
-			name: "Invalid Flow Ticket (Terminal State)",
+			name: "Invalid Flow Ticket (Terminal State - Partial Success)",
 			body: request.AIBatchTriageRequest{TicketIDs: []uint{1, 2}},
 			mockSetup: func(m *testmock.MockTriageService) {
-				m.On("ExecuteBatchTriage", mock.Anything, []uint{1, 2}).Return(([]*response.BatchTriageResponseItem)(nil), errmsgs.ErrTicketResolved)
+				m.On("ExecuteBatchTriage", mock.Anything, []uint{1, 2}).Return(&response.BatchTriageResponse{
+					Processed: []response.BatchTriageResponseItem{
+						{
+							TicketID:     1,
+							Category:     "IT",
+							UrgencyLevel: "high",
+						},
+					},
+					Failed: []response.BatchTriageFailedItem{
+						{
+							TicketID: 2,
+							Reason:   errmsgs.ErrTicketResolved.Message,
+						},
+					},
+				}, nil)
 			},
-			expectedCode: http.StatusBadRequest,
+			expectedCode: http.StatusOK,
 		},
 	}
 

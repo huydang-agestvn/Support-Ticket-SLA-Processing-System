@@ -1,8 +1,6 @@
 package ai
 
 import (
-	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -11,8 +9,16 @@ import (
 
 const confidenceThreshold = 0.5
 
+func ShouldTryNextAIAdapter(result *TriageResult, err error) bool {
+	return err != nil || result == nil
+}
+
+func ShouldUseSafeFallback(result *TriageResult, err error) bool {
+	return err != nil || result == nil || result.ConfidenceScore < confidenceThreshold
+}
+
 func ApplyFallbackIfNeeded(result *TriageResult, err error, ticket *model.Ticket) *TriageResult {
-	if err != nil || result == nil || result.ConfidenceScore < confidenceThreshold {
+	if ShouldUseSafeFallback(result, err) {
 		return buildFallbackResult(ticket, result)
 	}
 	return result
@@ -42,24 +48,10 @@ func buildFallbackResult(ticket *model.Ticket, result *TriageResult) *TriageResu
 		}
 	}
 
-	textToAnalyze := strings.ToLower(ticket.Title + " " + ticket.Description)
-	category := "IT"
-
-	hrRegex := regexp.MustCompile(`\b(salary|payroll|leave|contract|benefits|onboarding|insurance)\b`)
-	facilitiesRegex := regexp.MustCompile(`\b(light|aircon|ac|chair|table|desk|door|leak|office|building)\b`)
-
-	if hrRegex.MatchString(textToAnalyze) {
-		category = "HR"
-	} else if facilitiesRegex.MatchString(textToAnalyze) {
-		category = "Facilities"
-	}
+	category := "Unknown"
 
 	reasonParts := []string{"Fallback: AI unavailable or low confidence."}
-	if category != "IT" {
-		reasonParts = append(reasonParts, fmt.Sprintf("Category mapped to %s via keyword matching.", category))
-	} else {
-		reasonParts = append(reasonParts, "Category defaulted to IT (no specific keywords found).")
-	}
+	reasonParts = append(reasonParts, "Category defaulted to Unknown (no specific keywords found).")
 
 	switch slaBreachRisk {
 	case "high":

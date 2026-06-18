@@ -102,12 +102,12 @@ func (m *MockTriageService) ExecuteTriage(ctx context.Context, ticketID uint) (*
 	return args.Get(0).(*response.TriageResponse), args.Error(1)
 }
 
-func (m *MockTriageService) ExecuteBatchTriage(ctx context.Context, ticketIDs []uint) ([]*response.BatchTriageResponseItem, error) {
+func (m *MockTriageService) ExecuteBatchTriage(ctx context.Context, ticketIDs []uint) (*response.BatchTriageResponse, error) {
 	args := m.Called(ctx, ticketIDs)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*response.BatchTriageResponseItem), args.Error(1)
+	return args.Get(0).(*response.BatchTriageResponse), args.Error(1)
 }
 
 func (m *MockTriageService) GetLatestTriageResult(ctx context.Context, ticketID uint) (*response.TriageResponse, error) {

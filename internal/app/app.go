@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
-	"support-ticket.com/internal/ai"
+	aifactory "support-ticket.com/internal/ai/factory"
 	"support-ticket.com/internal/auth"
 	"support-ticket.com/internal/config"
 	"support-ticket.com/internal/cron"
@@ -84,19 +84,7 @@ func (a *App) initDB() error {
 }
 
 func (a *App) setupDependencies() {
-	var aiAdapter ai.TriageAdapter
-	if a.cfg.AIEnabled {
-		aiAdapter = ai.NewGroqAdapter(
-			a.cfg.AIBaseURL,
-			a.cfg.AIAPIKey,
-			a.cfg.AIModel,
-			a.cfg.AITimeoutSecs,
-			a.cfg.AIMaxRetries,
-			a.cfg.AIPromptVersion,
-		)
-	} else {
-		aiAdapter = ai.NewFakeAdapter(a.cfg.AIPromptVersion)
-	}
+	aiAdapter := aifactory.NewAdapterFromConfig(a.cfg)
 
 	_ = aiAdapter
 
@@ -104,6 +92,7 @@ func (a *App) setupDependencies() {
 	eventRepo := repository.NewTicketEventRepository(a.db)
 	reportRepo := repository.NewReportRepository(a.db)
 	triageRepo := repository.NewTriageRepository(a.db)
+	evaluationRepo := repository.NewEvaluationRepository(a.db)
 
 	auditLogger, err := service.NewMinIOAuditLogger(
 		a.cfg.MinioEndpoint,
@@ -120,11 +109,13 @@ func (a *App) setupDependencies() {
 	eventService := service.NewTicketEventService(eventRepo, ticketRepo, auditLogger)
 	reportService := service.NewReportService(reportRepo)
 	triageService := service.NewTriageService(ticketRepo, reportRepo, triageRepo, aiAdapter, a.cfg)
+	evaluationService := service.NewEvaluationService(evaluationRepo, reportRepo, aiAdapter)
 
 	ticketHandler := handler.NewTicketHandler(ticketService)
 	eventHandler := handler.NewTicketEventHandler(eventService)
 	reportHander := handler.NewReportHandler(reportService)
 	triageHandler := handler.NewTriageHandler(triageService)
+	evaluationHandler := handler.NewEvaluationHandler(evaluationService)
 
 	keycloakClient := service.NewClient(
 		a.cfg.KeycloakTokenURL,
@@ -152,6 +143,7 @@ func (a *App) setupDependencies() {
 		authMiddleware,
 		reportHander,
 		triageHandler,
+		evaluationHandler,
 	)
 
 	// 6. Initialize EmailService and Cron Scheduler

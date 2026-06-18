@@ -22,3 +22,20 @@ type JSONSchema struct {
 	Strict bool           `json:"strict"`
 	Schema map[string]any `json:"schema"`
 }
+
+type OllamaRequest struct {
+	Model    string          `json:"model"`
+	Messages []OllamaMessage `json:"messages"`
+	Format   any             `json:"format"`
+	Options  OllamaOptions   `json:"options"`
+	Stream   bool            `json:"stream"`
+}
+
+type OllamaMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type OllamaOptions struct {
+	Temperature float64 `json:"temperature"`
+}
