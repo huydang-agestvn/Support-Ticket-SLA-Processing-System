@@ -31,3 +31,7 @@ go.work.sum
 .idea/
 .vscode/
 
+ai-model/
+export_jsonl.go
+dataset.jsonl
+scripts/

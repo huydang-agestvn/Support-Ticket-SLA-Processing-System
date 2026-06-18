@@ -86,14 +86,24 @@ func (a *App) initDB() error {
 func (a *App) setupDependencies() {
 	var aiAdapter ai.TriageAdapter
 	if a.cfg.AIEnabled {
-		aiAdapter = ai.NewGroqAdapter(
-			a.cfg.AIBaseURL,
-			a.cfg.AIAPIKey,
-			a.cfg.AIModel,
-			a.cfg.AITimeoutSecs,
-			a.cfg.AIMaxRetries,
-			a.cfg.AIPromptVersion,
-		)
+		if a.cfg.AIProvider == "ollama" {
+			aiAdapter = ai.NewOllamaAdapter(
+				a.cfg.AIBaseURL,
+				a.cfg.AIModel,
+				a.cfg.AITimeoutSecs,
+				a.cfg.AIMaxRetries,
+				a.cfg.AIPromptVersion,
+			)
+		} else {
+			aiAdapter = ai.NewGroqAdapter(
+				a.cfg.AIBaseURL,
+				a.cfg.AIAPIKey,
+				a.cfg.AIModel,
+				a.cfg.AITimeoutSecs,
+				a.cfg.AIMaxRetries,
+				a.cfg.AIPromptVersion,
+			)
+		}
 	} else {
 		aiAdapter = ai.NewFakeAdapter(a.cfg.AIPromptVersion)
 	}
