@@ -113,14 +113,17 @@ func TestExecuteBatchTriage_Success(t *testing.T) {
 	res, err := svc.ExecuteBatchTriage(context.Background(), ticketIDs)
 
 	assert.NoError(t, err)
-	assert.Len(t, res, 2)
+	assert.NotNil(t, res)
+	assert.Len(t, res.Processed, 2)
+	assert.Len(t, res.Failed, 0)
 
 	var res1, res2 *response.BatchTriageResponseItem
-	for i := range res {
-		if res[i].TicketID == 1 {
-			res1 = res[i]
-		} else if res[i].TicketID == 2 {
-			res2 = res[i]
+	for i := range res.Processed {
+		item := &res.Processed[i]
+		if item.TicketID == 1 {
+			res1 = item
+		} else if item.TicketID == 2 {
+			res2 = item
 		}
 	}
 	assert.NotNil(t, res1)
@@ -201,18 +204,40 @@ func TestExecuteBatchTriage_TicketNotFound(t *testing.T) {
 
 	// Only ticket 1 is returned from DB, meaning ticket 2 is missing
 	tickets := []model.Ticket{
-		{ID: 1, Status: model.StatusNew},
+		{
+			ID:          1,
+			Title:       "Valid Ticket 1",
+			Description: "I cannot connect to the office wifi network.",
+			Status:      model.StatusNew,
+			Priority:    model.PriorityHigh,
+		},
 	}
 
 	mockTicketRepo.On("FindByIds", mock.Anything, ticketIDs).Return(tickets, nil)
+	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
+	mockTriageRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+
+	mockAI.On("AnalyzeTicket", mock.Anything, mock.Anything).Return(&ai.TriageResult{
+		Category:        "IT",
+		UrgencyLevel:    "high",
+		ConfidenceScore: 0.9,
+	}, nil)
 
 	res, err := svc.ExecuteBatchTriage(context.Background(), ticketIDs)
 
-	assert.Nil(t, res)
-	assert.Error(t, err)
-	assert.Equal(t, errmsgs.ErrTicketNotFound, err)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res.Processed, 1)
+	assert.Len(t, res.Failed, 1)
+
+	assert.Equal(t, uint(1), res.Processed[0].TicketID)
+	assert.Equal(t, uint(2), res.Failed[0].TicketID)
+	assert.Equal(t, errmsgs.ErrTicketNotFound.Message, res.Failed[0].Reason)
 
 	mockTicketRepo.AssertExpectations(t)
+	mockReportRepo.AssertExpectations(t)
+	mockTriageRepo.AssertExpectations(t)
+	mockAI.AssertExpectations(t)
 }
 
 func TestExecuteBatchTriage_TerminalState(t *testing.T) {
@@ -231,19 +256,47 @@ func TestExecuteBatchTriage_TerminalState(t *testing.T) {
 	ticketIDs := []uint{1, 2}
 
 	tickets := []model.Ticket{
-		{ID: 1, Status: model.StatusNew},
-		{ID: 2, Status: model.StatusResolved}, // Terminal state!
+		{
+			ID:          1,
+			Title:       "Valid Ticket 1",
+			Description: "I cannot connect to the office wifi network.",
+			Status:      model.StatusNew,
+			Priority:    model.PriorityHigh,
+		},
+		{
+			ID:          2,
+			Title:       "Terminal Ticket 2",
+			Description: "This ticket has already been resolved.",
+			Status:      model.StatusResolved, // Terminal state!
+			Priority:    model.PriorityMedium,
+		},
 	}
 
 	mockTicketRepo.On("FindByIds", mock.Anything, ticketIDs).Return(tickets, nil)
+	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
+	mockTriageRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+
+	mockAI.On("AnalyzeTicket", mock.Anything, mock.Anything).Return(&ai.TriageResult{
+		Category:        "IT",
+		UrgencyLevel:    "high",
+		ConfidenceScore: 0.9,
+	}, nil)
 
 	res, err := svc.ExecuteBatchTriage(context.Background(), ticketIDs)
 
-	assert.Nil(t, res)
-	assert.Error(t, err)
-	assert.Equal(t, errmsgs.ErrTicketResolved, err)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res.Processed, 1)
+	assert.Len(t, res.Failed, 1)
+
+	assert.Equal(t, uint(1), res.Processed[0].TicketID)
+	assert.Equal(t, uint(2), res.Failed[0].TicketID)
+	assert.Equal(t, errmsgs.ErrTicketResolved.Message, res.Failed[0].Reason)
 
 	mockTicketRepo.AssertExpectations(t)
+	mockReportRepo.AssertExpectations(t)
+	mockTriageRepo.AssertExpectations(t)
+	mockAI.AssertExpectations(t)
 }
 
 func TestExecuteBatchTriage_Fallback(t *testing.T) {
@@ -282,12 +335,14 @@ func TestExecuteBatchTriage_Fallback(t *testing.T) {
 	res, err := svc.ExecuteBatchTriage(context.Background(), ticketIDs)
 
 	assert.NoError(t, err)
-	assert.Len(t, res, 1)
+	assert.NotNil(t, res)
+	assert.Len(t, res.Processed, 1)
+	assert.Len(t, res.Failed, 0)
 
-	assert.Equal(t, uint(1), res[0].TicketID)
+	assert.Equal(t, uint(1), res.Processed[0].TicketID)
 	// Fallback should match "printer" as "IT" or generic, and fallback_used is true
-	assert.True(t, res[0].FallbackUsed)
-	assert.Equal(t, 0.0, res[0].ConfidenceScore)
+	assert.True(t, res.Processed[0].FallbackUsed)
+	assert.Equal(t, 0.0, res.Processed[0].ConfidenceScore)
 
 	mockTicketRepo.AssertExpectations(t)
 	mockReportRepo.AssertExpectations(t)
@@ -312,17 +367,46 @@ func TestExecuteBatchTriage_TicketOverdue(t *testing.T) {
 
 	overdueTime := time.Now().Add(-1 * time.Hour)
 	tickets := []model.Ticket{
-		{ID: 1, Status: model.StatusNew},
-		{ID: 2, Status: model.StatusNew, SLADueAt: &overdueTime},
+		{
+			ID:          1,
+			Title:       "Valid Ticket 1",
+			Description: "I cannot connect to the office wifi network.",
+			Status:      model.StatusNew,
+			Priority:    model.PriorityHigh,
+		},
+		{
+			ID:          2,
+			Title:       "Overdue Ticket 2",
+			Description: "This ticket has run past its due date.",
+			Status:      model.StatusNew,
+			SLADueAt:    &overdueTime,
+			Priority:    model.PriorityMedium,
+		},
 	}
 
 	mockTicketRepo.On("FindByIds", mock.Anything, ticketIDs).Return(tickets, nil)
+	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
+	mockTriageRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+
+	mockAI.On("AnalyzeTicket", mock.Anything, mock.Anything).Return(&ai.TriageResult{
+		Category:        "IT",
+		UrgencyLevel:    "high",
+		ConfidenceScore: 0.9,
+	}, nil)
 
 	res, err := svc.ExecuteBatchTriage(context.Background(), ticketIDs)
 
-	assert.Nil(t, res)
-	assert.Error(t, err)
-	assert.Equal(t, errmsgs.ErrTicketOverdue, err)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res.Processed, 1)
+	assert.Len(t, res.Failed, 1)
+
+	assert.Equal(t, uint(1), res.Processed[0].TicketID)
+	assert.Equal(t, uint(2), res.Failed[0].TicketID)
+	assert.Equal(t, errmsgs.ErrTicketOverdue.Message, res.Failed[0].Reason)
 
 	mockTicketRepo.AssertExpectations(t)
+	mockReportRepo.AssertExpectations(t)
+	mockTriageRepo.AssertExpectations(t)
+	mockAI.AssertExpectations(t)
 }
