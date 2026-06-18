@@ -1,4 +1,4 @@
-package ai
+package openai
 
 import (
 	"bytes"
@@ -6,50 +6,55 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"text/template"
 	"time"
 
+	"support-ticket.com/internal/ai"
+	"support-ticket.com/internal/ai/provider"
 	"support-ticket.com/internal/dto/request"
 	"support-ticket.com/internal/dto/response"
 )
 
-// GroqAdapter implements the TriageAdapter using the Groq API.
-type GroqAdapter struct {
+type Adapter struct {
+	providerName  string
 	apiKey        string
 	model         string
 	httpClient    *http.Client
 	baseURL       string
 	maxRetries    int
 	promptVersion string
+	headers       map[string]string
 }
 
-// NewGroqAdapter initializes a new adapter for Groq.
-func NewGroqAdapter(baseURL, apiKey, model string, timeoutSecs int, maxRetries int, promptVersion string) *GroqAdapter {
-	return &GroqAdapter{
-		apiKey: apiKey,
-		model:  model,
-		httpClient: &http.Client{
-			Timeout: time.Duration(timeoutSecs) * time.Second,
-		},
-		baseURL:       baseURL,
-		maxRetries:    maxRetries,
-		promptVersion: promptVersion,
+func NewAdapter(cfg provider.Config) *Adapter {
+	timeoutSecs := cfg.TimeoutSecs
+	if timeoutSecs <= 0 {
+		timeoutSecs = 30
+	}
+
+	return &Adapter{
+		providerName:  strings.TrimSpace(cfg.ProviderName),
+		apiKey:        cfg.APIKey,
+		model:         cfg.Model,
+		httpClient:    &http.Client{Timeout: time.Duration(timeoutSecs) * time.Second},
+		baseURL:       normalizeChatCompletionsURL(cfg.BaseURL),
+		maxRetries:    cfg.MaxRetries,
+		promptVersion: cfg.PromptVersion,
+		headers:       cfg.Headers,
 	}
 }
 
-// Model returns the configured LLM model name.
-func (g *GroqAdapter) Model() string {
-	return g.model
+func (a *Adapter) Model() string {
+	return a.model
 }
 
-// AnalyzeTicket sends the ticket details to Groq and enforces strict JSON schema output.
-func (g *GroqAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) (*TriageResult, error) {
-	return g.AnalyzeTicketWithVersion(ctx, data, g.promptVersion)
+func (a *Adapter) AnalyzeTicket(ctx context.Context, data ai.TriagePromptData) (*ai.TriageResult, error) {
+	return a.AnalyzeTicketWithVersion(ctx, data, a.promptVersion)
 }
 
-// AnalyzeTicketWithVersion sends the ticket details to Groq using a specific prompt version.
-func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriagePromptData, promptVersion string) (*TriageResult, error) {
-	templatePath := fmt.Sprintf("internal/ai/prompts/triage_%s.tmpl", g.promptVersion)
+func (a *Adapter) AnalyzeTicketWithVersion(ctx context.Context, data ai.TriagePromptData, promptVersion string) (*ai.TriageResult, error) {
+	templatePath := fmt.Sprintf("internal/ai/prompts/triage_%s.tmpl", promptVersion)
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load prompt template %s: %w", templatePath, err)
@@ -61,7 +66,6 @@ func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriageP
 	}
 	prompt := promptBuffer.String()
 
-	// Define the strict JSON schema required by Task 2
 	schema := map[string]any{
 		"type": "object",
 		"properties": map[string]any{
@@ -108,8 +112,8 @@ func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriageP
 	}
 
 	reqBody := request.GroqRequest{
-		Model:       g.model,
-		Temperature: 0.0, // Use 0.0 for deterministic output required in Triage
+		Model:       a.model,
+		Temperature: 0.0,
 		Messages: []request.GroqMessage{
 			{
 				Role:    "system",
@@ -121,7 +125,7 @@ func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriageP
 			},
 		},
 		ResponseFormat: request.ResponseFormat{
-			Type: "json_schema", // Enforce strict JSON output
+			Type: "json_schema",
 			JSONSchema: &request.JSONSchema{
 				Name:   "triage_result",
 				Strict: true,
@@ -130,30 +134,35 @@ func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriageP
 		},
 	}
 
-
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal groq request: %w", err)
+		return nil, fmt.Errorf("failed to marshal ai provider request: %w", err)
 	}
 
 	var lastErr error
-	for attempt := 0; attempt <= g.maxRetries; attempt++ {
+	for attempt := 0; attempt <= a.maxRetries; attempt++ {
 		if attempt > 0 {
-			time.Sleep(time.Duration(attempt) * time.Second) // Exponential-ish backoff
+			if err := sleepBeforeRetry(ctx, attempt); err != nil {
+				return nil, err
+			}
 		}
 
-		req, err := http.NewRequestWithContext(ctx, "POST", g.baseURL, bytes.NewBuffer(jsonData))
+		req, err := http.NewRequestWithContext(ctx, "POST", a.baseURL, bytes.NewBuffer(jsonData))
 		if err != nil {
 			return nil, fmt.Errorf("failed to create request: %w", err)
 		}
 
-		req.Header.Set("Authorization", "Bearer "+g.apiKey)
+		req.Header.Set("Authorization", "Bearer "+a.apiKey)
 		req.Header.Set("Content-Type", "application/json")
+		for key, value := range a.headers {
+			if strings.TrimSpace(key) != "" && strings.TrimSpace(value) != "" {
+				req.Header.Set(key, value)
+			}
+		}
 
-		// Call the LLM Provider
-		resp, err := g.httpClient.Do(req)
+		resp, err := a.httpClient.Do(req)
 		if err != nil {
-			lastErr = fmt.Errorf("groq api request failed: %w", err)
+			lastErr = fmt.Errorf("%s api request failed: %w", a.providerName, err)
 			continue
 		}
 
@@ -161,33 +170,31 @@ func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriageP
 			var errResp map[string]any
 			_ = json.NewDecoder(resp.Body).Decode(&errResp)
 			resp.Body.Close()
-			lastErr = fmt.Errorf("groq api returned error: status %d, details: %v", resp.StatusCode, errResp)
+			lastErr = fmt.Errorf("%s api returned error: status %d, details: %v", a.providerName, resp.StatusCode, errResp)
 			continue
 		}
 
-		var groqResp response.GroqResponse
-		if err := json.NewDecoder(resp.Body).Decode(&groqResp); err != nil {
+		var providerResp response.GroqResponse
+		if err := json.NewDecoder(resp.Body).Decode(&providerResp); err != nil {
 			resp.Body.Close()
-			lastErr = fmt.Errorf("failed to decode groq response: %w", err)
+			lastErr = fmt.Errorf("failed to decode %s response: %w", a.providerName, err)
 			continue
 		}
 		resp.Body.Close()
 
-		if len(groqResp.Choices) == 0 {
-			lastErr = fmt.Errorf("groq returned no choices")
+		if len(providerResp.Choices) == 0 {
+			lastErr = fmt.Errorf("%s returned no choices", a.providerName)
 			continue
 		}
 
-		content := groqResp.Choices[0].Message.Content
+		content := providerResp.Choices[0].Message.Content
 
-		// Parse structured JSON response mapped exactly to our output
-		var result TriageResult
+		var result ai.TriageResult
 		if err := json.Unmarshal([]byte(content), &result); err != nil {
 			lastErr = fmt.Errorf("failed to parse structured json response: %w", err)
 			continue
 		}
 
-		// Double-check the fallback flag
 		result.FallbackUsed = false
 		result.PromptVersion = promptVersion
 
@@ -197,3 +204,23 @@ func (g *GroqAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriageP
 	return nil, fmt.Errorf("max retries exceeded, last error: %w", lastErr)
 }
 
+func normalizeChatCompletionsURL(baseURL string) string {
+	baseURL = strings.TrimSpace(baseURL)
+	if baseURL == "" || strings.HasSuffix(baseURL, "/chat/completions") {
+		return baseURL
+	}
+	return strings.TrimRight(baseURL, "/") + "/chat/completions"
+}
+
+func sleepBeforeRetry(ctx context.Context, attempt int) error {
+	backoff := time.Duration(attempt) * time.Second
+	timer := time.NewTimer(backoff)
+	defer timer.Stop()
+
+	select {
+	case <-timer.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}

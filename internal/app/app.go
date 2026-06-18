@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
-	"support-ticket.com/internal/ai"
+	aifactory "support-ticket.com/internal/ai/factory"
 	"support-ticket.com/internal/auth"
 	"support-ticket.com/internal/config"
 	"support-ticket.com/internal/cron"
@@ -84,29 +84,7 @@ func (a *App) initDB() error {
 }
 
 func (a *App) setupDependencies() {
-	var aiAdapter ai.TriageAdapter
-	if a.cfg.AIEnabled {
-		if a.cfg.AIProvider == "ollama" {
-			aiAdapter = ai.NewOllamaAdapter(
-				a.cfg.AIBaseURL,
-				a.cfg.AIModel,
-				a.cfg.AITimeoutSecs,
-				a.cfg.AIMaxRetries,
-				a.cfg.AIPromptVersion,
-			)
-		} else {
-			aiAdapter = ai.NewGroqAdapter(
-				a.cfg.AIBaseURL,
-				a.cfg.AIAPIKey,
-				a.cfg.AIModel,
-				a.cfg.AITimeoutSecs,
-				a.cfg.AIMaxRetries,
-				a.cfg.AIPromptVersion,
-			)
-		}
-	} else {
-		aiAdapter = ai.NewFakeAdapter(a.cfg.AIPromptVersion)
-	}
+	aiAdapter := aifactory.NewAdapterFromConfig(a.cfg)
 
 	_ = aiAdapter
 

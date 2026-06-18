@@ -9,8 +9,16 @@ import (
 
 const confidenceThreshold = 0.5
 
+func ShouldTryNextAIAdapter(result *TriageResult, err error) bool {
+	return err != nil || result == nil
+}
+
+func ShouldUseSafeFallback(result *TriageResult, err error) bool {
+	return err != nil || result == nil || result.ConfidenceScore < confidenceThreshold
+}
+
 func ApplyFallbackIfNeeded(result *TriageResult, err error, ticket *model.Ticket) *TriageResult {
-	if err != nil || result == nil || result.ConfidenceScore < confidenceThreshold {
+	if ShouldUseSafeFallback(result, err) {
 		return buildFallbackResult(ticket, result)
 	}
 	return result
