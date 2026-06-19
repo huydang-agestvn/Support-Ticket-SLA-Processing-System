@@ -150,7 +150,6 @@ func LoadConfig() *Config {
 		AIModel:             getEnv("AI_MODEL"),
 		AIFallbackChain:     getEnv("AI_FALLBACK_CHAIN"),
 		AIBaseURL:           getEnv("AI_BASE_URL"),
-		AIAPIKey:            getEnv("AI_API_KEY"),
 		AIGroqBaseURL:       getEnv("AI_GROQ_BASE_URL"),
 		AIGroqAPIKey:        getEnv("AI_GROQ_API_KEY"),
 		AIOpenRouterBaseURL: getEnv("AI_OPENROUTER_BASE_URL"),
