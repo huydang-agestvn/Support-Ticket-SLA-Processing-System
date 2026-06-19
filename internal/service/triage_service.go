@@ -126,7 +126,11 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 		return nil, err
 	}
 
-	aiCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	timeoutSecs := 15
+	if s.cfg != nil && s.cfg.AITimeoutSecs > 0 {
+		timeoutSecs = s.cfg.AITimeoutSecs
+	}
+	aiCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSecs)*time.Second)
 	defer cancel()
 
 	aiResult, aiErr := s.aiAdapter.AnalyzeTicket(aiCtx, promptData)
@@ -226,4 +230,3 @@ func (s *triageServiceImpl) GetLatestTriageResult(ctx context.Context, ticketID 
 		PromptVersion:         dbResult.PromptVersion,
 	}, nil
 }
-

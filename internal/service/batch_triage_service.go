@@ -175,7 +175,11 @@ func (s *triageServiceImpl) triageSingleTicket(ctx context.Context, t model.Tick
 		TimeLeft:    slaEvidence,
 	}
 
-	aiCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	timeoutSecs := 15
+	if s.cfg != nil && s.cfg.AITimeoutSecs > 0 {
+		timeoutSecs = s.cfg.AITimeoutSecs
+	}
+	aiCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSecs)*time.Second)
 	defer cancel()
 
 	aiResult, aiErr := s.aiAdapter.AnalyzeTicket(aiCtx, promptData)
