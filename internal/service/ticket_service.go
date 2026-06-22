@@ -24,14 +24,16 @@ type TicketService interface {
 }
 
 type ticketServiceImpl struct {
-	repo      repository.TicketRepository
-	eventRepo repository.TicketEventRepository
+	repo          repository.TicketRepository
+	eventRepo     repository.TicketEventRepository
+	contentSafety ContentSafetyService
 }
 
 func NewTicketService(repo repository.TicketRepository, eventRepo repository.TicketEventRepository) TicketService {
 	return &ticketServiceImpl{
-		repo:      repo,
-		eventRepo: eventRepo,
+		repo:          repo,
+		eventRepo:     eventRepo,
+		contentSafety: NewContentSafetyService(),
 	}
 }
 
@@ -45,12 +47,12 @@ func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicket
 	)
 
 	ticket := &model.Ticket{
-		RequestorID: req.RequestorID,
-		Title:       req.Title,
-		Description: req.Description,
-		Priority:    req.Priority,
-		Category:    req.Category,
-		SLADueAt:    req.SlaDueAt,
+		RequestorID:     req.RequestorID,
+		Title:           req.Title,
+		Description:     req.Description,
+		Priority:        req.Priority,
+		Category:        req.Category,
+		SLADueAt:        req.SlaDueAt,
 		Status:          model.StatusNew,
 		TicketCreatedAt: now,
 		AuditModel: model.AuditModel{
@@ -64,6 +66,14 @@ func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicket
 			slog.Any("validation_error", err),
 		)
 		return nil, fmt.Errorf("invalid ticket data: %w", err)
+	}
+
+	if s.contentSafety != nil {
+		safetyResult := s.contentSafety.CheckTicket(ticket.Title, ticket.Description)
+		if safetyResult.Blocked {
+			logBlockedTicket(ctx, ticket, safetyResult, "create_ticket")
+			return nil, contentSafetyBlockedError(safetyResult)
+		}
 	}
 
 	if err := s.repo.Create(ctx, ticket); err != nil {

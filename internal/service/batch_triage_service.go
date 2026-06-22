@@ -55,6 +55,18 @@ func (s *triageServiceImpl) ExecuteBatchTriage(ctx context.Context, ticketIDs []
 			continue
 		}
 
+		if s.contentSafety != nil {
+			safetyResult := s.contentSafety.CheckTicket(t.Title, t.Description)
+			if safetyResult.Blocked {
+				logBlockedTicket(ctx, t, safetyResult, "batch_triage")
+				failedItems = append(failedItems, response.BatchTriageFailedItem{
+					TicketID: id,
+					Reason:   contentSafetyBlockedError(safetyResult).Message,
+				})
+				continue
+			}
+		}
+
 		if t.Status == model.StatusResolved || t.Status == model.StatusCancelled || t.Status == model.StatusClosed {
 			slog.WarnContext(ctx, "batch triage validation failed: ticket residing in terminal status boundary",
 				slog.Uint64("ticket_id", uint64(t.ID)),

@@ -68,6 +68,19 @@ func TestTicketService_Create(t *testing.T) {
 			mockRepo:      func(m *testmock.MockTicketRepository) {},
 			expectedError: "title is required",
 		},
+		{
+			name: "ContentSafetyBlocked",
+			req: request.CreateTicketReq{
+				RequestorID: "user1",
+				Title:       "You are stupid",
+				Description: "Fix this internal support request now.",
+				Priority:    model.PriorityLow,
+				Category:    model.CategoryIT,
+				SlaDueAt:    &dueAt,
+			},
+			mockRepo:      func(m *testmock.MockTicketRepository) {},
+			expectedError: "ticket content blocked by safety filter: insult",
+		},
 	}
 
 	for _, tt := range tests {
