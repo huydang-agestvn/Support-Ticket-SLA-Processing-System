@@ -36,13 +36,13 @@ func RunMigrations(db *gorm.DB) error {
 		return fmt.Errorf("failed to run auto migrations: %w", err)
 	}
 
-	// 3. Seed Knowledge Base if departments table is empty
-	var deptCount int64
-	if err := db.Table("departments").Count(&deptCount).Error; err != nil {
-		deptCount = 0
+	// 3. Seed Knowledge Base if sample_tickets table is empty (ensures complete seeding)
+	var sampleCount int64
+	if err := db.Table("sample_tickets").Count(&sampleCount).Error; err != nil {
+		sampleCount = 0
 	}
 
-	if deptCount == 0 {
+	if sampleCount == 0 {
 		fmt.Println("Seeding knowledge base data from kb_schema_and_seed.sql...")
 		if err := db.Exec(kbSchemaAndSeedSQL).Error; err != nil {
 			return fmt.Errorf("failed to seed knowledge base: %w", err)

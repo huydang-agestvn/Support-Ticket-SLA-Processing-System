@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS sub_departments (
     name             VARCHAR(200) NOT NULL,
     floor            VARCHAR(30),
     description      TEXT NOT NULL,
-    embedding        VECTOR(368) NULL,          -- populate after embedding generation
+    embedding        VECTOR(512) NULL,          -- populate after embedding generation
     embedding_model  VARCHAR(100),          -- e.g. 'bge-m3', for traceability
     embedding_updated_at TIMESTAMPTZ,
     is_active        BOOLEAN NOT NULL DEFAULT true,
@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS sample_tickets (
     id                   SERIAL PRIMARY KEY,
     sub_department_code  VARCHAR(10) NOT NULL REFERENCES sub_departments(code),
     sample_text          TEXT NOT NULL,
-    embedding            VECTOR(368) NULL,          -- Vector representation of the ticket
+    embedding            VECTOR(512) NULL,          -- Vector representation of the ticket
     embedding_model      VARCHAR(100),          -- e.g., 'bge-m3'
     embedding_updated_at TIMESTAMPTZ,
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
