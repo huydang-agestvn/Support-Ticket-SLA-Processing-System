@@ -34,6 +34,7 @@ func TestTicketService_Create(t *testing.T) {
 				Title:       "Test Ticket",
 				Description: "Description",
 				Priority:    model.PriorityHigh,
+				Category:    model.CategoryIT,
 				SlaDueAt:    &dueAt,
 			},
 			mockRepo: func(m *testmock.MockTicketRepository) {
@@ -47,6 +48,7 @@ func TestTicketService_Create(t *testing.T) {
 				Title:       "Test Ticket",
 				Description: "Description",
 				Priority:    model.PriorityHigh,
+				Category:    model.CategoryIT,
 				SlaDueAt:    &dueAt,
 			},
 			mockRepo: func(m *testmock.MockTicketRepository) {
@@ -60,6 +62,7 @@ func TestTicketService_Create(t *testing.T) {
 				RequestorID: "user1",
 				Description: "Description",
 				Priority:    model.PriorityHigh,
+				Category:    model.CategoryIT,
 				SlaDueAt:    &dueAt,
 			},
 			mockRepo:      func(m *testmock.MockTicketRepository) {},
@@ -93,7 +96,7 @@ func TestTicketService_Create(t *testing.T) {
 }
 
 func TestTicketService_FindById(t *testing.T) {
-	ticket := &model.Ticket{ID: 1, Title: "Test", RequestorID: "user-123"}
+	ticket := &model.Ticket{ID: 1, Title: "Test", RequestorID: "user-123", Category: model.CategoryIT}
 
 	tests := []struct {
 		name          string
@@ -229,6 +232,7 @@ func TestTicketService_UpdateTicketStatus(t *testing.T) {
 					ID:         1,
 					Status:     model.StatusAssigned,
 					AssigneeID: "agent1",
+					Category:   model.CategoryIT,
 				}
 				m.On("FindById", ctx, uint(1)).Return(ticket, nil)
 				m.On("UpdateStatusWithEvent", ctx, mock.Anything, mock.Anything).Return(nil)
@@ -247,6 +251,7 @@ func TestTicketService_UpdateTicketStatus(t *testing.T) {
 					ID:         1,
 					Status:     model.StatusNew,
 					AssigneeID: "agent1",
+					Category:   model.CategoryIT,
 				}
 				m.On("FindById", ctx, uint(1)).Return(ticket, nil)
 			},

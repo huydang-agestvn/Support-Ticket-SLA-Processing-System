@@ -27,22 +27,39 @@ const (
 	PriorityHigh   Priority = "high"
 )
 
+type TicketCategory string
+
+const (
+	CategoryIT         TicketCategory = "IT"
+	CategoryHR         TicketCategory = "HR"
+	CategoryFacilities TicketCategory = "Facilities"
+)
+
 type Ticket struct {
-	ID              uint         `json:"id" gorm:"primaryKey"`
-	AssigneeID      string       `json:"assignee_id" gorm:"column:assignee_id;type:varchar(255)"`
-	RequestorID     string       `json:"requestor_id" gorm:"column:requestor_id;type:varchar(255);not null"`
-	Title           string       `json:"title" gorm:"column:title;type:varchar(255);not null"`
-	Description     string       `json:"description" gorm:"column:description;type:text"`
-	Priority        Priority     `json:"priority" gorm:"column:priority;type:varchar(20);not null"`
-	Status          TicketStatus `json:"status" gorm:"column:status;type:varchar(20);not null"`
-	ResolvedAt      *time.Time   `json:"resolved_at" gorm:"column:resolved_at"`
-	SLADueAt        *time.Time   `json:"sla_due_at" gorm:"column:sla_due_at"`
-	CancelledAt     *time.Time   `json:"cancelled_at" gorm:"column:cancelled_at"`
-	TicketCreatedAt time.Time    `json:"ticket_created_at" gorm:"column:ticket_created_at"`
+	ID              uint           `json:"id" gorm:"primaryKey"`
+	AssigneeID      string         `json:"assignee_id" gorm:"column:assignee_id;type:varchar(255)"`
+	RequestorID     string         `json:"requestor_id" gorm:"column:requestor_id;type:varchar(255);not null"`
+	Title           string         `json:"title" gorm:"column:title;type:varchar(255);not null"`
+	Description     string         `json:"description" gorm:"column:description;type:text"`
+	Priority        Priority       `json:"priority" gorm:"column:priority;type:varchar(20);not null"`
+	Category        TicketCategory `json:"category" gorm:"column:category;type:varchar(50);not null;default:'IT'"`
+	Status          TicketStatus   `json:"status" gorm:"column:status;type:varchar(20);not null"`
+	ResolvedAt      *time.Time     `json:"resolved_at" gorm:"column:resolved_at"`
+	SLADueAt        *time.Time     `json:"sla_due_at" gorm:"column:sla_due_at"`
+	CancelledAt     *time.Time     `json:"cancelled_at" gorm:"column:cancelled_at"`
+	TicketCreatedAt time.Time      `json:"ticket_created_at" gorm:"column:ticket_created_at"`
 	AuditModel
 
 	// TODO:Relations
 	Events []TicketEvent `json:"events" gorm:"foreignKey:TicketID;constraint:OnDelete:CASCADE"`
+}
+
+func (c TicketCategory) IsValid() bool {
+	switch c {
+	case CategoryIT, CategoryHR, CategoryFacilities:
+		return true
+	}
+	return false
 }
 
 func (p Priority) IsValid() bool {
@@ -98,6 +115,9 @@ func (t *Ticket) Validate() error {
 	}
 	if !t.Priority.IsValid() {
 		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("unknown priority '%s'", t.Priority))
+	}
+	if !t.Category.IsValid() {
+		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("unknown category '%s'", t.Category))
 	}
 	if !t.Status.IsValid() {
 		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("unknown status '%s'", t.Status))
