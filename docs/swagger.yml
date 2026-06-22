@@ -880,6 +880,7 @@ components:
         - title
         - description
         - priority
+        - category
         - sla_due_at
       properties:
         requestor_id:
@@ -894,6 +895,8 @@ components:
           example: User cannot access internal support system
         priority:
           $ref: "#/components/schemas/TicketPriority"
+        category:
+          $ref: "#/components/schemas/TicketCategory"
         sla_due_at:
           type: string
           format: date-time
@@ -928,6 +931,8 @@ components:
                   example: User cannot access internal support system
                 priority:
                   $ref: "#/components/schemas/TicketPriority"
+                category:
+                  $ref: "#/components/schemas/TicketCategory"
                 status:
                   type: string
                   example: new
@@ -1022,6 +1027,8 @@ components:
           example: User cannot access internal support system
         priority:
           $ref: "#/components/schemas/TicketPriority"
+        category:
+          $ref: "#/components/schemas/TicketCategory"
         status:
           type: string
           example: assigned
@@ -1066,6 +1073,14 @@ components:
         - medium
         - high
       example: low
+
+    TicketCategory:
+      type: string
+      enum:
+        - IT
+        - HR
+        - Facilities
+      example: IT
 
     UpdateTicketStatusRequest:
       type: object

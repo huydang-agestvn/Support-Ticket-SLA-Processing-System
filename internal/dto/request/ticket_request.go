@@ -7,11 +7,12 @@ import (
 )
 
 type CreateTicketReq struct {
-	RequestorID string          `json:"-" swaggerignore:"true"`
-	Title       string          `json:"title"`
-	Description string          `json:"description"`
-	Priority    model.Priority `json:"priority"`
-	SlaDueAt    *time.Time      `json:"sla_due_at,omitempty"`
+	RequestorID string               `json:"-" swaggerignore:"true"`
+	Title       string               `json:"title"`
+	Description string               `json:"description"`
+	Priority    model.Priority       `json:"priority"`
+	Category    model.TicketCategory `json:"category"`
+	SlaDueAt    *time.Time           `json:"sla_due_at,omitempty"`
 }
 
 type UpdateStatusReq struct {
