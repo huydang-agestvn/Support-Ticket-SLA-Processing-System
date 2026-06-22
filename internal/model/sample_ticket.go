@@ -12,7 +12,7 @@ type SampleTicket struct {
 	Embedding          Vector     `gorm:"type:vector(368) NULL" json:"embedding,omitempty"`
 	EmbeddingModel     string     `gorm:"type:varchar(100)" json:"embedding_model,omitempty"`
 	EmbeddingUpdatedAt *time.Time `json:"embedding_updated_at,omitempty"`
-	CreatedAt          time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	AuditModel
 
 	SubDepartment *SubDepartment `gorm:"foreignKey:SubDepartmentCode" json:"sub_department,omitempty"`
 }

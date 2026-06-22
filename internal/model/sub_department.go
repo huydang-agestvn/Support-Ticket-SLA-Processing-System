@@ -15,8 +15,7 @@ type SubDepartment struct {
 	EmbeddingModel     string     `gorm:"type:varchar(100)" json:"embedding_model,omitempty"`
 	EmbeddingUpdatedAt *time.Time `json:"embedding_updated_at,omitempty"`
 	IsActive           bool       `gorm:"not null;default:true" json:"is_active"`
-	CreatedAt          time.Time  `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt          time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
+	AuditModel
 
 	Department    *Department    `gorm:"foreignKey:DepartmentCode" json:"department,omitempty"`
 	RulePatterns  []RulePattern  `gorm:"foreignKey:SubDepartmentCode;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"rule_patterns,omitempty"`

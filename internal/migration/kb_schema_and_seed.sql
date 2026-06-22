@@ -27,7 +27,9 @@ CREATE TABLE IF NOT EXISTS departments (
     code        VARCHAR(10) PRIMARY KEY,
     name        VARCHAR(150) NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by  VARCHAR(255) DEFAULT 'system',
+    updated_by  VARCHAR(255) DEFAULT 'system'
 );
 
 -- ----------------------------------------------------------------
@@ -45,7 +47,9 @@ CREATE TABLE IF NOT EXISTS sub_departments (
     embedding_updated_at TIMESTAMPTZ,
     is_active        BOOLEAN NOT NULL DEFAULT true,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by       VARCHAR(255) DEFAULT 'system',
+    updated_by       VARCHAR(255) DEFAULT 'system'
 );
 
 CREATE INDEX IF NOT EXISTS idx_sub_departments_department_code
@@ -70,7 +74,10 @@ CREATE TABLE IF NOT EXISTS rule_patterns (
     pattern_type         VARCHAR(20) NOT NULL DEFAULT 'keyword', -- 'keyword' | 'regex'
     priority             INT NOT NULL DEFAULT 100, -- rule priority, higher = evaluated first
     is_active            BOOLEAN NOT NULL DEFAULT true,
-    created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by           VARCHAR(255) DEFAULT 'system',
+    updated_by           VARCHAR(255) DEFAULT 'system'
 );
 
 CREATE INDEX IF NOT EXISTS idx_rule_patterns_sub_department
@@ -91,7 +98,10 @@ CREATE TABLE IF NOT EXISTS sample_tickets (
     embedding            VECTOR(512) NULL,          -- Vector representation of the ticket
     embedding_model      VARCHAR(100),          -- e.g., 'bge-m3'
     embedding_updated_at TIMESTAMPTZ,
-    created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by           VARCHAR(255) DEFAULT 'system',
+    updated_by           VARCHAR(255) DEFAULT 'system'
 );
 
 CREATE INDEX IF NOT EXISTS idx_sample_tickets_sub_department
