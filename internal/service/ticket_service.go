@@ -40,9 +40,16 @@ func NewTicketService(repo repository.TicketRepository, eventRepo repository.Tic
 func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicketReq) (*model.Ticket, error) {
 	now := time.Now()
 
+	if s.contentSafety != nil {
+		safetyResult := s.contentSafety.CheckTicket(req.Title, req.Description)
+		if safetyResult.Blocked {
+			logBlockedTicket(ctx, 0, req.RequestorID, safetyResult, "create_ticket")
+			return nil, contentSafetyBlockedError(safetyResult)
+		}
+	}
+
 	slog.InfoContext(ctx, "initiating ticket creation",
 		slog.String("requestor_id", req.RequestorID),
-		slog.String("title", req.Title),
 		slog.String("priority", string(req.Priority)),
 	)
 
@@ -66,14 +73,6 @@ func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicket
 			slog.Any("validation_error", err),
 		)
 		return nil, fmt.Errorf("invalid ticket data: %w", err)
-	}
-
-	if s.contentSafety != nil {
-		safetyResult := s.contentSafety.CheckTicket(ticket.Title, ticket.Description)
-		if safetyResult.Blocked {
-			logBlockedTicket(ctx, ticket, safetyResult, "create_ticket")
-			return nil, contentSafetyBlockedError(safetyResult)
-		}
 	}
 
 	if err := s.repo.Create(ctx, ticket); err != nil {

@@ -58,7 +58,7 @@ func (s *triageServiceImpl) ExecuteBatchTriage(ctx context.Context, ticketIDs []
 		if s.contentSafety != nil {
 			safetyResult := s.contentSafety.CheckTicket(t.Title, t.Description)
 			if safetyResult.Blocked {
-				logBlockedTicket(ctx, t, safetyResult, "batch_triage")
+				logBlockedTicket(ctx, t.ID, t.RequestorID, safetyResult, "batch_triage")
 				failedItems = append(failedItems, response.BatchTriageFailedItem{
 					TicketID: id,
 					Reason:   contentSafetyBlockedError(safetyResult).Message,

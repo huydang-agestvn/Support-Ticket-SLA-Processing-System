@@ -41,7 +41,7 @@ func TestExecuteTriage_BlocksUnsafeContentBeforeAI(t *testing.T) {
 
 	var apiErr *common.Error
 	assert.ErrorAs(t, err, &apiErr)
-	assert.Equal(t, common.ErrCodeInvalidInput, apiErr.Code)
+	assert.Equal(t, common.ErrCodeTicketContentBlocked, apiErr.Code)
 
 	mockTicketRepo.AssertExpectations(t)
 	mockReportRepo.AssertNotCalled(t, "GetByDate", mock.Anything)

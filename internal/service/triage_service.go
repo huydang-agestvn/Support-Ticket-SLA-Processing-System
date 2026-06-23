@@ -135,26 +135,36 @@ func (s *triageServiceImpl) ensureTicketContentSafe(ctx context.Context, ticket 
 		return nil
 	}
 
-	logBlockedTicket(ctx, ticket, result, "single_triage")
+	logBlockedTicket(ctx, ticket.ID, ticket.RequestorID, result, "single_triage")
 	return contentSafetyBlockedError(result)
 }
 
-func logBlockedTicket(ctx context.Context, ticket *model.Ticket, result ContentSafetyResult, action string) {
+func logBlockedTicket(ctx context.Context, ticketID uint, userID string, result ContentSafetyResult, action string) {
 	slog.WarnContext(ctx, "ticket blocked by content safety filter",
 		slog.String("action", action),
-		slog.Uint64("ticket_id", uint64(ticket.ID)),
-		slog.String("requestor_id", ticket.RequestorID),
+		slog.String("request_id", requestIDFromContext(ctx)),
+		slog.Uint64("ticket_id", uint64(ticketID)),
+		slog.String("user_id", userID),
 		slog.String("category", result.Category),
-		slog.String("reason", result.Reason),
 		slog.String("matched_rule", result.MatchedRule),
+		slog.Time("timestamp", time.Now()),
 	)
 }
 
 func contentSafetyBlockedError(result ContentSafetyResult) *common.Error {
 	return common.NewBadRequest(
-		common.ErrCodeInvalidInput,
+		common.ErrCodeTicketContentBlocked,
 		fmt.Sprintf("ticket content blocked by safety filter: %s", result.Category),
 	)
+}
+
+func requestIDFromContext(ctx context.Context) string {
+	for _, key := range []any{"request_id", "requestID", "x-request-id"} {
+		if value, ok := ctx.Value(key).(string); ok {
+			return value
+		}
+	}
+	return ""
 }
 
 func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*response.TriageResponse, error) {

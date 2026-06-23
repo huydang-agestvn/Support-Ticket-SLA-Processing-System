@@ -96,6 +96,12 @@ func TestTicketService_Create(t *testing.T) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError)
 				assert.Nil(t, res)
+				if tt.name == "ContentSafetyBlocked" {
+					var apiErr *common.Error
+					assert.ErrorAs(t, err, &apiErr)
+					assert.Equal(t, common.ErrCodeTicketContentBlocked, apiErr.Code)
+					mockRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
+				}
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, res)

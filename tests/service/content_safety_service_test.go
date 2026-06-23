@@ -208,11 +208,10 @@ func TestContentSafetyService_BlocksSpamAndGibberish(t *testing.T) {
 		category string
 	}{
 		{name: "Symbols", text: "@@@@@@@@@@@@@@@", category: service.ContentSafetyCategoryGibberish},
-		{name: "NumbersOnly", text: "123456789012345", category: service.ContentSafetyCategoryGibberish},
 		{name: "RepeatedNonsense", text: "asdfasdfasdfasdf", category: service.ContentSafetyCategoryGibberish},
-		{name: "RepeatedWords", text: "hello hello hello hello hello", category: service.ContentSafetyCategoryGibberish},
-		{name: "RepeatedAcronym", text: "VPN VPN VPN VPN VPN", category: service.ContentSafetyCategoryGibberish},
+		{name: "RepeatedWords", text: "hello hello hello hello hello hello", category: service.ContentSafetyCategoryGibberish},
 		{name: "ExcessiveUrls", title: "Request", text: "See http://a.test http://b.test http://c.test http://d.test http://e.test http://f.test", category: service.ContentSafetyCategorySpam},
+		{name: "ExcessiveUrlsMixedCase", title: "Request", text: "See HTTP://a.test HTTPS://b.test WWW.c.test HTTP://d.test HTTPS://e.test WWW.f.test", category: service.ContentSafetyCategorySpam},
 		{name: "ExcessiveEmails", title: "Request", text: "Send to a@example.com b@example.com c@example.com d@example.com e@example.com f@example.com", category: service.ContentSafetyCategorySpam},
 		{name: "PromotionalPhrase", title: "Request", text: "Limited offer click here for free money", category: service.ContentSafetyCategorySpam},
 	}
@@ -223,6 +222,70 @@ func TestContentSafetyService_BlocksSpamAndGibberish(t *testing.T) {
 
 			assert.True(t, result.Blocked)
 			assert.Equal(t, tt.category, result.Category)
+		})
+	}
+}
+
+func TestContentSafetyService_RequiredBlockedCases(t *testing.T) {
+	svc := service.NewContentSafetyService()
+
+	tests := []struct {
+		name     string
+		title    string
+		text     string
+		category string
+	}{
+		{name: "DirectProfanity", title: "This is bullshit", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
+		{name: "DirectInsult", title: "You are an idiot", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryInsult},
+		{name: "ObfuscatedProfanityDots", title: "f.u.c.k", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
+		{name: "ObfuscatedProfanitySpaces", title: "f u c k", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
+		{name: "ObfuscatedProfanityHyphens", title: "f-u-c-k", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
+		{name: "ObfuscatedProfanityStars", title: "f*u*c*k", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
+		{name: "LeetSubstitution", title: "This is sh1t", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
+		{name: "ZeroWidthBypass", title: "id\u200Biot", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryInsult},
+		{name: "ExcessiveURLs", title: "Links", text: "See http://a.test http://b.test http://c.test http://d.test http://e.test http://f.test", category: service.ContentSafetyCategorySpam},
+		{name: "ExcessiveEmails", title: "Emails", text: "Use a@example.com b@example.com c@example.com d@example.com e@example.com f@example.com", category: service.ContentSafetyCategorySpam},
+		{name: "SymbolHeavy", title: "@@@@@@@@@@@@@@@", text: "", category: service.ContentSafetyCategoryGibberish},
+		{name: "LongRepeatedCharacters", title: "aaaaaaaaaaaa", text: "", category: service.ContentSafetyCategoryGibberish},
+		{name: "PromotionalSpam", title: "Offer", text: "Limited offer click here for free money", category: service.ContentSafetyCategorySpam},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := svc.CheckTicket(tt.title, tt.text)
+
+			assert.True(t, result.Blocked)
+			assert.Equal(t, tt.category, result.Category)
+			assert.NotEmpty(t, result.MatchedRule)
+		})
+	}
+}
+
+func TestContentSafetyService_RequiredAllowedCases(t *testing.T) {
+	svc := service.NewContentSafetyService()
+
+	tests := []struct {
+		name  string
+		title string
+		text  string
+	}{
+		{name: "NormalEnglishSupportTicket", title: "Cannot connect to VPN", text: "I cannot connect to the company VPN from home."},
+		{name: "OneURL", title: "Portal link broken", text: "The HR portal at https://hr.example.com returns HTTP 404."},
+		{name: "EmailsBelowLimit", title: "Distribution list update", text: "Please add alice@example.com bob@example.com carol@example.com dave@example.com eve@example.com to the list."},
+		{name: "PasswordResetWithEmail", title: "Password reset", text: "Please reset the password for jane.doe@example.com."},
+		{name: "HTTP500Error", title: "API returned 500", text: "The payment API returns HTTP 500 after login."},
+		{name: "SerialNumber", title: "Laptop asset issue", text: "Asset code LT-2026-00012345 will not boot."},
+		{name: "TransactionIdentifier", title: "Payment callback failed", text: "Transaction 987654321012345 needs reconciliation."},
+		{name: "RepeatedTechnicalTerms", title: "VPN VPN VPN troubleshooting", text: "VPN drops during VPN reconnect after the VPN client update."},
+		{name: "NormalLogPunctuation", title: "Stack trace", text: "panic: runtime error: invalid memory address; goroutine 12 [running]: service.(*Worker).Run()"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := svc.CheckTicket(tt.title, tt.text)
+
+			assert.False(t, result.Blocked)
+			assert.Empty(t, result.Category)
 		})
 	}
 }

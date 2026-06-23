@@ -68,7 +68,7 @@ var contentSafetyRules = []contentSafetyRule{
 }
 
 var (
-	contentSafetyURLPattern   = regexp.MustCompile(`https?://|www\.`)
+	contentSafetyURLPattern   = regexp.MustCompile(`(?i)https?://|www\.`)
 	contentSafetyEmailPattern = regexp.MustCompile(`(?i)[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}`)
 	contentSafetyPromoPattern = regexp.MustCompile(`\b(buy now|limited offer|free money)\b`)
 )
@@ -237,9 +237,6 @@ func detectGibberish(raw, normalized string) (ContentSafetyResult, bool) {
 	if total > 0 && symbols >= 10 && float64(symbols)/float64(total) >= 0.70 {
 		return blockedContent(ContentSafetyCategoryGibberish, "symbol_heavy_content", "ticket content is mostly symbols"), true
 	}
-	if total > 0 && letters == 0 && digits >= 12 {
-		return blockedContent(ContentSafetyCategoryGibberish, "numeric_only_content", "ticket content does not contain meaningful words"), true
-	}
 
 	words := meaningfulWords(normalized)
 	if len(words) == 0 {
@@ -252,7 +249,7 @@ func detectGibberish(raw, normalized string) (ContentSafetyResult, bool) {
 	if hasRepeatedRun(normalized, 12, unicode.IsLetter) || hasRepeatedRun(raw, 10, isPunctuation) {
 		return blockedContent(ContentSafetyCategoryGibberish, "repeated_characters", "ticket content contains repeated characters"), true
 	}
-	if len(words) >= 4 && mostRepeatedWordRatio(words) >= 0.75 {
+	if len(words) >= 6 && mostRepeatedWordRatio(words) >= 0.80 {
 		return blockedContent(ContentSafetyCategoryGibberish, "repeated_words", "ticket content repeats the same words"), true
 	}
 	if looksLikeRepeatedNonsense(words) {
@@ -366,11 +363,12 @@ func looksLikeRepeatedNonsense(words []string) bool {
 		return false
 	}
 	for _, word := range words {
-		if len(word) < 12 || len(word)%2 != 0 {
+		runes := []rune(word)
+		if len(runes) < 12 || len(runes)%2 != 0 {
 			continue
 		}
-		half := len(word) / 2
-		if word[:half] == word[half:] {
+		half := len(runes) / 2
+		if string(runes[:half]) == string(runes[half:]) {
 			return true
 		}
 	}
