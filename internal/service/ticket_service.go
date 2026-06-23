@@ -39,6 +39,8 @@ func NewTicketService(repo repository.TicketRepository, eventRepo repository.Tic
 
 func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicketReq) (*model.Ticket, error) {
 	now := time.Now()
+	req.Title = strings.TrimSpace(req.Title)
+	req.Description = strings.TrimSpace(req.Description)
 
 	if s.contentSafety != nil {
 		safetyResult := s.contentSafety.CheckTicket(req.Title, req.Description)
