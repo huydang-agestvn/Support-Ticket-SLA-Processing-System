@@ -112,10 +112,24 @@ func TestContentSafetyService_ObfuscationAndUnicode(t *testing.T) {
 		{name: "DotStupid", input: "st.upid", category: service.ContentSafetyCategoryInsult},
 		{name: "LeetStupid", input: "stup1d", category: service.ContentSafetyCategoryInsult},
 		{name: "LeetMoron", input: "m0ron", category: service.ContentSafetyCategoryInsult},
+		{name: "SymbolLeetShit", input: "sh!t", category: service.ContentSafetyCategoryProfanity},
+		{name: "SymbolLeetBitch", input: "b!tch", category: service.ContentSafetyCategoryProfanity},
+		{name: "SymbolLeetAsshole", input: "a$$hole", category: service.ContentSafetyCategoryProfanity},
+		{name: "SymbolLeetIdiot", input: "!d!ot", category: service.ContentSafetyCategoryInsult},
 		{name: "FullWidthIdiot", input: "ｉｄｉｏｔ", category: service.ContentSafetyCategoryInsult},
 		{name: "ZeroWidthIdiot", input: "id\u200Biot", category: service.ContentSafetyCategoryInsult},
 		{name: "ZeroWidthStupid", input: "stu\u200Dpid", category: service.ContentSafetyCategoryInsult},
 		{name: "ObfuscatedProfanity", input: "f.u.c.k", category: service.ContentSafetyCategoryProfanity},
+		{name: "PluralIdiot", input: "idiots", category: service.ContentSafetyCategoryInsult},
+		{name: "PluralStupid", input: "stupids", category: service.ContentSafetyCategoryInsult},
+		{name: "PluralMoron", input: "morons", category: service.ContentSafetyCategoryInsult},
+		{name: "AbbreviatedProfanity", input: "fk", category: service.ContentSafetyCategoryProfanity},
+		{name: "SpacedAbbreviatedProfanity", input: "f k", category: service.ContentSafetyCategoryProfanity},
+		{name: "ShortenedProfanity", input: "fck", category: service.ContentSafetyCategoryProfanity},
+		{name: "SpacedShortenedProfanity", input: "f c k", category: service.ContentSafetyCategoryProfanity},
+		{name: "PluralFuck", input: "fucks", category: service.ContentSafetyCategoryProfanity},
+		{name: "PluralShit", input: "shits", category: service.ContentSafetyCategoryProfanity},
+		{name: "PluralBullshit", input: "bullshits", category: service.ContentSafetyCategoryProfanity},
 	}
 
 	for _, tt := range tests {
@@ -185,6 +199,12 @@ func TestContentSafetyService_BlocksClearlyNonWorkSensitiveContent(t *testing.T)
 	tests := []string{
 		"Visit this casino promotion now and place a bet.",
 		"Free porn links available here.",
+		"Porn content posted in this message.",
+		"Porns content posted in this message.",
+		"Pornos posted in this message.",
+		"NSFW images attached.",
+		"OnlyFans promotion.",
+		"XXX videos available here.",
 		"Buy illegal drugs from this website.",
 	}
 
@@ -209,6 +229,9 @@ func TestContentSafetyService_BlocksSpamAndGibberish(t *testing.T) {
 	}{
 		{name: "Symbols", text: "@@@@@@@@@@@@@@@", category: service.ContentSafetyCategoryGibberish},
 		{name: "RepeatedNonsense", text: "asdfasdfasdfasdf", category: service.ContentSafetyCategoryGibberish},
+		{name: "RareLetterBigrams", text: "aldhakdgaidkadnnhoahpwdph", category: service.ContentSafetyCategoryGibberish},
+		{name: "RareLetterBigramsAcrossWords", text: "adkaugdaadadkja dbdavwdhadkaga", category: service.ContentSafetyCategoryGibberish},
+		{name: "RareLetterBigramsWithDiacritic", text: "VPN failed! adwadhăadawdadawdhqiaddawakd", category: service.ContentSafetyCategoryGibberish},
 		{name: "RepeatedWords", text: "hello hello hello hello hello hello", category: service.ContentSafetyCategoryGibberish},
 		{name: "ExcessiveUrls", title: "Request", text: "See http://a.test http://b.test http://c.test http://d.test http://e.test http://f.test", category: service.ContentSafetyCategorySpam},
 		{name: "ExcessiveUrlsMixedCase", title: "Request", text: "See HTTP://a.test HTTPS://b.test WWW.c.test HTTP://d.test HTTPS://e.test WWW.f.test", category: service.ContentSafetyCategorySpam},
@@ -278,6 +301,10 @@ func TestContentSafetyService_RequiredAllowedCases(t *testing.T) {
 		{name: "TransactionIdentifier", title: "Payment callback failed", text: "Transaction 987654321012345 needs reconciliation."},
 		{name: "RepeatedTechnicalTerms", title: "VPN VPN VPN troubleshooting", text: "VPN drops during VPN reconnect after the VPN client update."},
 		{name: "NormalLogPunctuation", title: "Stack trace", text: "panic: runtime error: invalid memory address; goroutine 12 [running]: service.(*Worker).Run()"},
+		{name: "LongSupportTerms", title: "Authentication troubleshooting", text: "Internationalization configuration failed after administrator authorization."},
+		{name: "LongFacilitiesTerm", title: "Electromagnetic lock malfunction", text: "The characterization of the access issue points to a controller replacement."},
+		{name: "NormalExclamationPunctuation", title: "VPN failed!", text: "It disconnects after login."},
+		{name: "VietnameseSupportTicket", title: "Không đăng nhập được", text: "Tôi không thể đăng nhập vào hệ thống sau khi đổi mật khẩu."},
 	}
 
 	for _, tt := range tests {

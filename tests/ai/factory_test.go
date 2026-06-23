@@ -31,14 +31,12 @@ func TestFactoryBuildsPrimaryOnlyWhenFallbackChainIsEmpty(t *testing.T) {
 
 func TestFactoryFallbackChainPreservesColonInModelID(t *testing.T) {
 	adapter := aifactory.NewAdapterFromConfig(&config.Config{
-		AIEnabled:           true,
-		AIFallbackChain:     "openrouter:nex-agi/nex-n2-pro:free,groq:openai/gpt-oss-20b",
-		AIOpenRouterAPIKey:  "openrouter-key",
-		AIOpenRouterBaseURL: "https://openrouter.ai/api/v1/chat/completions",
-		AIGroqAPIKey:        "groq-key",
+		AIEnabled:       true,
+		AIFallbackChain: "ollama:qwen2.5:0.5b,groq:openai/gpt-oss-20b",
+		AIGroqAPIKey:    "groq-key",
 	})
 
-	assert.Equal(t, "nex-agi/nex-n2-pro:free", adapter.Model())
+	assert.Equal(t, "qwen2.5:0.5b", adapter.Model())
 }
 
 func TestFactoryUsesPrimaryBeforeFallbackChain(t *testing.T) {
@@ -46,7 +44,7 @@ func TestFactoryUsesPrimaryBeforeFallbackChain(t *testing.T) {
 		AIEnabled:       true,
 		AIProvider:      "groq",
 		AIModel:         "openai/gpt-oss-20bsad",
-		AIFallbackChain: "groq:openai/gpt-oss-120b,openrouter:nex-agi/nex-n2-pro:free",
+		AIFallbackChain: "groq:openai/gpt-oss-120b,ollama:qwen2.5:0.5b",
 		AIGroqAPIKey:    "groq-key",
 	})
 
@@ -77,7 +75,7 @@ func TestFactorySupportsOllamaInFallbackChain(t *testing.T) {
 func TestFactorySkipsFallbackProvidersWithoutCredentials(t *testing.T) {
 	adapter := aifactory.NewAdapterFromConfig(&config.Config{
 		AIEnabled:       true,
-		AIFallbackChain: "openrouter:nex-agi/nex-n2-pro:free,groq:openai/gpt-oss-20b",
+		AIFallbackChain: "unsupported:test-model,groq:openai/gpt-oss-20b",
 		AIGroqAPIKey:    "groq-key",
 	})
 

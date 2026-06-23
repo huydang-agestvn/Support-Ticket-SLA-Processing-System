@@ -51,23 +51,19 @@ type Config struct {
 	MinioBucketName string
 
 	//AI Config
-	AIProvider          string
-	AIModel             string
-	AIFallbackChain     string
-	AIBaseURL           string
-	AIAPIKey            string
-	AIGroqBaseURL       string
-	AIGroqAPIKey        string
-	AIOpenRouterBaseURL string
-	AIOpenRouterAPIKey  string
-	AIGeminiBaseURL     string
-	AIGeminiAPIKey      string
-	AITimeoutSecs       int
-	AIMaxRetries        int
-	AIEnabled           bool
-	AIPromptVersion     string
-	AIMaxBatchSize      int
-	AIWorkerPoolSize    int
+	AIProvider       string
+	AIModel          string
+	AIFallbackChain  string
+	AIBaseURL        string
+	AIAPIKey         string
+	AIGroqBaseURL    string
+	AIGroqAPIKey     string
+	AITimeoutSecs    int
+	AIMaxRetries     int
+	AIEnabled        bool
+	AIPromptVersion  string
+	AIMaxBatchSize   int
+	AIWorkerPoolSize int
 }
 
 func init() {
@@ -146,22 +142,18 @@ func LoadConfig() *Config {
 		MinioUseSSL:     minioUseSSL,
 		MinioBucketName: minioBucket,
 
-		AIProvider:          getEnv("AI_PROVIDER"),
-		AIModel:             getEnv("AI_MODEL"),
-		AIFallbackChain:     getEnv("AI_FALLBACK_CHAIN"),
-		AIBaseURL:           getEnv("AI_BASE_URL"),
-		AIGroqBaseURL:       getEnv("AI_GROQ_BASE_URL"),
-		AIGroqAPIKey:        getEnv("AI_GROQ_API_KEY"),
-		AIOpenRouterBaseURL: getEnv("AI_OPENROUTER_BASE_URL"),
-		AIOpenRouterAPIKey:  getEnv("AI_OPENROUTER_API_KEY"),
-		AIGeminiBaseURL:     getEnv("AI_GEMINI_BASE_URL"),
-		AIGeminiAPIKey:      getEnv("AI_GEMINI_API_KEY"),
-		AITimeoutSecs:       aiTimeoutSecs,
-		AIMaxRetries:        aiMaxRetries,
-		AIEnabled:           aiEnabled,
-		AIPromptVersion:     aiPromptVersion,
-		AIMaxBatchSize:      aiMaxBatchSize,
-		AIWorkerPoolSize:    aiWorkerPoolSize,
+		AIProvider:       getEnv("AI_PROVIDER"),
+		AIModel:          getEnv("AI_MODEL"),
+		AIFallbackChain:  getEnv("AI_FALLBACK_CHAIN"),
+		AIBaseURL:        getEnv("AI_BASE_URL"),
+		AIGroqBaseURL:    getEnv("AI_GROQ_BASE_URL"),
+		AIGroqAPIKey:     getEnv("AI_GROQ_API_KEY"),
+		AITimeoutSecs:    aiTimeoutSecs,
+		AIMaxRetries:     aiMaxRetries,
+		AIEnabled:        aiEnabled,
+		AIPromptVersion:  aiPromptVersion,
+		AIMaxBatchSize:   aiMaxBatchSize,
+		AIWorkerPoolSize: aiWorkerPoolSize,
 	}
 
 	return cfg
