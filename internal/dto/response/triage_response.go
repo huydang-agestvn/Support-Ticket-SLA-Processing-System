@@ -1,5 +1,7 @@
 package response
 
+import "time"
+
 type TriageResponse struct {
 	Category              string  `json:"category"`
 	UrgencyLevel          string  `json:"urgency_level"`
@@ -31,4 +33,18 @@ type BatchTriageResponse struct {
 type BatchTriageFailedItem struct {
 	TicketID uint   `json:"ticket_id"`
 	Reason   string `json:"reason"`
+}
+
+type RulePatternResponse struct {
+	ID                uint      `json:"id"`
+	SubDepartmentCode string    `json:"sub_department_code"`
+	Pattern           string    `json:"pattern"`
+	PatternType       string    `json:"pattern_type"`
+	Priority          string    `json:"priority"`
+	IsActive          bool      `json:"is_active"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+	Name              string    `json:"name"`
+	Floor             string    `json:"floor"`
+	Description       string    `json:"description"`
 }

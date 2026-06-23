@@ -6,7 +6,7 @@ type RulePattern struct {
 	SubDepartmentCode string    `gorm:"type:varchar(10);not null" json:"sub_department_code"`
 	Pattern           string    `gorm:"type:text;not null" json:"pattern"`
 	PatternType       string    `gorm:"type:varchar(20);not null;default:'keyword'" json:"pattern_type"`
-	Priority          int       `gorm:"not null" json:"priority"`
+	Priority          Priority  `gorm:"type:varchar(20);not null;" json:"priority"`
 	IsActive          bool      `gorm:"not null;default:true" json:"is_active"`
 	AuditModel
 
