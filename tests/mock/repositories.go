@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"support-ticket.com/internal/ai"
 	"support-ticket.com/internal/dto/request"
+	"support-ticket.com/internal/dto/response"
 	"support-ticket.com/internal/model"
 )
 
@@ -78,6 +79,11 @@ func (m *MockTicketRepository) FindByIds(ctx context.Context, ids []uint) ([]mod
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]model.Ticket), args.Error(1)
+}
+
+func (m *MockTicketRepository) UpdateCategory(ctx context.Context, id uint, category model.TicketCategory) error {
+	args := m.Called(ctx, id, category)
+	return args.Error(0)
 }
 
 
@@ -162,6 +168,14 @@ func (m *MockTriageRepository) FindLatestByTicketID(ctx context.Context, ticketI
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*model.AITicketTriageResult), args.Error(1)
+}
+
+func (m *MockTriageRepository) GetActiveRulePatterns(ctx context.Context) ([]response.RulePatternResponse, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]response.RulePatternResponse), args.Error(1)
 }
 
 // MockEvaluationRepository
