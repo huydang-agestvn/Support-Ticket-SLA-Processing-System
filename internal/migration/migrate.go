@@ -63,7 +63,7 @@ func RunMigrations(db *gorm.DB) error {
 		SELECT 
 			'example' AS source_type,
 			sub_department_code,
-			sample_text AS content_text,
+			title || ' ' || description AS content_text,
 			embedding
 		FROM sample_tickets;
 		`
