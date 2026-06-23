@@ -29,6 +29,7 @@ def clean_text(text: str) -> str:
     return text
 
 
+
 def get_embedding(text: str) -> list[float]:
     """Call Ollama /api/embeddings endpoint — same model as Go backend uses."""
     resp = requests.post(
