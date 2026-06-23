@@ -16,6 +16,17 @@ DB_NAME = os.getenv("DB_NAME", "ticket_sla")
 
 MODEL_NAME = "all-MiniLM-L6-v2"
 
+import re
+
+def clean_text(text: str) -> str:
+    if not text:
+        return ""
+    # Strip whitespace at ends
+    text = text.strip()
+    # Replace multiple spaces/newlines/tabs with a single space
+    text = re.sub(r'\s+', ' ', text)
+    return text
+
 def main():
     print(f"Loading embedding model: {MODEL_NAME}...")
     # This will download the model to your local HuggingFace cache on first run
@@ -37,15 +48,19 @@ def main():
 
     # 1. Update Sub Departments
     print("\n--- Processing sub_departments ---")
-    cur.execute("SELECT code, description FROM sub_departments WHERE embedding IS NULL")
+    # Forcing update of all rows so the new cleaned vectors replace the old ones
+    cur.execute("SELECT code, description FROM sub_departments")
     sub_deps = cur.fetchall()
     
     if sub_deps:
-        print(f"Found {len(sub_deps)} sub_departments without embeddings. Generating...")
+        print(f"Found {len(sub_deps)} sub_departments. Generating clean embeddings...")
         update_data = []
         for code, description in sub_deps:
-            # Generate vector
-            vec = model.encode(description).tolist()
+            # Clean and generate vector
+            clean_desc = clean_text(description)
+            # Use 'Description:' prefix to match the format of tickets for better semantic similarity
+            semantic_text = f"Description: {clean_desc}"
+            vec = model.encode(semantic_text).tolist()
             update_data.append((str(vec), MODEL_NAME, code))
             
         update_query = """
@@ -57,19 +72,23 @@ def main():
         conn.commit()
         print("Successfully updated sub_departments embeddings.")
     else:
-        print("No sub_departments need updating.")
+        print("No sub_departments found.")
 
     # 2. Update Sample Tickets
     print("\n--- Processing sample_tickets ---")
-    cur.execute("SELECT id, title, description FROM sample_tickets WHERE embedding IS NULL")
+    # Forcing update of all rows so the new cleaned vectors replace the old ones
+    cur.execute("SELECT id, title, description FROM sample_tickets")
     tickets = cur.fetchall()
     
     if tickets:
-        print(f"Found {len(tickets)} sample_tickets without embeddings. Generating...")
+        print(f"Found {len(tickets)} sample_tickets. Generating clean embeddings...")
         update_data = []
         for t_id, title, description in tickets:
-            # Generate vector from title and description
-            combined_text = f"{title} {description}"
+            # Clean texts and generate vector
+            clean_title = clean_text(title)
+            clean_desc = clean_text(description)
+            combined_text = f"Title: {clean_title}\nDescription: {clean_desc}"
+            
             vec = model.encode(combined_text).tolist()
             update_data.append((str(vec), MODEL_NAME, t_id))
             
