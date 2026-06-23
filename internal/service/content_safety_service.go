@@ -6,16 +6,14 @@ import (
 	"unicode"
 
 	"golang.org/x/text/unicode/norm"
+	"support-ticket.com/internal/safetyrule"
 )
 
 const (
-	ContentSafetyCategoryProfanity = "profanity"
-	ContentSafetyCategoryInsult    = "insult"
-	ContentSafetyCategorySpam      = "spam"
-	ContentSafetyCategoryGibberish = "gibberish"
-
-	maxAllowedURLs   = 5
-	maxAllowedEmails = 5
+	ContentSafetyCategoryProfanity = safetyrule.CategoryProfanity
+	ContentSafetyCategoryInsult    = safetyrule.CategoryInsult
+	ContentSafetyCategorySpam      = safetyrule.CategorySpam
+	ContentSafetyCategoryGibberish = safetyrule.CategoryGibberish
 )
 
 type ContentSafetyResult struct {
@@ -30,23 +28,7 @@ type ContentSafetyService interface {
 }
 
 type ruleBasedContentSafetyService struct {
-	rules []contentSafetyRule
-}
-
-type contentSafetyMatchInput string
-
-const (
-	contentSafetyMatchNormalized contentSafetyMatchInput = "normalized"
-	contentSafetyMatchObfuscated contentSafetyMatchInput = "obfuscated"
-	contentSafetyMatchUnicode    contentSafetyMatchInput = "unicode"
-)
-
-type contentSafetyRule struct {
-	Name       string
-	Pattern    *regexp.Regexp
-	Category   string
-	Reason     string
-	MatchInput contentSafetyMatchInput
+	rules []safetyrule.Rule
 }
 
 type safetyTextRepresentations struct {
@@ -56,26 +38,9 @@ type safetyTextRepresentations struct {
 	Obfuscated string
 }
 
-var contentSafetyRules = []contentSafetyRule{
-	groupedSafetyRule("direct_common_profanity", ContentSafetyCategoryProfanity, "ticket contains inappropriate language", contentSafetyMatchObfuscated, `fuck(?:ing|in)?`, `motherfucker`, `shit(?:ty)?`, `bullshit`, `asshole`, `bastard`, `bitch(?:es)?`, `cunt`, `twat`, `wank(?:er)?`),
-	groupedSafetyRule("direct_common_insult", ContentSafetyCategoryInsult, "ticket contains direct insulting language", contentSafetyMatchObfuscated, `idiot`, `st[ou]+pid`, `moron`, `dumb`, `jerk`, `loser`),
-	groupedSafetyRule("contextual_trash_insult", ContentSafetyCategoryInsult, "ticket contains direct insulting language", contentSafetyMatchObfuscated, `(?:you|u)\s+(?:are|r)\s+trash`, `(?:this|that|your|ur)\s+(?:team|service|support|ticket)\s+(?:is|r)\s+trash`),
-	groupedSafetyRule("obfuscated_common_profanity", ContentSafetyCategoryProfanity, "ticket contains obfuscated inappropriate language", contentSafetyMatchUnicode, obfuscatedWordPattern("fuck"), obfuscatedWordPattern("shit"), obfuscatedWordPattern("bitch"), obfuscatedWordPattern("cunt")),
-	groupedSafetyRule("obfuscated_common_insult", ContentSafetyCategoryInsult, "ticket contains obfuscated insulting language", contentSafetyMatchUnicode, obfuscatedWordPattern("idiot"), `st[\s._*\-]*[ou]+[\s._*\-]*p[\s._*\-]*i[\s._*\-]*d`, obfuscatedWordPattern("moron")),
-	groupedSafetyRule("gambling_spam", ContentSafetyCategorySpam, "ticket contains gambling promotional content", contentSafetyMatchNormalized, `casino promotion`, `place a bet`, `betting promotion`, `gambling promotion`),
-	groupedSafetyRule("adult_content_spam", ContentSafetyCategorySpam, "ticket contains adult promotional content", contentSafetyMatchNormalized, `porn links`, `free porn`, `adult links`, `xxx links`, `nsfw links`),
-	groupedSafetyRule("illegal_drug_spam", ContentSafetyCategorySpam, "ticket contains illegal drug promotional content", contentSafetyMatchNormalized, `buy illegal drugs`, `illegal drugs from`, `buy cocaine`, `buy heroin`),
-}
-
-var (
-	contentSafetyURLPattern   = regexp.MustCompile(`(?i)https?://|www\.`)
-	contentSafetyEmailPattern = regexp.MustCompile(`(?i)[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}`)
-	contentSafetyPromoPattern = regexp.MustCompile(`\b(buy now|limited offer|free money)\b`)
-)
-
 func NewContentSafetyService() ContentSafetyService {
 	return &ruleBasedContentSafetyService{
-		rules: contentSafetyRules,
+		rules: safetyrule.Rules,
 	}
 }
 
@@ -95,24 +60,6 @@ func (s *ruleBasedContentSafetyService) CheckTicket(title, description string) C
 	return ContentSafetyResult{}
 }
 
-func groupedSafetyRule(name, category, reason string, input contentSafetyMatchInput, alternatives ...string) contentSafetyRule {
-	return contentSafetyRule{
-		Name:       name,
-		Pattern:    regexp.MustCompile(`\b(?:` + strings.Join(alternatives, "|") + `)\b`),
-		Category:   category,
-		Reason:     reason,
-		MatchInput: input,
-	}
-}
-
-func obfuscatedWordPattern(word string) string {
-	parts := make([]string, 0, len(word))
-	for _, r := range word {
-		parts = append(parts, regexp.QuoteMeta(string(r)))
-	}
-	return strings.Join(parts, `[\s._*\-]*`)
-}
-
 func (s *ruleBasedContentSafetyService) matchRules(reps safetyTextRepresentations) (ContentSafetyResult, bool) {
 	for _, rule := range s.rules {
 		if rule.Pattern.MatchString(ruleInput(rule.MatchInput, reps)) {
@@ -122,11 +69,11 @@ func (s *ruleBasedContentSafetyService) matchRules(reps safetyTextRepresentation
 	return ContentSafetyResult{}, false
 }
 
-func ruleInput(input contentSafetyMatchInput, reps safetyTextRepresentations) string {
+func ruleInput(input safetyrule.MatchInput, reps safetyTextRepresentations) string {
 	switch input {
-	case contentSafetyMatchUnicode:
+	case safetyrule.MatchUnicode:
 		return reps.Unicode
-	case contentSafetyMatchObfuscated:
+	case safetyrule.MatchObfuscated:
 		return reps.Obfuscated
 	default:
 		return reps.Normalized
@@ -260,13 +207,13 @@ func detectGibberish(raw, normalized string) (ContentSafetyResult, bool) {
 }
 
 func detectSpam(raw, normalized string) (ContentSafetyResult, bool) {
-	if countMatches(raw, contentSafetyURLPattern) > maxAllowedURLs {
+	if countMatches(raw, safetyrule.URLPattern) > safetyrule.MaxAllowedURLs {
 		return blockedContent(ContentSafetyCategorySpam, "excessive_urls", "ticket contains excessive links"), true
 	}
-	if countMatches(raw, contentSafetyEmailPattern) > maxAllowedEmails {
+	if countMatches(raw, safetyrule.EmailPattern) > safetyrule.MaxAllowedEmails {
 		return blockedContent(ContentSafetyCategorySpam, "excessive_email_addresses", "ticket contains excessive email addresses"), true
 	}
-	if contentSafetyPromoPattern.MatchString(normalized) {
+	if safetyrule.PromoPattern.MatchString(normalized) {
 		return blockedContent(ContentSafetyCategorySpam, "promotional_phrase", "ticket contains promotional spam language"), true
 	}
 	return ContentSafetyResult{}, false
