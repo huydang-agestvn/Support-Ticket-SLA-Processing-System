@@ -7,7 +7,7 @@ type SubDepartment struct {
 	Name           string `gorm:"type:varchar(200);not null" json:"name"`
 	Floor          string `gorm:"type:varchar(30)" json:"floor"`
 	Description    string `gorm:"type:text;not null" json:"description"`
-	Embedding      Vector `gorm:"type:vector(512) NULL" json:"embedding,omitempty"`
+	Embedding      Vector `gorm:"type:vector(384);index:idx_sub_departments_embedding,class:vector_cosine_ops,type:hnsw" json:"embedding,omitempty"`
 	EmbeddingModel string `gorm:"type:varchar(100)" json:"embedding_model,omitempty"`
 	IsActive       bool   `gorm:"not null;default:true" json:"is_active"`
 	AuditModel

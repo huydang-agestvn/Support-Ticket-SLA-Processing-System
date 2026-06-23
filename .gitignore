@@ -34,4 +34,4 @@ go.work.sum
 ai-model/
 export_jsonl.go
 dataset.jsonl
-scripts/
+scripts/venv
