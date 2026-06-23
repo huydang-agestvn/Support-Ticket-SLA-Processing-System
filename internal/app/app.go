@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"support-ticket.com/internal/ai"
 	aifactory "support-ticket.com/internal/ai/factory"
 	"support-ticket.com/internal/auth"
 	"support-ticket.com/internal/config"
@@ -105,10 +106,13 @@ func (a *App) setupDependencies() {
 		slog.ErrorContext(context.Background(), "failed to initialize audit logger", slog.Any("error", err))
 	}
 
+	kbRepo := repository.NewKnowledgeBaseRepository(a.db)
+	embeddingClient := ai.NewEmbeddingClient(a.cfg.EmbeddingServiceURL, a.cfg.EmbeddingModel, a.cfg.AITimeoutSecs)
+
 	ticketService := service.NewTicketService(ticketRepo, eventRepo)
 	eventService := service.NewTicketEventService(eventRepo, ticketRepo, auditLogger)
 	reportService := service.NewReportService(reportRepo)
-	triageService := service.NewTriageService(ticketRepo, reportRepo, triageRepo, aiAdapter, a.cfg)
+	triageService := service.NewTriageService(ticketRepo, reportRepo, triageRepo, kbRepo, aiAdapter, embeddingClient, a.cfg)
 	evaluationService := service.NewEvaluationService(evaluationRepo, reportRepo, aiAdapter)
 
 	ticketHandler := handler.NewTicketHandler(ticketService)

@@ -14,7 +14,7 @@ type SampleTicket struct {
 	TriageRecommendedNextAction string  `gorm:"type:text" json:"triage_recommended_next_action"`
 	TriageConfidenceScore       float64 `gorm:"type:numeric" json:"triage_confidence_score"`
 
-	Embedding      Vector `gorm:"type:vector(384);index:idx_sample_tickets_embedding,class:vector_cosine_ops,type:hnsw" json:"embedding,omitempty"`
+	Embedding      Vector `gorm:"type:vector(768);index:idx_sample_tickets_embedding,class:vector_cosine_ops,type:hnsw" json:"embedding,omitempty"`
 	EmbeddingModel string `gorm:"type:varchar(100)" json:"embedding_model,omitempty"`
 	IsVerified     bool   `gorm:"not null;default:false" json:"is_verified"`
 	AuditModel

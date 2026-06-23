@@ -68,6 +68,10 @@ type Config struct {
 	AIPromptVersion     string
 	AIMaxBatchSize      int
 	AIWorkerPoolSize    int
+
+	// Embedding Microservice
+	EmbeddingServiceURL string
+	EmbeddingModel      string
 }
 
 func init() {
@@ -162,6 +166,9 @@ func LoadConfig() *Config {
 		AIPromptVersion:     aiPromptVersion,
 		AIMaxBatchSize:      aiMaxBatchSize,
 		AIWorkerPoolSize:    aiWorkerPoolSize,
+
+		EmbeddingServiceURL: getEmbeddingServiceURL(),
+		EmbeddingModel:      getEmbeddingModel(),
 	}
 
 	return cfg
@@ -243,4 +250,22 @@ func loadEnv() error {
 		}
 	}
 	return fmt.Errorf("no .env file found")
+}
+
+// getEmbeddingServiceURL returns the configured embedding service URL.
+func getEmbeddingServiceURL() string {
+	url := getEnv("EMBEDDING_SERVICE_URL")
+	if url == "" {
+		return "http://localhost:11434"
+	}
+	return url
+}
+
+// getEmbeddingModel returns the Ollama embedding model to use.
+func getEmbeddingModel() string {
+	model := getEnv("EMBEDDING_MODEL")
+	if model == "" {
+		return "nomic-embed-text"
+	}
+	return model
 }

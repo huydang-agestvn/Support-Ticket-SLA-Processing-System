@@ -20,7 +20,7 @@ func TestExecuteTriage_BlocksUnsafeContentBeforeAI(t *testing.T) {
 	mockTriageRepo := new(testmock.MockTriageRepository)
 	mockAI := new(mockAIAdapter)
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, &config.Config{})
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, &config.Config{})
 
 	ticket := &model.Ticket{
 		ID:          1,
@@ -59,7 +59,7 @@ func TestExecuteBatchTriage_BlocksUnsafeContentAsFailedItem(t *testing.T) {
 		AIMaxBatchSize:   5,
 		AIWorkerPoolSize: 2,
 	}
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	ticketIDs := []uint{1}
 	tickets := []model.Ticket{

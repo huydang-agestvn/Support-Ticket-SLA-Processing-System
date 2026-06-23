@@ -53,7 +53,7 @@ func TestExecuteBatchTriage_Success(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	ticket1 := model.Ticket{
 		ID:          1,
@@ -161,7 +161,7 @@ func TestExecuteBatchTriage_EmptyBatch(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	res, err := svc.ExecuteBatchTriage(context.Background(), []uint{})
 
@@ -181,7 +181,7 @@ func TestExecuteBatchTriage_BatchTooLarge(t *testing.T) {
 		AIWorkerPoolSize: 1,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	res, err := svc.ExecuteBatchTriage(context.Background(), []uint{1, 2, 3})
 
@@ -201,7 +201,7 @@ func TestExecuteBatchTriage_TicketNotFound(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	ticketIDs := []uint{1, 2}
 
@@ -255,7 +255,7 @@ func TestExecuteBatchTriage_TerminalState(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	ticketIDs := []uint{1, 2}
 
@@ -315,7 +315,7 @@ func TestExecuteBatchTriage_Fallback(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	ticket1 := model.Ticket{
 		ID:          1,
@@ -367,7 +367,7 @@ func TestExecuteBatchTriage_TicketOverdue(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	ticketIDs := []uint{1, 2}
 
@@ -429,7 +429,7 @@ func TestExecuteBatchTriage_RuleEngine_ShortCircuit_Success(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	// Mock active rule patterns
 	mockTriageRepo.On("GetActiveRulePatterns", mock.Anything).Return([]response.RulePatternResponse{
@@ -507,7 +507,7 @@ func TestExecuteBatchTriage_RuleEngine_CategoryMismatch_Override(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	// Mock active rule patterns
 	mockTriageRepo.On("GetActiveRulePatterns", mock.Anything).Return([]response.RulePatternResponse{
