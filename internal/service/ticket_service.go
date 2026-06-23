@@ -49,6 +49,7 @@ func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicket
 		Title:       req.Title,
 		Description: req.Description,
 		Priority:    req.Priority,
+		Category:    req.Category,
 		SLADueAt:    req.SlaDueAt,
 		Status:          model.StatusNew,
 		TicketCreatedAt: now,

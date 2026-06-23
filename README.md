@@ -8,6 +8,7 @@
   ![MinIO](https://img.shields.io/badge/MinIO-S3_Compatible-C72C48?style=for-the-badge&logo=minio)
   ![Grafana](https://img.shields.io/badge/Grafana-11.0.0-F46800?style=for-the-badge&logo=grafana)
   ![Loki](https://img.shields.io/badge/Loki-3.0.0-F46800?style=for-the-badge&logo=grafana)
+  ![Ollama](https://img.shields.io/badge/Ollama-Local_AI-white?style=for-the-badge&logo=ollama)
 </div>
 
 ## 📖 Description
@@ -42,30 +43,36 @@ flowchart LR
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 1. ⚡ High-Performance Batch Import (ETL)
+### 1. High-Performance Batch Import (ETL)
 * Processes large-volume ticket event imports concurrently using an **In-Memory Worker Pool** pattern.
 * Leverages Go channels (`jobs` and `results`) and `sync.WaitGroup` to scale processing safely across multiple worker goroutines.
 
-### 2. 🗄️ Audit Logging & MinIO Integration
+### 2. Audit Logging & MinIO Integration
 * Any duplicate or invalid ticket events encountered during batch import are rejected and detailed in an audit report.
 * These error reports are dynamically formatted as CSV files and uploaded to a local **MinIO** object storage bucket (`audit-logs`).
 * **API Download**: Managers or agents can download the audit reports using the endpoint `GET /api/v1/ticket-events/import/logs/:filename`.
 
-### 3. 🕒 Daily SLA Report Cron Job
+### 3. Daily SLA Report Cron Job
 * A background cron scheduler (powered by `robfig/cron`) runs automatically at **5:00 PM** daily to aggregate ticket metrics and compute agent resolution rates.
 
-### 4. 📧 Automated HTML Email Notifications
+### 4. Automated HTML Email Notifications
 * Upon cron job completion, the daily SLA report is rendered into a rich HTML template and dispatched directly to the IT Manager via **SMTP**.
 
-### 5. 📊 Centralized Logging System (PLG Stack)
+### 5. Centralized Logging System (PLG Stack)
 * Integrated **Grafana Loki** and **Promtail** for centralized log collection and visualization.
 * **Shared Volume Architecture**: Container logs are captured in a shared Docker volume (`app_logs`), making Promtail read operations completely isolated and independent of the host filesystem permissions.
 
+### 6. AI-Powered Ticket Triage & Multi-AI Fallback
+* **Local AI Integration**: Leverages **Ollama** and a fine-tuned **Qwen2.5** model for automated ticket triage (category, urgency, SLA risk) with strictly enforced JSON outputs, ensuring data privacy and cost-efficiency.
+* **Multi-AI Fallback Chain**: Implements a robust *Chain of Responsibility* architecture. If the primary Local AI fails or returns low confidence (< 0.5), the system gracefully falls back to Cloud AI providers (e.g., Groq, Gemini) or applies a heuristic Safe Fallback based on real-time SLA deadlines.
+* **AI Batch Triage (High-Performance)**: The system supports evaluating massive lists of tickets concurrently for AI Triage utilizing a **Partial Success** strategy. Valid tickets are processed efficiently via a worker pool, while validation failures (e.g., overdue, closed tickets) are recorded individually without failing the entire batch.
+* **AI Quality Evaluation**: Includes a specialized endpoint to assess the accuracy of AI predictions against a seeded ground-truth dataset, providing automated scoring and transparency into model performance over time.
+
 ---
 
-## 🛠 Prerequisites
+## Prerequisites
 
 - **Go**: 1.26
 - **Docker & Docker Compose**: For containerized deployment
@@ -73,7 +80,7 @@ flowchart LR
 
 ---
 
-## ⚙️ Environment Variables
+## Environment Variables
 
 Create a `.env` file in the root directory based on the following configurations:
 
@@ -127,6 +134,14 @@ MANAGER_EMAIL=manager_email@gmail.com
 # Grafana & Loki Configuration
 GRAFANA_PORT=3000
 LOKI_PORT=3100
+
+# AI & Triage Configuration
+AI_ENABLED=true
+AI_PROVIDER=ollama
+AI_MODEL=qwen2.5:0.5b
+AI_FALLBACK_CHAIN=groq:llama3-8b-8192,gemini:gemini-1.5-flash
+AI_MAX_BATCH_SIZE=30
+AI_WORKER_POOL_SIZE=3
 ```
 * Note: The default credentials provided below are for local development purposes only. Please ensure you generate strong, unique passwords for production environments.
 ---
@@ -185,6 +200,10 @@ All API routes are prefixed with `/api/v1`. Authentication is handled via Bearer
 | `POST` | `/ticket-events/import` | Batch import historical ticket events | `Agent` |
 | `GET` | `/ticket-events/import/logs/:filename` | Download batch import audit logs from MinIO | `Agent`, `Manager` |
 | `GET` | `/reports/daily` | Retrieve daily SLA performance report | `Manager` |
+| `POST` | `/ai/tickets/:id/triage` | Trigger AI triage for a single ticket | `Agent` |
+| `GET` | `/ai/tickets/:id/triage/latest` | Fetch the latest AI triage result | `Agent`, `Manager` |
+| `POST` | `/ai/tickets/triage:batch` | Batch process multiple tickets using AI triage | `Agent` |
+| `POST` | `/ai/evaluations/ticket-triage` | Run automated AI evaluation against ground-truth dataset | `Manager` |
 
 *Swagger UI is available at `/swagger/index.html` when the server is running.*
 
@@ -204,99 +223,42 @@ All API routes are prefixed with `/api/v1`. Authentication is handled via Bearer
 ```text
 support-ticket-sla/
 ├── cmd/
-│   ├── api/
-│   │   ├── event-sample.json
-│   │   └── main.go
-│   ├── import-sample/
-│   │   └── main.go
-│   └── report/
-│       └── main.go
-├── docs/
-│   ├── batch-import-flow.png
-│   ├── sla-report-flow.png
-│   └── swagger.yml
+│   ├── api/                 # Main API entrypoint
+│   ├── import-sample/       # Script to generate sample events
+│   └── report/              # Manual SLA report trigger
+├── docs/                    # Architecture diagrams & Swagger API specs
 ├── internal/
-│   ├── app/
-│   │   └── app.go
-│   ├── auth/
-│   │   ├── claims.go
-│   │   ├── context.go
-│   │   └── keycloak.go
-│   ├── config/
-│   │   ├── config.go
-│   │   └── database.go
-│   ├── cron/
-│   │   └── scheduler.go
-│   ├── dto/
-│   │   ├── common/
-│   │   ├── request/
-│   │   └── response/
-│   ├── errmsgs/
-│   │   └── errors.go
+│   ├── ai/                  # AI Core Logic & Adapters
+│   │   ├── factory/         # Factory for fallback AI initialization
+│   │   ├── prompts/         # AI Prompt templates (.tmpl files)
+│   │   └── provider/        # Implementations of AI adapters
+│   ├── app/                 # Application bootstrap
+│   ├── auth/                # Authentication & Keycloak integration
+│   ├── config/              # Environment configurations
+│   ├── cron/                # Scheduled background jobs
+│   ├── dto/                 # Data Transfer Objects (Requests/Responses)
+│   ├── handler/             # HTTP Controllers (REST endpoints)
+│   ├── middleware/          # HTTP Middleware (Auth, Logging)
+│   ├── model/               # Database Entities & Domain Models
+│   ├── repository/          # Data Access Layer
+│   ├── router/              # HTTP Route Definitions
+│   ├── seeding/             # Database Seeders (e.g. AI Eval Cases)
+│   ├── service/             # Business Logic Layer (Triage, Batch, SLA)
+│   ├── templates/           # HTML templates (e.g. Email reports)
+│   └── worker/              # Worker Pool logic for concurrent tasks
+├── logging/                 # Grafana, Loki, Promtail configuration
+├── scripts/
+│   └── import_model.ps1     # Automation script to load Local AI models
+├── tests/                   # Unit and Integration Tests
+│   ├── ai/
 │   ├── handler/
-│   │   ├── auth_handler.go
-│   │   ├── helper.go
-│   │   ├── report_handler.go
-│   │   ├── ticket_event_handler.go
-│   │   └── ticket_handler.go
-│   ├── middleware/
-│   │   └── auth_middleware.go
-│   ├── migration/
-│   │   └── migrate.go
-│   ├── model/
-│   │   ├── ticket.go
-│   │   ├── ticket_event.go
-│   │   └── ticket_report.go
-│   ├── repository/
-│   │   ├── event_repository.go
-│   │   ├── report_repository.go
-│   │   └── ticket_repository.go
-│   ├── router/
-│   │   └── router.go
 │   ├── service/
-│   │   ├── audit_logger.go
-│   │   ├── auth_service.go
-│   │   ├── email_service.go
-│   │   ├── keycloak_service.go
-│   │   ├── report_service.go
-│   │   ├── ticket_event_service.go
-│   │   └── ticket_service.go
-│   ├── templates/
-│   │   └── daily_report.html
-│   └── worker/
-│       └── job.go
-├── logging/
-│   ├── grafana-datasources.yaml
-│   ├── loki-config.yaml
-│   └── promtail-config.yaml
-├── tests/
-│   ├── cron/
-│   │   └── scheduler_test.go
-│   ├── handler/
-│   │   ├── auth_handler_test.go
-│   │   ├── report_handler_test.go
-│   │   └── ticket_handler_test.go
-│   ├── mock/
-│   │   └── services.go
-│   ├── model/
-│   │   ├── ticket_event_test.go
-│   │   ├── ticket_report_test.go
-│   │   └── ticket_test.go
-│   ├── service/
-│   │   ├── report_service_test.go
-│   │   ├── ticket_event_service_test.go
-│   │   └── ticket_service_test.go
-│   └── worker/
-│       └── job.go
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-├── docker-compose.yml
-├── Dockerfile
-├── Makefile
-├── .env.example
-├── .gitignore
-├── go.mod
-├── go.sum
+│   └── mock/
+├── ai-model/                # Directory for local GGUF models
+├── docker-compose.yml       # Docker environment orchestration
+├── Dockerfile               # API Container definition
+├── Makefile                 # Make commands for build/run/test
+├── Modelfile                # Ollama model definition template
+├── dataset.jsonl            # Fine-tuning dataset
 └── README.md
 ```

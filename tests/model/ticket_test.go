@@ -85,6 +85,7 @@ func TestTicket_Validate(t *testing.T) {
 			Description: "Valid Description",
 			RequestorID: "req-1",
 			Priority:    model.PriorityHigh,
+			Category:    model.CategoryIT,
 			Status:      model.StatusNew,
 			AuditModel: model.AuditModel{
 				CreatedAt: now,
@@ -104,6 +105,8 @@ func TestTicket_Validate(t *testing.T) {
 		{"Empty Description", func(t *model.Ticket) { t.Description = "" }, true, "description is required"},
 		{"Empty Requestor", func(t *model.Ticket) { t.RequestorID = "" }, true, "requestor_id is required"},
 		{"Invalid Priority", func(t *model.Ticket) { t.Priority = "invalid" }, true, "unknown priority 'invalid'"},
+		{"Invalid Category", func(t *model.Ticket) { t.Category = "invalid" }, true, "unknown category 'invalid'"},
+		{"Empty Category", func(t *model.Ticket) { t.Category = "" }, true, "unknown category ''"},
 		{"Invalid Status", func(t *model.Ticket) { t.Status = "invalid" }, true, "unknown status 'invalid'"},
 		{"Zero CreatedAt", func(t *model.Ticket) { t.CreatedAt = time.Time{} }, true, "created_at is required"},
 		{"Nil SLADueAt", func(t *model.Ticket) { t.SLADueAt = nil }, true, "sla_due_at is required"},

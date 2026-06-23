@@ -157,6 +157,75 @@ func (s *triageServiceImpl) fetchDailyReport(now time.Time) *model.TicketReport 
 func (s *triageServiceImpl) triageSingleTicket(ctx context.Context, t model.Ticket, now time.Time, report *model.TicketReport) *response.BatchTriageResponseItem {
 	slog.InfoContext(ctx, "worker processing AI triage", slog.Uint64("ticket_id", uint64(t.ID)))
 
+	// 1. Tầng 1: Urgency Level Rule Engine short-circuit
+	if ruleResult, matched, correctedCategory := s.evaluateUrgencyRuleEngine(ctx, t.Title, t.Description, string(t.Category), t.SLADueAt); matched {
+		if correctedCategory != string(t.Category) {
+			slog.WarnContext(ctx, "Urgency Level Rule Engine detected a critical input mismatch",
+				slog.Uint64("ticket_id", uint64(t.ID)),
+				slog.String("user_category", string(t.Category)),
+				slog.String("corrected_category", correctedCategory),
+				slog.String("urgency_level", ruleResult.UrgencyLevel),
+				slog.String("sla_breach_risk", ruleResult.SLABreachRisk),
+			)
+
+			// Asynchronously update ticket category in database
+			go func(tID uint, cat string) {
+				bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				if err := s.ticketRepo.UpdateCategory(bgCtx, tID, model.TicketCategory(cat)); err != nil {
+					slog.Error("failed to asynchronously update ticket category in DB",
+						slog.Uint64("ticket_id", uint64(tID)),
+						slog.String("category", cat),
+						slog.Any("error", err),
+					)
+				} else {
+					slog.Info("asynchronously updated ticket category in DB successfully",
+						slog.Uint64("ticket_id", uint64(tID)),
+						slog.String("category", cat),
+					)
+				}
+			}(t.ID, correctedCategory)
+		} else {
+			slog.InfoContext(ctx, "Urgency Level Rule Engine short-circuit triggered",
+				slog.Uint64("ticket_id", uint64(t.ID)),
+				slog.String("category", string(t.Category)),
+				slog.String("urgency_level", ruleResult.UrgencyLevel),
+				slog.String("sla_breach_risk", ruleResult.SLABreachRisk),
+			)
+		}
+
+		dbResult := &model.AITicketTriageResult{
+			TicketID:              t.ID,
+			Category:              ruleResult.Category,
+			UrgencyLevel:          ruleResult.UrgencyLevel,
+			SLABreachRisk:         ruleResult.SLABreachRisk,
+			ReasonSummary:         ruleResult.ReasonSummary,
+			RecommendedNextAction: ruleResult.RecommendedNextAction,
+			ConfidenceScore:       ruleResult.ConfidenceScore,
+			FallbackUsed:          ruleResult.FallbackUsed,
+			PromptVersion:         ruleResult.PromptVersion,
+		}
+
+		if err := s.triageRepo.Create(ctx, dbResult); err != nil {
+			slog.ErrorContext(ctx, "failed to save triage result from rule engine",
+				slog.Uint64("ticket_id", uint64(t.ID)),
+				slog.Any("db_error", err),
+			)
+		}
+
+		return &response.BatchTriageResponseItem{
+			TicketID:              t.ID,
+			Category:              ruleResult.Category,
+			UrgencyLevel:          ruleResult.UrgencyLevel,
+			SLABreachRisk:         ruleResult.SLABreachRisk,
+			ReasonSummary:         ruleResult.ReasonSummary,
+			RecommendedNextAction: ruleResult.RecommendedNextAction,
+			ConfidenceScore:       ruleResult.ConfidenceScore,
+			FallbackUsed:          ruleResult.FallbackUsed,
+			PromptVersion:         ruleResult.PromptVersion,
+		}
+	}
+
 	slaEvidence := "SLA not set."
 	if t.SLADueAt != nil {
 		timeLeft := t.SLADueAt.Sub(now).Round(time.Minute)
@@ -170,12 +239,16 @@ func (s *triageServiceImpl) triageSingleTicket(ctx context.Context, t model.Tick
 	promptData := ai.TriagePromptData{
 		Ticket:      t,
 		Events:      t.Events,
-		SLAPolicy:   "Max resolution time is determined by priority: High (4h), Medium (24h), Low (48h).",
+		SLAPolicy:   ai.DefaultSLAPolicy,
 		DailyReport: report,
 		TimeLeft:    slaEvidence,
 	}
 
-	aiCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	timeoutSecs := 15
+	if s.cfg != nil && s.cfg.AITimeoutSecs > 0 {
+		timeoutSecs = s.cfg.AITimeoutSecs
+	}
+	aiCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSecs)*time.Second)
 	defer cancel()
 
 	aiResult, aiErr := s.aiAdapter.AnalyzeTicket(aiCtx, promptData)
