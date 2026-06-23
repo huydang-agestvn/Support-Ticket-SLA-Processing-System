@@ -41,7 +41,7 @@ func (m *mockAIAdapter) AnalyzeTicketWithVersion(ctx context.Context, data ai.Tr
 
 func (m *mockAIAdapter) Model() string {
 	return "fake-model"
-}	
+}
 func TestExecuteBatchTriage_Success(t *testing.T) {
 	mockTicketRepo := new(testmock.MockTicketRepository)
 	mockReportRepo := new(testmock.MockReportRepository)

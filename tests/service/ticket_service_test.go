@@ -68,6 +68,19 @@ func TestTicketService_Create(t *testing.T) {
 			mockRepo:      func(m *testmock.MockTicketRepository) {},
 			expectedError: "title is required",
 		},
+		{
+			name: "ContentSafetyBlocked",
+			req: request.CreateTicketReq{
+				RequestorID: "user1",
+				Title:       "You are stupid",
+				Description: "Fix this internal support request now.",
+				Priority:    model.PriorityLow,
+				Category:    model.CategoryIT,
+				SlaDueAt:    &dueAt,
+			},
+			mockRepo:      func(m *testmock.MockTicketRepository) {},
+			expectedError: "ticket content blocked by safety filter: insult",
+		},
 	}
 
 	for _, tt := range tests {
@@ -83,6 +96,12 @@ func TestTicketService_Create(t *testing.T) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError)
 				assert.Nil(t, res)
+				if tt.name == "ContentSafetyBlocked" {
+					var apiErr *common.Error
+					assert.ErrorAs(t, err, &apiErr)
+					assert.Equal(t, common.ErrCodeTicketContentBlocked, apiErr.Code)
+					mockRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
+				}
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, res)

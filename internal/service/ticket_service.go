@@ -24,33 +24,42 @@ type TicketService interface {
 }
 
 type ticketServiceImpl struct {
-	repo      repository.TicketRepository
-	eventRepo repository.TicketEventRepository
+	repo          repository.TicketRepository
+	eventRepo     repository.TicketEventRepository
+	contentSafety ContentSafetyService
 }
 
 func NewTicketService(repo repository.TicketRepository, eventRepo repository.TicketEventRepository) TicketService {
 	return &ticketServiceImpl{
-		repo:      repo,
-		eventRepo: eventRepo,
+		repo:          repo,
+		eventRepo:     eventRepo,
+		contentSafety: NewContentSafetyService(),
 	}
 }
 
 func (s *ticketServiceImpl) Create(ctx context.Context, req request.CreateTicketReq) (*model.Ticket, error) {
 	now := time.Now()
 
+	if s.contentSafety != nil {
+		safetyResult := s.contentSafety.CheckTicket(req.Title, req.Description)
+		if safetyResult.Blocked {
+			logBlockedTicket(ctx, 0, req.RequestorID, safetyResult, "create_ticket")
+			return nil, contentSafetyBlockedError(safetyResult)
+		}
+	}
+
 	slog.InfoContext(ctx, "initiating ticket creation",
 		slog.String("requestor_id", req.RequestorID),
-		slog.String("title", req.Title),
 		slog.String("priority", string(req.Priority)),
 	)
 
 	ticket := &model.Ticket{
-		RequestorID: req.RequestorID,
-		Title:       req.Title,
-		Description: req.Description,
-		Priority:    req.Priority,
-		Category:    req.Category,
-		SLADueAt:    req.SlaDueAt,
+		RequestorID:     req.RequestorID,
+		Title:           req.Title,
+		Description:     req.Description,
+		Priority:        req.Priority,
+		Category:        req.Category,
+		SLADueAt:        req.SlaDueAt,
 		Status:          model.StatusNew,
 		TicketCreatedAt: now,
 		AuditModel: model.AuditModel{

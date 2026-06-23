@@ -24,11 +24,12 @@ type TriageService interface {
 }
 
 type triageServiceImpl struct {
-	ticketRepo      repository.TicketRepository
-	reportRepo      repository.ReportRepository
-	triageRepo      repository.TriageRepository
-	aiAdapter       ai.TriageAdapter
-	cfg             *config.Config
+	ticketRepo    repository.TicketRepository
+	reportRepo    repository.ReportRepository
+	triageRepo    repository.TriageRepository
+	aiAdapter     ai.TriageAdapter
+	cfg           *config.Config
+	contentSafety ContentSafetyService
 }
 
 func NewTriageService(
@@ -39,11 +40,12 @@ func NewTriageService(
 	cfg *config.Config,
 ) TriageService {
 	return &triageServiceImpl{
-		ticketRepo:      ticketRepo,
-		reportRepo:      reportRepo,
-		triageRepo:      triageRepo,
-		aiAdapter:       aiAdapter,
-		cfg:             cfg,
+		ticketRepo:    ticketRepo,
+		reportRepo:    reportRepo,
+		triageRepo:    triageRepo,
+		aiAdapter:     aiAdapter,
+		cfg:           cfg,
+		contentSafety: NewContentSafetyService(),
 	}
 }
 
@@ -55,6 +57,11 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 	if ticket == nil {
 		return nil, ai.TriagePromptData{}, errmsgs.ErrTicketNotFound
 	}
+
+	if err := s.ensureTicketContentSafe(ctx, ticket); err != nil {
+		return nil, ai.TriagePromptData{}, err
+	}
+
 	now := time.Now()
 
 	// Business Validations for AI Triage
@@ -117,6 +124,48 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 	}
 
 	return ticket, promptData, nil
+}
+
+func (s *triageServiceImpl) ensureTicketContentSafe(ctx context.Context, ticket *model.Ticket) error {
+	if s.contentSafety == nil {
+		return nil
+	}
+
+	result := s.contentSafety.CheckTicket(ticket.Title, ticket.Description)
+	if !result.Blocked {
+		return nil
+	}
+
+	logBlockedTicket(ctx, ticket.ID, ticket.RequestorID, result, "single_triage")
+	return contentSafetyBlockedError(result)
+}
+
+func logBlockedTicket(ctx context.Context, ticketID uint, userID string, result ContentSafetyResult, action string) {
+	slog.WarnContext(ctx, "ticket blocked by content safety filter",
+		slog.String("action", action),
+		slog.String("request_id", requestIDFromContext(ctx)),
+		slog.Uint64("ticket_id", uint64(ticketID)),
+		slog.String("user_id", userID),
+		slog.String("category", result.Category),
+		slog.String("matched_rule", result.MatchedRule),
+		slog.Time("timestamp", time.Now()),
+	)
+}
+
+func contentSafetyBlockedError(result ContentSafetyResult) *common.Error {
+	return common.NewBadRequest(
+		common.ErrCodeTicketContentBlocked,
+		fmt.Sprintf("ticket content blocked by safety filter: %s", result.Category),
+	)
+}
+
+func requestIDFromContext(ctx context.Context) string {
+	for _, key := range []any{"request_id", "requestID", "x-request-id"} {
+		if value, ok := ctx.Value(key).(string); ok {
+			return value
+		}
+	}
+	return ""
 }
 
 func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*response.TriageResponse, error) {

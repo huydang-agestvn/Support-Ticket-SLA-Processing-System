@@ -58,8 +58,6 @@ func (m *MockTicketRepository) GetTicketStatusAndCreatedAt(ctx context.Context, 
 	return args.Get(0).(map[uint]model.TicketStatus), args.Get(1).(map[uint]time.Time), args.Get(2).(map[uint]string), args.Error(3)
 }
 
-
-
 func (m *MockTicketRepository) Transaction(ctx context.Context, fn func(ctx context.Context) error) error {
 	args := m.Called(ctx, fn)
 	if err := args.Error(0); err != nil {
@@ -85,7 +83,6 @@ func (m *MockTicketRepository) UpdateCategory(ctx context.Context, id uint, cate
 	args := m.Called(ctx, id, category)
 	return args.Error(0)
 }
-
 
 // MockTicketEventRepository
 type MockTicketEventRepository struct {
@@ -221,5 +218,3 @@ func (m *MockTriageAdapter) Model() string {
 	args := m.Called()
 	return args.String(0)
 }
-
-
