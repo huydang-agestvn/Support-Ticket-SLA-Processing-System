@@ -18,29 +18,6 @@
 
 BEGIN;
 
--- ----------------------------------------------------------------
--- 5. unified_knowledge_base (VIEW) — Unified search space for RAG
---    Combines sub_department descriptions and sample tickets into
---    a single queryable vector space for the Backend.
--- ----------------------------------------------------------------
-CREATE OR REPLACE VIEW unified_knowledge_base AS
-SELECT 
-    'policy' AS source_type,
-    code AS sub_department_code,
-    description AS content_text,
-    embedding
-FROM sub_departments
-WHERE is_active = true
-UNION ALL
-SELECT 
-    'example' AS source_type,
-    sub_department_code,
-    title || ' ' || description AS content_text,
-    embedding
-FROM sample_tickets;
-
-COMMIT;
-
 -- ============================================================
 -- SEED DATA
 -- ============================================================

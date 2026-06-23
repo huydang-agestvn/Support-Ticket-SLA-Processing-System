@@ -129,44 +129,31 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 	return ticket, promptData, nil
 }
 
-// buildRAGContext calls the embedding microservice and queries the Vector DB
-// to retrieve the most semantically similar department descriptions and sample tickets.
-// Returns a formatted context string to inject into the AI prompt.
-func (s *triageServiceImpl) buildRAGContext(ctx context.Context, title, description string) string {
-	if s.embeddingClient == nil || s.kbRepo == nil {
+// buildRAGContext formats the retrieved department policies and sample tickets
+// into a plain-text context string to inject into the AI prompt.
+func (s *triageServiceImpl) buildRAGContext(departments []repository.DepartmentMatch, tickets []repository.TicketMatch) string {
+	if len(departments) == 0 && len(tickets) == 0 {
 		return ""
 	}
 
-	// 1. Field Selector: normalize ticket text
-	normalizedText := ai.NormalizeTicketForEmbedding(title, description)
-
-	// 2. Generate embedding vector via Ollama
-	vec, err := s.embeddingClient.GetEmbedding(ctx, normalizedText)
-	if err != nil {
-		slog.WarnContext(ctx, "RAG: failed to get embedding, skipping context enrichment", slog.Any("error", err))
-		return ""
-	}
-
-	// 3. Vector search: retrieve top-5 semantically similar entries
-	matches, err := s.kbRepo.SearchSimilarContext(ctx, vec, 5)
-	if err != nil {
-		slog.WarnContext(ctx, "RAG: vector search failed, skipping context enrichment", slog.Any("error", err))
-		return ""
-	}
-
-	if len(matches) == 0 {
-		return ""
-	}
-
-	// 4. Format retrieved context for the prompt
 	var sb strings.Builder
 	sb.WriteString("# Relevant Knowledge Base Context (from Vector DB)\n")
-	for i, m := range matches {
-		sb.WriteString(fmt.Sprintf("%d. [%s | dept: %s] %s\n", i+1, m.SourceType, m.SubDepartmentCode, m.ContentText))
+	
+	counter := 1
+	for _, dept := range departments {
+		sb.WriteString(fmt.Sprintf("%d. [policy | dept: %s] %s\n", counter, dept.Code, dept.Description))
+		counter++
 	}
-	slog.InfoContext(ctx, "RAG: retrieved context", slog.Int("matches", len(matches)))
+
+	for _, t := range tickets {
+		content := fmt.Sprintf("%s %s", t.Title, t.Description)
+		sb.WriteString(fmt.Sprintf("%d. [example | dept: %s] %s\n", counter, t.SubDepartmentCode, content))
+		counter++
+	}
+
 	return sb.String()
 }
+
 
 func (s *triageServiceImpl) ensureTicketContentSafe(ctx context.Context, ticket *model.Ticket) error {
 	if s.contentSafety == nil {
@@ -183,7 +170,7 @@ func (s *triageServiceImpl) ensureTicketContentSafe(ctx context.Context, ticket 
 }
 
 func logBlockedTicket(ctx context.Context, ticketID uint, userID string, result ContentSafetyResult, action string) {
-	slog.WarnContext(ctx, "ticket blocked by content safety filter",
+		slog.WarnContext(ctx, "ticket blocked by content safety filter",
 		slog.String("action", action),
 		slog.String("request_id", requestIDFromContext(ctx)),
 		slog.Uint64("ticket_id", uint64(ticketID)),
@@ -281,10 +268,87 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 		return ruleResult, nil
 	}
 
-	// Layer 3: Field Selector + RAG Retrieval — normalize text, generate embedding,
-	// query Vector DB for semantically similar departments and sample tickets
-	ragContext := s.buildRAGContext(ctx, ticket.Title, ticket.Description)
+	// Layer 3: Field Selector + RAG Retrieval
+	var vec []float32
+	var embeddingErr error
+	if s.embeddingClient != nil {
+		// 1. Field Selector: normalize ticket text
+		normalizedText := ai.NormalizeTicketForEmbedding(ticket.Title, ticket.Description)
+		// 2. Generate embedding vector via Ollama
+		vec, embeddingErr = s.embeddingClient.GetEmbedding(ctx, normalizedText)
+		if embeddingErr != nil {
+			slog.WarnContext(ctx, "RAG: failed to get embedding, proceeding without RAG/Short-circuit", slog.Any("error", embeddingErr))
+		}
+	}
+
+	var ragContext string
+
+	if embeddingErr == nil && vec != nil && s.kbRepo != nil {
+		threshold := 0.5
+		if s.cfg != nil && s.cfg.AIRagThreshold > 0 {
+			threshold = s.cfg.AIRagThreshold
+		}
+
+		// Retrieve Top 3 tickets
+		tickets, err := s.kbRepo.SearchSimilarTickets(ctx, vec, 3, threshold)
+		if err != nil {
+			slog.WarnContext(ctx, "RAG: search tickets failed", slog.Any("error", err))
+		}
+
+		// RAG Short-circuit: check if Top 1 ticket matches with >= 0.85 similarity (distance < 0.15)
+		if len(tickets) > 0 && tickets[0].Distance < 0.15 {
+			closestTicket := tickets[0]
+			similarity := 1.0 - closestTicket.Distance
+			slog.InfoContext(ctx, "RAG short-circuit triggered: resolved ticket matched with high similarity",
+				slog.Uint64("ticket_id", uint64(ticketID)),
+				slog.Uint64("matched_sample_ticket_id", uint64(closestTicket.ID)),
+				slog.Float64("similarity", similarity),
+			)
+
+			dbResult := &model.AITicketTriageResult{
+				TicketID:              ticket.ID,
+				Category:              closestTicket.TriageCategory,
+				UrgencyLevel:          closestTicket.TriageUrgencyLevel,
+				SLABreachRisk:         closestTicket.TriageSLABreachRisk,
+				ReasonSummary:         fmt.Sprintf("RAG Short-circuit: matched historical sample ticket ID %d (similarity: %.2f%%). Reason: %s", closestTicket.ID, similarity*100, closestTicket.TriageReasonSummary),
+				RecommendedNextAction: closestTicket.TriageRecommendedNextAction,
+				ConfidenceScore:       1.0, // Maximum confidence since we found a near-exact match
+				FallbackUsed:          false,
+				PromptVersion:         "rag_short_circuit_v1.0",
+			}
+
+			if err := s.triageRepo.Create(ctx, dbResult); err != nil {
+				slog.ErrorContext(ctx, "failed to save triage result from RAG short-circuit",
+					slog.Uint64("ticket_id", uint64(ticketID)),
+					slog.Any("db_error", err),
+				)
+				return nil, fmt.Errorf("failed to save triage result: %w", err)
+			}
+
+			return &response.TriageResponse{
+				Category:              dbResult.Category,
+				UrgencyLevel:          dbResult.UrgencyLevel,
+				SLABreachRisk:         dbResult.SLABreachRisk,
+				ReasonSummary:         dbResult.ReasonSummary,
+				RecommendedNextAction: dbResult.RecommendedNextAction,
+				ConfidenceScore:       dbResult.ConfidenceScore,
+				FallbackUsed:          dbResult.FallbackUsed,
+				PromptVersion:         dbResult.PromptVersion,
+			}, nil
+		}
+
+		// Retrieve Top 2 departments
+		departments, err := s.kbRepo.SearchSimilarDepartments(ctx, vec, 2, threshold)
+		if err != nil {
+			slog.WarnContext(ctx, "RAG: search departments failed", slog.Any("error", err))
+		}
+
+		// Format context for LLM
+		ragContext = s.buildRAGContext(departments, tickets)
+	}
+
 	promptData.KnowledgeContext = ragContext
+
 
 	// Layer 4: AI Classification — send enriched prompt to LLM via Fallback Chain
 	timeoutSecs := 15

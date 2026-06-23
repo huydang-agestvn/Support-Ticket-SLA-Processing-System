@@ -72,6 +72,7 @@ type Config struct {
 	// Embedding Microservice
 	EmbeddingServiceURL string
 	EmbeddingModel      string
+	AIRagThreshold      float64
 }
 
 func init() {
@@ -117,6 +118,13 @@ func LoadConfig() *Config {
 	if aiWorkerPoolSize == 0 {
 		aiWorkerPoolSize = 3
 	}
+
+	aiRagThresholdStr := getEnv("AI_RAG_THRESHOLD")
+	aiRagThreshold, err := strconv.ParseFloat(aiRagThresholdStr, 64)
+	if err != nil || aiRagThreshold == 0.0 {
+		aiRagThreshold = 0.6
+	}
+
 
 	cfg := &Config{
 		// Database: Found environment variables for database configuration
@@ -169,6 +177,7 @@ func LoadConfig() *Config {
 
 		EmbeddingServiceURL: getEmbeddingServiceURL(),
 		EmbeddingModel:      getEmbeddingModel(),
+		AIRagThreshold:      aiRagThreshold,
 	}
 
 	return cfg
