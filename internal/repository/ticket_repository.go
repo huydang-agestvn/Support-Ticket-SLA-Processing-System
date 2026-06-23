@@ -22,13 +22,14 @@ type TicketRepository interface {
 	Transaction(ctx context.Context, fn func(ctx context.Context) error) error
 	UpdateStatusesBatch(ctx context.Context, tickets []model.Ticket) error
 	FindByIds(ctx context.Context, ids []uint) ([]model.Ticket, error)
+	UpdateCategory(ctx context.Context, id uint, category model.TicketCategory) error
 }
 
 type ticketRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewTicketRepository(db *gorm.DB) TicketRepository {		
+func NewTicketRepository(db *gorm.DB) TicketRepository {
 	return &ticketRepositoryImpl{db: db}
 }
 
@@ -152,10 +153,10 @@ func (r *ticketRepositoryImpl) GetTicketStatusAndCreatedAt(ctx context.Context, 
 	}
 
 	type ticketMetadataRow struct {
-		ID         uint                `gorm:"column:id"`
+		ID         uint               `gorm:"column:id"`
 		Status     model.TicketStatus `gorm:"column:status"`
-		CreatedAt  time.Time           `gorm:"column:created_at"`
-		AssigneeID string              `gorm:"column:assignee_id"`
+		CreatedAt  time.Time          `gorm:"column:created_at"`
+		AssigneeID string             `gorm:"column:assignee_id"`
 	}
 
 	var rows []ticketMetadataRow
@@ -191,4 +192,6 @@ func (r *ticketRepositoryImpl) FindByIds(ctx context.Context, ids []uint) ([]mod
 	return tickets, nil
 }
 
-
+func (r *ticketRepositoryImpl) UpdateCategory(ctx context.Context, id uint, category model.TicketCategory) error {
+	return r.getDB(ctx).Model(&model.Ticket{}).Where("id = ?", id).Update("category", category).Error
+}
