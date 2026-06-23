@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS rule_patterns (
     sub_department_code  VARCHAR(10) NOT NULL REFERENCES sub_departments(code),
     pattern              TEXT NOT NULL,      -- keyword or regex, lowercase match
     pattern_type         VARCHAR(20) NOT NULL DEFAULT 'keyword', -- 'keyword' | 'regex'
-    priority             INT NOT NULL DEFAULT 100, -- rule priority, higher = evaluated first
+    priority             VARCHAR(20) NOT NULL, -- 'low' | 'medium' | 'high'
     is_active            BOOLEAN NOT NULL DEFAULT true,
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS rule_patterns (
 CREATE INDEX IF NOT EXISTS idx_rule_patterns_sub_department
     ON rule_patterns(sub_department_code);
 CREATE INDEX IF NOT EXISTS idx_rule_patterns_priority
-    ON rule_patterns(priority DESC);
+    ON rule_patterns(priority);
 
 -- ----------------------------------------------------------------
 -- 4. sample_tickets — Historical data for Hybrid RAG (K-NN Search)
@@ -281,98 +281,98 @@ BEGIN;
 
 -- IT001
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('IT001', 'new laptop request', 'keyword', 200),
-    ('IT001', 'broken keyboard', 'keyword', 200),
-    ('IT001', 'broken mouse', 'keyword', 200),
-    ('IT001', 'monitor not working', 'keyword', 200),
-    ('IT001', 'headset replacement', 'keyword', 200),
-    ('IT001', 'laptop charger broken', 'keyword', 200),
-    ('IT001', 'temporary equipment loan', 'keyword', 150),
-    ('IT001', 'hardware warranty', 'keyword', 150),
-    ('IT001', 'damaged screen', 'keyword', 150);
+    ('IT001', 'new laptop request', 'keyword', 'high'),
+    ('IT001', 'broken keyboard', 'keyword', 'high'),
+    ('IT001', 'broken mouse', 'keyword', 'high'),
+    ('IT001', 'monitor not working', 'keyword', 'high'),
+    ('IT001', 'headset replacement', 'keyword', 'high'),
+    ('IT001', 'laptop charger broken', 'keyword', 'high'),
+    ('IT001', 'temporary equipment loan', 'keyword', 'medium'),
+    ('IT001', 'hardware warranty', 'keyword', 'medium'),
+    ('IT001', 'damaged screen', 'keyword', 'medium');
 
 -- IT002
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('IT002', 'no internet connection', 'keyword', 200),
-    ('IT002', 'wifi not working', 'keyword', 200),
-    ('IT002', 'vpn not connecting', 'keyword', 200),
-    ('IT002', 'cannot connect to vpn', 'keyword', 200),
-    ('IT002', 'software installation error', 'keyword', 150),
-    ('IT002', 'os installation', 'keyword', 150),
-    ('IT002', 'shared drive access', 'keyword', 150),
-    ('IT002', 'network down', 'keyword', 150),
-    ('IT002', 'slow internet', 'keyword', 150);
+    ('IT002', 'no internet connection', 'keyword', 'high'),
+    ('IT002', 'wifi not working', 'keyword', 'high'),
+    ('IT002', 'vpn not connecting', 'keyword', 'high'),
+    ('IT002', 'cannot connect to vpn', 'keyword', 'high'),
+    ('IT002', 'software installation error', 'keyword', 'medium'),
+    ('IT002', 'os installation', 'keyword', 'medium'),
+    ('IT002', 'shared drive access', 'keyword', 'medium'),
+    ('IT002', 'network down', 'keyword', 'medium'),
+    ('IT002', 'slow internet', 'keyword', 'medium');
 
 -- IT003
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('IT003', 'reset password', 'keyword', 200),
-    ('IT003', 'forgot password', 'keyword', 200),
-    ('IT003', 'account locked', 'keyword', 200),
-    ('IT003', 'active directory', 'keyword', 200),
-    ('IT003', 'suspected phishing', 'keyword', 200),
-    ('IT003', 'malware alert', 'keyword', 200),
-    ('IT003', 'suspicious email', 'keyword', 180),
-    ('IT003', 'mfa issue', 'keyword', 150),
-    ('IT003', 'two factor authentication', 'keyword', 150);
+    ('IT003', 'reset password', 'keyword', 'high'),
+    ('IT003', 'forgot password', 'keyword', 'high'),
+    ('IT003', 'account locked', 'keyword', 'high'),
+    ('IT003', 'active directory', 'keyword', 'high'),
+    ('IT003', 'suspected phishing', 'keyword', 'high'),
+    ('IT003', 'malware alert', 'keyword', 'high'),
+    ('IT003', 'suspicious email', 'keyword', 'medium'),
+    ('IT003', 'mfa issue', 'keyword', 'medium'),
+    ('IT003', 'two factor authentication', 'keyword', 'medium');
 
 -- FC001
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('FC001', 'air conditioning broken', 'keyword', 200),
-    ('FC001', 'ac not cooling', 'keyword', 200),
-    ('FC001', 'broken chair', 'keyword', 200),
-    ('FC001', 'broken desk', 'keyword', 200),
-    ('FC001', 'light not working', 'keyword', 180),
-    ('FC001', 'water leak', 'keyword', 180),
-    ('FC001', 'power outage', 'keyword', 150),
-    ('FC001', 'cleaning request', 'keyword', 130);
+    ('FC001', 'air conditioning broken', 'keyword', 'high'),
+    ('FC001', 'ac not cooling', 'keyword', 'high'),
+    ('FC001', 'broken chair', 'keyword', 'high'),
+    ('FC001', 'broken desk', 'keyword', 'high'),
+    ('FC001', 'light not working', 'keyword', 'medium'),
+    ('FC001', 'water leak', 'keyword', 'medium'),
+    ('FC001', 'power outage', 'keyword', 'medium'),
+    ('FC001', 'cleaning request', 'keyword', 'low');
 
 -- FC002
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('FC002', 'send courier', 'keyword', 200),
-    ('FC002', 'book company car', 'keyword', 200),
-    ('FC002', 'replace employee badge', 'keyword', 200),
-    ('FC002', 'lost badge', 'keyword', 200),
-    ('FC002', 'book meeting room', 'keyword', 150),
-    ('FC002', 'reserve event space', 'keyword', 150);
+    ('FC002', 'send courier', 'keyword', 'high'),
+    ('FC002', 'book company car', 'keyword', 'high'),
+    ('FC002', 'replace employee badge', 'keyword', 'high'),
+    ('FC002', 'lost badge', 'keyword', 'high'),
+    ('FC002', 'book meeting room', 'keyword', 'medium'),
+    ('FC002', 'reserve event space', 'keyword', 'medium');
 
 -- FC003
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('FC003', 'request office supplies', 'keyword', 200),
-    ('FC003', 'need printer paper', 'keyword', 200),
-    ('FC003', 'out of pens', 'keyword', 200),
-    ('FC003', 'no coffee', 'keyword', 180),
-    ('FC003', 'pantry restock', 'keyword', 180),
-    ('FC003', 'printer ink request', 'keyword', 150);
+    ('FC003', 'request office supplies', 'keyword', 'high'),
+    ('FC003', 'need printer paper', 'keyword', 'high'),
+    ('FC003', 'out of pens', 'keyword', 'high'),
+    ('FC003', 'no coffee', 'keyword', 'medium'),
+    ('FC003', 'pantry restock', 'keyword', 'medium'),
+    ('FC003', 'printer ink request', 'keyword', 'medium');
 
 -- HR001
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('HR001', 'payroll error', 'keyword', 200),
-    ('HR001', 'wrong salary', 'keyword', 200),
-    ('HR001', 'social insurance', 'keyword', 200),
-    ('HR001', 'bhxh', 'keyword', 200),
-    ('HR001', 'maternity leave benefit', 'keyword', 200),
-    ('HR001', 'health insurance pvi', 'keyword', 180),
-    ('HR001', 'bao viet insurance', 'keyword', 180),
-    ('HR001', 'personal income tax', 'keyword', 150),
-    ('HR001', 'dependent declaration', 'keyword', 150);
+    ('HR001', 'payroll error', 'keyword', 'high'),
+    ('HR001', 'wrong salary', 'keyword', 'high'),
+    ('HR001', 'social insurance', 'keyword', 'high'),
+    ('HR001', 'bhxh', 'keyword', 'high'),
+    ('HR001', 'maternity leave benefit', 'keyword', 'high'),
+    ('HR001', 'health insurance pvi', 'keyword', 'medium'),
+    ('HR001', 'bao viet insurance', 'keyword', 'medium'),
+    ('HR001', 'personal income tax', 'keyword', 'medium'),
+    ('HR001', 'dependent declaration', 'keyword', 'medium');
 
 -- HR002
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('HR002', 'register training course', 'keyword', 200),
-    ('HR002', 'request training budget', 'keyword', 200),
-    ('HR002', 'prepare desk for new hire', 'keyword', 180),
-    ('HR002', 'external course registration', 'keyword', 180),
-    ('HR002', 'recruitment request', 'keyword', 150),
-    ('HR002', 'new employee orientation', 'keyword', 150);
+    ('HR002', 'register training course', 'keyword', 'high'),
+    ('HR002', 'request training budget', 'keyword', 'high'),
+    ('HR002', 'prepare desk for new hire', 'keyword', 'medium'),
+    ('HR002', 'external course registration', 'keyword', 'medium'),
+    ('HR002', 'recruitment request', 'keyword', 'medium'),
+    ('HR002', 'new employee orientation', 'keyword', 'medium');
 
 -- HR003
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('HR003', 'resignation procedure', 'keyword', 200),
-    ('HR003', 'offboarding process', 'keyword', 200),
-    ('HR003', 'workplace conflict', 'keyword', 200),
-    ('HR003', 'harassment report', 'keyword', 200),
-    ('HR003', 'team building suggestion', 'keyword', 130),
-    ('HR003', 'year end party feedback', 'keyword', 130);
+    ('HR003', 'resignation procedure', 'keyword', 'high'),
+    ('HR003', 'offboarding process', 'keyword', 'high'),
+    ('HR003', 'workplace conflict', 'keyword', 'high'),
+    ('HR003', 'harassment report', 'keyword', 'high'),
+    ('HR003', 'team building suggestion', 'keyword', 'low'),
+    ('HR003', 'year end party feedback', 'keyword', 'low');
 
 COMMIT;
 

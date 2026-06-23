@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"strings"
 	"time"
 
@@ -23,11 +24,11 @@ type TriageService interface {
 }
 
 type triageServiceImpl struct {
-	ticketRepo repository.TicketRepository
-	reportRepo repository.ReportRepository
-	triageRepo repository.TriageRepository
-	aiAdapter  ai.TriageAdapter
-	cfg        *config.Config
+	ticketRepo      repository.TicketRepository
+	reportRepo      repository.ReportRepository
+	triageRepo      repository.TriageRepository
+	aiAdapter       ai.TriageAdapter
+	cfg             *config.Config
 }
 
 func NewTriageService(
@@ -38,11 +39,11 @@ func NewTriageService(
 	cfg *config.Config,
 ) TriageService {
 	return &triageServiceImpl{
-		ticketRepo: ticketRepo,
-		reportRepo: reportRepo,
-		triageRepo: triageRepo,
-		aiAdapter:  aiAdapter,
-		cfg:        cfg,
+		ticketRepo:      ticketRepo,
+		reportRepo:      reportRepo,
+		triageRepo:      triageRepo,
+		aiAdapter:       aiAdapter,
+		cfg:             cfg,
 	}
 }
 
@@ -110,7 +111,7 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 	promptData := ai.TriagePromptData{
 		Ticket:      *ticket,
 		Events:      ticket.Events,
-		SLAPolicy:   "Max resolution time is determined by priority: High (4h), Medium (24h), Low (48h).",
+		SLAPolicy:   ai.DefaultSLAPolicy,
 		DailyReport: report,
 		TimeLeft:    slaEvidence,
 	}
@@ -124,6 +125,66 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 	ticket, promptData, err := s.buildTriageContext(ctx, ticketID)
 	if err != nil {
 		return nil, err
+	}
+
+	// 1. Tầng 1: Urgency Level Rule Engine short-circuit
+	if ruleResult, matched, correctedCategory := s.evaluateUrgencyRuleEngine(ctx, ticket.Title, ticket.Description, string(ticket.Category), ticket.SLADueAt); matched {
+		if correctedCategory != string(ticket.Category) {
+			slog.WarnContext(ctx, "Urgency Level Rule Engine detected a critical input mismatch",
+				slog.Uint64("ticket_id", uint64(ticketID)),
+				slog.String("user_category", string(ticket.Category)),
+				slog.String("corrected_category", correctedCategory),
+				slog.String("urgency_level", ruleResult.UrgencyLevel),
+				slog.String("sla_breach_risk", ruleResult.SLABreachRisk),
+			)
+
+			// Asynchronously update ticket category in database
+			go func(tID uint, cat string) {
+				bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				if err := s.ticketRepo.UpdateCategory(bgCtx, tID, model.TicketCategory(cat)); err != nil {
+					slog.Error("failed to asynchronously update ticket category in DB",
+						slog.Uint64("ticket_id", uint64(tID)),
+						slog.String("category", cat),
+						slog.Any("error", err),
+					)
+				} else {
+					slog.Info("asynchronously updated ticket category in DB successfully",
+						slog.Uint64("ticket_id", uint64(tID)),
+						slog.String("category", cat),
+					)
+				}
+			}(ticketID, correctedCategory)
+		} else {
+			slog.InfoContext(ctx, "Urgency Level Rule Engine short-circuit triggered",
+				slog.Uint64("ticket_id", uint64(ticketID)),
+				slog.String("category", string(ticket.Category)),
+				slog.String("urgency_level", ruleResult.UrgencyLevel),
+				slog.String("sla_breach_risk", ruleResult.SLABreachRisk),
+			)
+		}
+
+		dbResult := &model.AITicketTriageResult{
+			TicketID:              ticket.ID,
+			Category:              ruleResult.Category,
+			UrgencyLevel:          ruleResult.UrgencyLevel,
+			SLABreachRisk:         ruleResult.SLABreachRisk,
+			ReasonSummary:         ruleResult.ReasonSummary,
+			RecommendedNextAction: ruleResult.RecommendedNextAction,
+			ConfidenceScore:       ruleResult.ConfidenceScore,
+			FallbackUsed:          ruleResult.FallbackUsed,
+			PromptVersion:         ruleResult.PromptVersion,
+		}
+
+		if err := s.triageRepo.Create(ctx, dbResult); err != nil {
+			slog.ErrorContext(ctx, "failed to save triage result from rule engine",
+				slog.Uint64("ticket_id", uint64(ticketID)),
+				slog.Any("db_error", err),
+			)
+			return nil, fmt.Errorf("failed to save triage result: %w", err)
+		}
+
+		return ruleResult, nil
 	}
 
 	timeoutSecs := 15
@@ -229,4 +290,136 @@ func (s *triageServiceImpl) GetLatestTriageResult(ctx context.Context, ticketID 
 		FallbackUsed:          dbResult.FallbackUsed,
 		PromptVersion:         dbResult.PromptVersion,
 	}, nil
+}
+
+func (s *triageServiceImpl) evaluateUrgencyRuleEngine(ctx context.Context, title, description string, originalCategory string, slaDueAt *time.Time) (*response.TriageResponse, bool, string) {
+	// Fetch active rule patterns from database
+	patterns, err := s.triageRepo.GetActiveRulePatterns(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to fetch active rule patterns from database", slog.Any("error", err))
+		return nil, false, ""
+	}
+
+	combined := fmt.Sprintf("%s\n%s", title, description)
+	combinedLower := strings.ToLower(combined)
+
+	// Helper function to match a pattern
+	matchesPattern := func(p response.RulePatternResponse) bool {
+		if p.PatternType == "regex" {
+			re, err := regexp.Compile(p.Pattern)
+			if err != nil {
+				slog.WarnContext(ctx, "invalid rule pattern regex", slog.String("pattern", p.Pattern), slog.Any("error", err))
+				return false
+			}
+			return re.MatchString(combined)
+		}
+		// Default to case-insensitive keyword match
+		return strings.Contains(combinedLower, strings.ToLower(p.Pattern))
+	}
+
+	// 1. Priority 1: Check original input category first
+	for _, p := range patterns {
+		var cat string
+		if len(p.SubDepartmentCode) >= 2 {
+			cat = ai.MapDeptCodeToCategory(p.SubDepartmentCode[:2])
+		}
+
+		if cat != originalCategory {
+			continue
+		}
+
+		if matchesPattern(p) {
+			slaBreachRisk, reasonSummary, recommendedNextAction := s.calculateRuleEngineSLARisk(slaDueAt, false, originalCategory, originalCategory, p)
+			return &response.TriageResponse{
+				Category:              originalCategory,
+				UrgencyLevel:          string(p.Priority),
+				SLABreachRisk:         slaBreachRisk,
+				ReasonSummary:         reasonSummary,
+				RecommendedNextAction: recommendedNextAction,
+				ConfidenceScore:       1.0,
+				FallbackUsed:          false,
+				PromptVersion:         ai.RuleEnginePromptVersion,
+			}, true, originalCategory
+		}
+	}
+
+	// 2. Priority 2: Check other categories
+	for _, p := range patterns {
+		var cat string
+		if len(p.SubDepartmentCode) >= 2 {
+			cat = ai.MapDeptCodeToCategory(p.SubDepartmentCode[:2])
+		}
+
+		if cat == originalCategory {
+			continue
+		}
+
+		if matchesPattern(p) {
+			correctedCategory := cat
+			slaBreachRisk, reasonSummary, recommendedNextAction := s.calculateRuleEngineSLARisk(slaDueAt, true, originalCategory, correctedCategory, p)
+			return &response.TriageResponse{
+				Category:              correctedCategory,
+				UrgencyLevel:          string(p.Priority),
+				SLABreachRisk:         slaBreachRisk,
+				ReasonSummary:         reasonSummary,
+				RecommendedNextAction: recommendedNextAction,
+				ConfidenceScore:       1.0,
+				FallbackUsed:          false,
+				PromptVersion:         ai.RuleEnginePromptVersion,
+			}, true, correctedCategory
+		}
+	}
+
+	return nil, false, ""
+}
+
+func (s *triageServiceImpl) calculateRuleEngineSLARisk(
+	slaDueAt *time.Time,
+	isMismatch bool,
+	originalCategory,
+	correctedCategory string,
+	p response.RulePatternResponse,
+) (string, string, string) {
+	slaBreachRisk := "low"
+	var reasonDurationInfo string
+
+	if slaDueAt != nil {
+		now := time.Now()
+		if now.After(*slaDueAt) {
+			slaBreachRisk = "overdue"
+			reasonDurationInfo = fmt.Sprintf("SLA is overdue by %s, requiring immediate escalation", now.Sub(*slaDueAt).Round(time.Minute).String())
+		} else {
+			timeLeft := slaDueAt.Sub(now)
+			if timeLeft <= 2*time.Hour {
+				slaBreachRisk = "high"
+				reasonDurationInfo = fmt.Sprintf("there are only %s left before SLA breach, leaving very little room for delay", timeLeft.Round(time.Minute).String())
+			} else if timeLeft <= 24*time.Hour {
+				slaBreachRisk = "medium"
+				reasonDurationInfo = fmt.Sprintf("there are only %s left to resolve this issue", timeLeft.Round(time.Minute).String())
+			} else {
+				slaBreachRisk = "low"
+				reasonDurationInfo = fmt.Sprintf("there are %s remaining before SLA breach", timeLeft.Round(time.Minute).String())
+			}
+		}
+	} else {
+		reasonDurationInfo = "SLA is not set"
+	}
+
+	duties, action := ai.GetSubDeptDutiesAndAction(p.SubDepartmentCode)
+
+	var prefix string
+	if isMismatch {
+		prefix = fmt.Sprintf("System Rule Engine detected a critical input mismatch. User selected '%s', but content matched '%s' disaster keywords. Category automatically corrected. ", originalCategory, correctedCategory)
+	} else {
+		prefix = fmt.Sprintf("Ticket was automatically escalated to %s urgency by the System Rule Engine due to matching critical disaster keywords. ", p.Priority)
+	}
+
+	slaBreachRiskUpper := strings.ToUpper(slaBreachRisk)
+	reasonSummary := fmt.Sprintf("%sRouted to %s (%s) on %s as it involves %s. SLA breach risk is %s because %s.",
+		prefix, p.SubDepartmentCode, p.Name, p.Floor, duties, slaBreachRiskUpper, reasonDurationInfo)
+
+	recommendedNextAction := fmt.Sprintf("%s Route the request to the '%s' team located at %s.",
+		action, p.Name, p.Floor)
+
+	return slaBreachRisk, reasonSummary, recommendedNextAction
 }

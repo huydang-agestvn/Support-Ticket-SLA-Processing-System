@@ -4,12 +4,14 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+	"support-ticket.com/internal/dto/response"
 	"support-ticket.com/internal/model"
 )
 
 type TriageRepository interface {
 	Create(ctx context.Context, result *model.AITicketTriageResult) error
 	FindLatestByTicketID(ctx context.Context, ticketID uint) (*model.AITicketTriageResult, error)
+	GetActiveRulePatterns(ctx context.Context) ([]response.RulePatternResponse, error)
 }
 
 type triageRepositoryImpl struct {
@@ -42,4 +44,16 @@ func (r *triageRepositoryImpl) FindLatestByTicketID(ctx context.Context, ticketI
 		return nil, err
 	}
 	return &result, nil
+}
+
+func (r *triageRepositoryImpl) GetActiveRulePatterns(ctx context.Context) ([]response.RulePatternResponse, error) {
+	var patterns []response.RulePatternResponse
+	err := r.getDB(ctx).
+		Table("rule_patterns").
+		Select("rule_patterns.id, rule_patterns.sub_department_code, rule_patterns.pattern, rule_patterns.pattern_type, rule_patterns.priority, rule_patterns.is_active, rule_patterns.created_at, sub_departments.name as name, sub_departments.floor as floor, sub_departments.description as description").
+		Joins("left join sub_departments on rule_patterns.sub_department_code = sub_departments.code").
+		Where("rule_patterns.is_active = ?", true).
+		Find(&patterns).
+		Error
+	return patterns, err
 }
