@@ -56,6 +56,17 @@ func (s *ruleBasedContentSafetyService) CheckTicket(title, description string) C
 	if result, blocked := s.matchRules(reps); blocked {
 		return result
 	}
+	for _, fieldReps := range []safetyTextRepresentations{
+		buildSafetyTextRepresentations(title, ""),
+		buildSafetyTextRepresentations("", description),
+	} {
+		if strings.TrimSpace(fieldReps.Raw) == "" {
+			continue
+		}
+		if result, blocked := detectGibberish(fieldReps.Raw, fieldReps.FoldedNormalized); blocked {
+			return result
+		}
+	}
 	if result, blocked := detectGibberish(reps.Raw, reps.FoldedNormalized); blocked {
 		return result
 	}
@@ -275,7 +286,11 @@ func detectGibberish(raw, normalized string) (ContentSafetyResult, bool) {
 		return blockedContent(ContentSafetyCategoryGibberish, "symbol_heavy_content", "ticket content is mostly symbols"), true
 	}
 
+	tokens := strings.Fields(normalized)
 	words := meaningfulWords(normalized)
+	if looksLikeIsolatedLetterNoise(tokens, words) {
+		return blockedContent(ContentSafetyCategoryGibberish, "isolated_letter_noise", "ticket content contains isolated random letters"), true
+	}
 	if len(words) == 0 {
 		return ContentSafetyResult{}, false
 	}
@@ -355,6 +370,27 @@ func meaningfulWords(normalized string) []string {
 		}
 	}
 	return words
+}
+
+func looksLikeIsolatedLetterNoise(tokens, words []string) bool {
+	if len(tokens) == 0 || len(tokens) > 5 || len(words) > 2 {
+		return false
+	}
+
+	noiseLetters := 0
+	for _, token := range tokens {
+		if len([]rune(token)) != 1 {
+			continue
+		}
+		switch token {
+		case "a", "i":
+			continue
+		default:
+			noiseLetters++
+		}
+	}
+
+	return noiseLetters >= 2
 }
 
 func hasRepeatedRun(text string, threshold int, include func(rune) bool) bool {

@@ -232,6 +232,8 @@ func TestContentSafetyService_BlocksSpamAndGibberish(t *testing.T) {
 		{name: "RareLetterBigrams", text: "aldhakdgaidkadnnhoahpwdph", category: service.ContentSafetyCategoryGibberish},
 		{name: "RareLetterBigramsAcrossWords", text: "adkaugdaadadkja dbdavwdhadkaga", category: service.ContentSafetyCategoryGibberish},
 		{name: "RareLetterBigramsWithDiacritic", text: "VPN failed! adwadhăadawdadawdhqiaddawakd", category: service.ContentSafetyCategoryGibberish},
+		{name: "IsolatedLetterNoise", title: "VPN failed!  ư    d            ", category: service.ContentSafetyCategoryGibberish},
+		{name: "IsolatedLetterNoiseWithNormalDescription", title: "VPN failed!  ư    d            ", text: "Please help me check the VPN connection.", category: service.ContentSafetyCategoryGibberish},
 		{name: "RepeatedWords", text: "hello hello hello hello hello hello", category: service.ContentSafetyCategoryGibberish},
 		{name: "ExcessiveUrls", title: "Request", text: "See http://a.test http://b.test http://c.test http://d.test http://e.test http://f.test", category: service.ContentSafetyCategorySpam},
 		{name: "ExcessiveUrlsMixedCase", title: "Request", text: "See HTTP://a.test HTTPS://b.test WWW.c.test HTTP://d.test HTTPS://e.test WWW.f.test", category: service.ContentSafetyCategorySpam},
@@ -304,6 +306,7 @@ func TestContentSafetyService_RequiredAllowedCases(t *testing.T) {
 		{name: "LongSupportTerms", title: "Authentication troubleshooting", text: "Internationalization configuration failed after administrator authorization."},
 		{name: "LongFacilitiesTerm", title: "Electromagnetic lock malfunction", text: "The characterization of the access issue points to a controller replacement."},
 		{name: "NormalExclamationPunctuation", title: "VPN failed!", text: "It disconnects after login."},
+		{name: "NormalShortPronounAndArticle", title: "I need a VPN", text: "Please help."},
 		{name: "VietnameseSupportTicket", title: "Không đăng nhập được", text: "Tôi không thể đăng nhập vào hệ thống sau khi đổi mật khẩu."},
 	}
 
