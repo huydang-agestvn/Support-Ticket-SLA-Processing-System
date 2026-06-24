@@ -10,6 +10,7 @@ import (
 	"support-ticket.com/internal/model"
 )
 
+//go:embed kb_schema_and_seed.sql
 var kbSchemaAndSeedSQL string
 
 // RunMigrations

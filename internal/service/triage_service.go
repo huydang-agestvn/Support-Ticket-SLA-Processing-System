@@ -277,8 +277,8 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 	var ragContext string
 
 	if embeddingErr == nil && vec != nil && s.kbRepo != nil {
-		shortCircuitSimilarityThreshold := 0.5 
-		contextSimilarityThreshold := 0.4    
+		shortCircuitSimilarityThreshold := 0.5
+		contextSimilarityThreshold := 0.4
 		if s.cfg != nil {
 			if s.cfg.AIRagThreshold > 0 {
 				shortCircuitSimilarityThreshold = s.cfg.AIRagThreshold
@@ -295,6 +295,7 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 		if ticketSearchErr != nil {
 			slog.WarnContext(ctx, "RAG: search tickets failed", slog.Any("error", ticketSearchErr))
 		}
+
 
 		// Log top-1 match similarity for diagnostics
 		if len(similarTickets) > 0 {
