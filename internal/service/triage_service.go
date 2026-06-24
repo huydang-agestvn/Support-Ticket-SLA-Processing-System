@@ -24,28 +24,34 @@ type TriageService interface {
 }
 
 type triageServiceImpl struct {
-	ticketRepo    repository.TicketRepository
-	reportRepo    repository.ReportRepository
-	triageRepo    repository.TriageRepository
-	aiAdapter     ai.TriageAdapter
-	cfg           *config.Config
-	contentSafety ContentSafetyService
+	ticketRepo      repository.TicketRepository
+	reportRepo      repository.ReportRepository
+	triageRepo      repository.TriageRepository
+	kbRepo          repository.KnowledgeBaseRepository
+	aiAdapter       ai.TriageAdapter
+	embeddingClient *ai.EmbeddingClient
+	cfg             *config.Config
+	contentSafety   ContentSafetyService
 }
 
 func NewTriageService(
 	ticketRepo repository.TicketRepository,
 	reportRepo repository.ReportRepository,
 	triageRepo repository.TriageRepository,
+	kbRepo repository.KnowledgeBaseRepository,
 	aiAdapter ai.TriageAdapter,
+	embeddingClient *ai.EmbeddingClient,
 	cfg *config.Config,
 ) TriageService {
 	return &triageServiceImpl{
-		ticketRepo:    ticketRepo,
-		reportRepo:    reportRepo,
-		triageRepo:    triageRepo,
-		aiAdapter:     aiAdapter,
-		cfg:           cfg,
-		contentSafety: NewContentSafetyService(),
+		ticketRepo:      ticketRepo,
+		reportRepo:      reportRepo,
+		triageRepo:      triageRepo,
+		kbRepo:          kbRepo,
+		aiAdapter:       aiAdapter,
+		embeddingClient: embeddingClient,
+		cfg:             cfg,
+		contentSafety:   NewContentSafetyService(),
 	}
 }
 
@@ -94,10 +100,7 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 		slog.WarnContext(ctx, "ticket description too short, skipping triage",
 			slog.Uint64("ticket_id", uint64(ticketID)),
 			slog.Int("description_length", len(strings.TrimSpace(ticket.Description))),
-		) // 3. Setup logical evaluation time
-		// For evaluation runs on seed data, the tickets are set around 2026-06-10.
-		// We use 2026-06-10T09:00:00+07:00 as the evaluation reference time to align
-		// with the expected SLA/breach timelines (e.g. 2 hours left for Case 4, 3 days overdue for Case 5).
+		)
 		return nil, ai.TriagePromptData{}, common.NewBadRequest(
 			common.ErrCodeInvalidInput,
 			"ticket description is too short for meaningful AI triage (minimum 10 characters required)",
@@ -124,6 +127,24 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 	}
 
 	return ticket, promptData, nil
+}
+
+// into a plain-text context string to inject into the AI prompt.
+func (s *triageServiceImpl) buildRAGContext(departments []repository.DepartmentMatch, tickets []repository.TicketMatch) string {
+	if len(departments) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	sb.WriteString("# Relevant Knowledge Base Context (from Vector DB)\n")
+
+	counter := 1
+	for _, dept := range departments {
+		sb.WriteString(fmt.Sprintf("%d. [policy | dept: %s | name: %s | floor: %s] %s\n", counter, dept.Code, dept.Name, dept.Floor, dept.Description))
+		counter++
+	}
+
+	return sb.String()
 }
 
 func (s *triageServiceImpl) ensureTicketContentSafe(ctx context.Context, ticket *model.Ticket) error {
@@ -176,7 +197,10 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 		return nil, err
 	}
 
-	// 1. Tầng 1: Urgency Level Rule Engine short-circuit
+	// Layer 1: Content Safety Filter — handled inside buildTriageContext() above
+	// (blocks profanity, spam, gibberish before any processing)
+
+	// Layer 2: Rule Engine — short-circuit for high-confidence keyword/regex matches
 	if ruleResult, matched, correctedCategory := s.evaluateUrgencyRuleEngine(ctx, ticket.Title, ticket.Description, string(ticket.Category), ticket.SLADueAt); matched {
 		if correctedCategory != string(ticket.Category) {
 			slog.WarnContext(ctx, "Urgency Level Rule Engine detected a critical input mismatch",
@@ -236,6 +260,113 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 		return ruleResult, nil
 	}
 
+	// Layer 3: Field Selector + RAG Retrieval
+	var vec []float32
+	var embeddingErr error
+	if s.embeddingClient != nil {
+		// 1. Field Selector: normalize ticket text (title + description combined)
+		normalizedText := ai.NormalizeTicketForEmbedding(ticket.Title, ticket.Description)
+		slog.InfoContext(ctx, "RAG: normalized text for embedding", slog.String("text", normalizedText))
+		// 2. Generate embedding vector via Ollama
+		vec, embeddingErr = s.embeddingClient.GetEmbedding(ctx, normalizedText)
+		if embeddingErr != nil {
+			slog.WarnContext(ctx, "RAG: failed to get embedding, proceeding without RAG", slog.Any("error", embeddingErr))
+		}
+	}
+
+	var ragContext string
+
+	if embeddingErr == nil && vec != nil && s.kbRepo != nil {
+		shortCircuitSimilarityThreshold := 0.5 
+		contextSimilarityThreshold := 0.4    
+		if s.cfg != nil {
+			if s.cfg.AIRagThreshold > 0 {
+				shortCircuitSimilarityThreshold = s.cfg.AIRagThreshold
+			}
+			if s.cfg.AIRagContextThreshold > 0 {
+				contextSimilarityThreshold = s.cfg.AIRagContextThreshold
+			}
+		}
+		if contextSimilarityThreshold >= shortCircuitSimilarityThreshold {
+			contextSimilarityThreshold = shortCircuitSimilarityThreshold - 0.4
+		}
+
+		similarTickets, ticketSearchErr := s.kbRepo.SearchSimilarTickets(ctx, vec, 3, contextSimilarityThreshold)
+		if ticketSearchErr != nil {
+			slog.WarnContext(ctx, "RAG: search tickets failed", slog.Any("error", ticketSearchErr))
+		}
+
+		// Log top-1 match similarity for diagnostics
+		if len(similarTickets) > 0 {
+			slog.InfoContext(ctx, "RAG: top-1 match similarity",
+				slog.Uint64("ticket_id", uint64(ticketID)),
+				slog.Uint64("matched_sample_id", uint64(similarTickets[0].ID)),
+				slog.Float64("similarity", similarTickets[0].Similarity),
+				slog.Float64("similarity_pct", similarTickets[0].Similarity*100),
+				slog.Float64("short_circuit_threshold", shortCircuitSimilarityThreshold),
+				slog.Bool("will_short_circuit", similarTickets[0].Similarity >= shortCircuitSimilarityThreshold),
+			)
+		}
+
+		// RAG Short-circuit: Top-1 similarity >= threshold → high similarity → skip AI, return cached result
+		if len(similarTickets) > 0 && similarTickets[0].Similarity >= shortCircuitSimilarityThreshold {
+			closest := similarTickets[0]
+			slog.InfoContext(ctx, "RAG short-circuit: high-similarity sample found, bypassing AI",
+				slog.Uint64("ticket_id", uint64(ticketID)),
+				slog.Uint64("matched_sample_id", uint64(closest.ID)),
+				slog.Float64("similarity", closest.Similarity),
+				slog.Float64("similarity_pct", closest.Similarity*100),
+				slog.Float64("threshold", shortCircuitSimilarityThreshold),
+			)
+
+			dbResult := &model.AITicketTriageResult{
+				TicketID:              ticket.ID,
+				Category:              closest.TriageCategory,
+				UrgencyLevel:          closest.TriageUrgencyLevel,
+				SLABreachRisk:         closest.TriageSLABreachRisk,
+				ReasonSummary:         closest.TriageReasonSummary,
+				RecommendedNextAction: closest.TriageRecommendedNextAction,
+				ConfidenceScore:       closest.TriageConfidenceScore,
+				FallbackUsed:          false,
+			}
+
+			if err := s.triageRepo.Create(ctx, dbResult); err != nil {
+				slog.ErrorContext(ctx, "failed to save RAG short-circuit result",
+					slog.Uint64("ticket_id", uint64(ticketID)),
+					slog.Any("db_error", err),
+				)
+				return nil, fmt.Errorf("failed to save triage result: %w", err)
+			}
+
+			return &response.TriageResponse{
+				Category:              dbResult.Category,
+				UrgencyLevel:          dbResult.UrgencyLevel,
+				SLABreachRisk:         dbResult.SLABreachRisk,
+				ReasonSummary:         dbResult.ReasonSummary,
+				RecommendedNextAction: dbResult.RecommendedNextAction,
+				ConfidenceScore:       dbResult.ConfidenceScore,
+				FallbackUsed:          dbResult.FallbackUsed,
+				PromptVersion:         dbResult.PromptVersion,
+			}, nil
+		}
+
+		// No short-circuit: enrich AI prompt with top-N context from vector DB
+		departments, deptSearchErr := s.kbRepo.SearchSimilarDepartments(ctx, vec, 1, contextSimilarityThreshold)
+		if deptSearchErr != nil {
+			slog.WarnContext(ctx, "RAG: search departments failed", slog.Any("error", deptSearchErr))
+		}
+
+		ragContext = s.buildRAGContext(departments, similarTickets)
+		slog.InfoContext(ctx, "RAG context built, proceeding to AI",
+			slog.Uint64("ticket_id", uint64(ticketID)),
+			slog.Int("matched_tickets", len(similarTickets)),
+			slog.Int("matched_departments", len(departments)),
+		)
+	}
+
+	promptData.KnowledgeContext = ragContext
+
+	// Layer 4: AI Classification — send enriched prompt to LLM via Fallback Chain
 	timeoutSecs := 15
 	if s.cfg != nil && s.cfg.AITimeoutSecs > 0 {
 		timeoutSecs = s.cfg.AITimeoutSecs
@@ -244,6 +375,11 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 	defer cancel()
 
 	aiResult, aiErr := s.aiAdapter.AnalyzeTicket(aiCtx, promptData)
+
+	if aiResult.ConfidenceScore > 1.0 {
+		aiResult.ConfidenceScore = aiResult.ConfidenceScore / 100.0
+	}
+
 	if aiErr != nil {
 		slog.WarnContext(ctx, "AI adapter failed, evaluating fallback",
 			slog.Uint64("ticket_id", uint64(ticketID)),
@@ -272,6 +408,7 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 		PromptVersion:         finalResult.PromptVersion,
 	}
 
+	// Layer 5: Save result + return response
 	if err := s.triageRepo.Create(ctx, dbResult); err != nil {
 		slog.ErrorContext(ctx, "failed to save triage result",
 			slog.Uint64("ticket_id", uint64(ticketID)),
@@ -439,7 +576,7 @@ func (s *triageServiceImpl) calculateRuleEngineSLARisk(
 			reasonDurationInfo = fmt.Sprintf("SLA is overdue by %s, requiring immediate escalation", now.Sub(*slaDueAt).Round(time.Minute).String())
 		} else {
 			timeLeft := slaDueAt.Sub(now)
-			if timeLeft <= 2*time.Hour {
+			if timeLeft <= 4*time.Hour {
 				slaBreachRisk = "high"
 				reasonDurationInfo = fmt.Sprintf("there are only %s left before SLA breach, leaving very little room for delay", timeLeft.Round(time.Minute).String())
 			} else if timeLeft <= 24*time.Hour {

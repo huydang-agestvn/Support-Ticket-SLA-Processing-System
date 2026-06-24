@@ -22,7 +22,6 @@ type OllamaAdapter struct {
 	promptVersion string
 }
 
-// NewOllamaAdapter initializes a new adapter for Ollama.
 func NewOllamaAdapter(baseURL, model string, timeoutSecs int, maxRetries int, promptVersion string) *OllamaAdapter {
 	return &OllamaAdapter{
 		model: model,
@@ -35,17 +34,14 @@ func NewOllamaAdapter(baseURL, model string, timeoutSecs int, maxRetries int, pr
 	}
 }
 
-// Model returns the configured LLM model name.
 func (o *OllamaAdapter) Model() string {
 	return o.model
 }
 
-// AnalyzeTicket sends the ticket details to Ollama and enforces strict JSON schema output.
 func (o *OllamaAdapter) AnalyzeTicket(ctx context.Context, data TriagePromptData) (*TriageResult, error) {
 	return o.AnalyzeTicketWithVersion(ctx, data, o.promptVersion)
 }
 
-// AnalyzeTicketWithVersion sends the ticket details to Ollama using a specific prompt version.
 func (o *OllamaAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriagePromptData, promptVersion string) (*TriageResult, error) {
 	templatePath := fmt.Sprintf("internal/ai/prompts/triage_%s.tmpl", promptVersion)
 	tmpl, err := template.ParseFiles(templatePath)
@@ -59,7 +55,6 @@ func (o *OllamaAdapter) AnalyzeTicketWithVersion(ctx context.Context, data Triag
 	}
 	prompt := promptBuffer.String()
 
-	// Define the strict JSON schema required by Task 2
 	schema := map[string]any{
 		"type": "object",
 		"properties": map[string]any{
@@ -70,10 +65,12 @@ func (o *OllamaAdapter) AnalyzeTicketWithVersion(ctx context.Context, data Triag
 			"urgency_level": map[string]any{
 				"type":        "string",
 				"description": "Urgency level",
+				"enum":        []string{"Low", "Medium", "High"},
 			},
 			"sla_breach_risk": map[string]any{
 				"type":        "string",
 				"description": "Risk of SLA breach",
+				"enum":        []string{"Low", "Medium", "High"},
 			},
 			"reason_summary": map[string]any{
 				"type":        "string",
@@ -112,7 +109,7 @@ func (o *OllamaAdapter) AnalyzeTicketWithVersion(ctx context.Context, data Triag
 				Content: prompt,
 			},
 		},
-		Format: schema, // Enforce strict JSON output
+		Format: schema, 
 		Options: request.OllamaOptions{
 			Temperature: 0.0,
 		},
@@ -129,7 +126,7 @@ func (o *OllamaAdapter) AnalyzeTicketWithVersion(ctx context.Context, data Triag
 	var lastErr error
 	for attempt := 0; attempt <= o.maxRetries; attempt++ {
 		if attempt > 0 {
-			time.Sleep(time.Duration(attempt) * time.Second) // Exponential-ish backoff
+			time.Sleep(time.Duration(attempt) * time.Second) 
 		}
 
 		req, err := http.NewRequestWithContext(ctx, "POST", o.baseURL, bytes.NewBuffer(jsonData))
@@ -139,7 +136,6 @@ func (o *OllamaAdapter) AnalyzeTicketWithVersion(ctx context.Context, data Triag
 
 		req.Header.Set("Content-Type", "application/json")
 
-		// Call the LLM Provider
 		resp, err := o.httpClient.Do(req)
 		if err != nil {
 			lastErr = fmt.Errorf("ollama api request failed: %w", err)
@@ -160,7 +156,7 @@ func (o *OllamaAdapter) AnalyzeTicketWithVersion(ctx context.Context, data Triag
 			lastErr = fmt.Errorf("failed to decode ollama response: %w", err)
 			continue
 		}
-		fmt.Println(ollamaResp.Message.Content)
+		// fmt.Println(ollamaResp.Message.Content)
 		resp.Body.Close()
 
 		content := ollamaResp.Message.Content
@@ -169,14 +165,12 @@ func (o *OllamaAdapter) AnalyzeTicketWithVersion(ctx context.Context, data Triag
 			continue
 		}
 
-		// Parse structured JSON response mapped exactly to our output
 		var result TriageResult
 		if err := json.Unmarshal([]byte(content), &result); err != nil {
 			lastErr = fmt.Errorf("failed to parse structured json response: %w", err)
 			continue
 		}
 
-		// Double-check the fallback flag
 		result.FallbackUsed = false
 		result.PromptVersion = promptVersion
 

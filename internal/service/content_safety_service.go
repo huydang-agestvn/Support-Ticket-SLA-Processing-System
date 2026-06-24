@@ -16,7 +16,7 @@ const (
 	ContentSafetyCategorySpam      = safetyrule.CategorySpam
 	ContentSafetyCategoryGibberish = safetyrule.CategoryGibberish
 
-	minBigramGibberishWordLength = 20
+	minBigramGibberishWordLength = 12
 	maxRareBigramRatio           = 0.45
 	maxConsecutiveRareBigrams    = 4
 )

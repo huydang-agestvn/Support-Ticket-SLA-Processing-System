@@ -51,19 +51,29 @@ type Config struct {
 	MinioBucketName string
 
 	//AI Config
-	AIProvider       string
-	AIModel          string
-	AIFallbackChain  string
-	AIBaseURL        string
-	AIAPIKey         string
-	AIGroqBaseURL    string
-	AIGroqAPIKey     string
-	AITimeoutSecs    int
-	AIMaxRetries     int
-	AIEnabled        bool
-	AIPromptVersion  string
-	AIMaxBatchSize   int
-	AIWorkerPoolSize int
+	AIProvider          string
+	AIModel             string
+	AIFallbackChain     string
+	AIBaseURL           string
+	AIAPIKey            string
+	AIGroqBaseURL       string
+	AIGroqAPIKey        string
+	AIOpenRouterBaseURL string
+	AIOpenRouterAPIKey  string
+	AIGeminiBaseURL     string
+	AIGeminiAPIKey      string
+	AITimeoutSecs       int
+	AIMaxRetries        int
+	AIEnabled           bool
+	AIPromptVersion     string
+	AIMaxBatchSize      int
+	AIWorkerPoolSize    int
+
+	// Embedding Microservice
+	EmbeddingServiceURL      string
+	EmbeddingModel           string
+	AIRagThreshold           float64 
+	AIRagContextThreshold    float64 
 }
 
 func init() {
@@ -110,6 +120,19 @@ func LoadConfig() *Config {
 		aiWorkerPoolSize = 3
 	}
 
+	aiRagThresholdStr := getEnv("AI_RAG_THRESHOLD")
+	aiRagThreshold, err := strconv.ParseFloat(aiRagThresholdStr, 64)
+	if err != nil || aiRagThreshold == 0.0 {
+		aiRagThreshold = 0.9 
+	}
+
+	aiRagContextThresholdStr := getEnv("AI_RAG_CONTEXT_THRESHOLD")
+	aiRagContextThreshold, err := strconv.ParseFloat(aiRagContextThresholdStr, 64)
+	if err != nil || aiRagContextThreshold == 0.0 {
+		aiRagContextThreshold = 0.4 
+	}
+
+
 	cfg := &Config{
 		// Database: Found environment variables for database configuration
 		DBHost:     getEnv("DB_HOST"),
@@ -142,18 +165,27 @@ func LoadConfig() *Config {
 		MinioUseSSL:     minioUseSSL,
 		MinioBucketName: minioBucket,
 
-		AIProvider:       getEnv("AI_PROVIDER"),
-		AIModel:          getEnv("AI_MODEL"),
-		AIFallbackChain:  getEnv("AI_FALLBACK_CHAIN"),
-		AIBaseURL:        getEnv("AI_BASE_URL"),
-		AIGroqBaseURL:    getEnv("AI_GROQ_BASE_URL"),
-		AIGroqAPIKey:     getEnv("AI_GROQ_API_KEY"),
-		AITimeoutSecs:    aiTimeoutSecs,
-		AIMaxRetries:     aiMaxRetries,
-		AIEnabled:        aiEnabled,
-		AIPromptVersion:  aiPromptVersion,
-		AIMaxBatchSize:   aiMaxBatchSize,
-		AIWorkerPoolSize: aiWorkerPoolSize,
+		AIProvider:          getEnv("AI_PROVIDER"),
+		AIModel:             getEnv("AI_MODEL"),
+		AIFallbackChain:     getEnv("AI_FALLBACK_CHAIN"),
+		AIBaseURL:           getEnv("AI_BASE_URL"),
+		AIGroqBaseURL:       getEnv("AI_GROQ_BASE_URL"),
+		AIGroqAPIKey:        getEnv("AI_GROQ_API_KEY"),
+		AIOpenRouterBaseURL: getEnv("AI_OPENROUTER_BASE_URL"),
+		AIOpenRouterAPIKey:  getEnv("AI_OPENROUTER_API_KEY"),
+		AIGeminiBaseURL:     getEnv("AI_GEMINI_BASE_URL"),
+		AIGeminiAPIKey:      getEnv("AI_GEMINI_API_KEY"),
+		AITimeoutSecs:       aiTimeoutSecs,
+		AIMaxRetries:        aiMaxRetries,
+		AIEnabled:           aiEnabled,
+		AIPromptVersion:     aiPromptVersion,
+		AIMaxBatchSize:      aiMaxBatchSize,
+		AIWorkerPoolSize:    aiWorkerPoolSize,
+
+		EmbeddingServiceURL:   getEmbeddingServiceURL(),
+		EmbeddingModel:        getEmbeddingModel(),
+		AIRagThreshold:        aiRagThreshold,
+		AIRagContextThreshold: aiRagContextThreshold,
 	}
 
 	return cfg
@@ -225,8 +257,6 @@ func getEnvInt(key string) int {
 	return intVal
 }
 
-// loadEnv tries to load .env from the current and parent directories
-// Useful when running tests from subdirectories like internal/service/
 func loadEnv() error {
 	paths := []string{".env", "../.env", "../../.env", "../../../.env"}
 	for _, p := range paths {
@@ -235,4 +265,21 @@ func loadEnv() error {
 		}
 	}
 	return fmt.Errorf("no .env file found")
+}
+
+func getEmbeddingServiceURL() string {
+	url := getEnv("EMBEDDING_SERVICE_URL")
+	if url == "" {
+		return "http://localhost:11434"
+	}
+	return url
+}
+
+// getEmbeddingModel returns the Ollama embedding model to use.
+func getEmbeddingModel() string {
+	model := getEnv("EMBEDDING_MODEL")
+	if model == "" {
+		return "nomic-embed-text"
+	}
+	return model
 }

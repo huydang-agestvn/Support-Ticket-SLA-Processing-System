@@ -32,8 +32,8 @@ func TestTicketService_Create(t *testing.T) {
 			name: "Success",
 			req: request.CreateTicketReq{
 				RequestorID: "user1",
-				Title:       "Test Ticket",
-				Description: "Description",
+				Title:       "This is a valid test ticket title",
+				Description: "This is a valid test ticket description that is long enough",
 				Priority:    model.PriorityHigh,
 				Category:    model.CategoryIT,
 				SlaDueAt:    &dueAt,
@@ -46,8 +46,8 @@ func TestTicketService_Create(t *testing.T) {
 			name: "TrimsWhitespace",
 			req: request.CreateTicketReq{
 				RequestorID: "user1",
-				Title:       "VPN failed!                   ",
-				Description: "  Please help me check the VPN connection.  ",
+				Title:       "VPN failed! This is a longer title string       ",
+				Description: "  Please help me check the VPN connection. It has been failing since yesterday.  ",
 				Priority:    model.PriorityHigh,
 				Category:    model.CategoryIT,
 				SlaDueAt:    &dueAt,
@@ -55,14 +55,14 @@ func TestTicketService_Create(t *testing.T) {
 			mockRepo: func(m *testmock.MockTicketRepository) {
 				m.On("Create", ctx, mock.AnythingOfType("*model.Ticket")).Return(nil)
 			},
-			expectedTitle: "VPN failed!",
+			expectedTitle: "VPN failed! This is a longer title string",
 		},
 		{
 			name: "DBError",
 			req: request.CreateTicketReq{
 				RequestorID: "user1",
-				Title:       "Test Ticket",
-				Description: "Description",
+				Title:       "This is a valid test ticket title",
+				Description: "This is a valid test ticket description that is long enough",
 				Priority:    model.PriorityHigh,
 				Category:    model.CategoryIT,
 				SlaDueAt:    &dueAt,
@@ -76,7 +76,7 @@ func TestTicketService_Create(t *testing.T) {
 			name: "ValidationError",
 			req: request.CreateTicketReq{
 				RequestorID: "user1",
-				Description: "Description",
+				Description: "This is a valid test ticket description that is long enough",
 				Priority:    model.PriorityHigh,
 				Category:    model.CategoryIT,
 				SlaDueAt:    &dueAt,
@@ -88,8 +88,8 @@ func TestTicketService_Create(t *testing.T) {
 			name: "ContentSafetyBlocked",
 			req: request.CreateTicketReq{
 				RequestorID: "user1",
-				Title:       "You are stupid",
-				Description: "Fix this internal support request now.",
+				Title:       "You are stupid, this is a very long insult title",
+				Description: "Fix this internal support request now. It is really stupid and I hate it.",
 				Priority:    model.PriorityLow,
 				Category:    model.CategoryIT,
 				SlaDueAt:    &dueAt,
@@ -101,8 +101,8 @@ func TestTicketService_Create(t *testing.T) {
 			name: "ContentSafetyBlockedTitleGibberish",
 			req: request.CreateTicketReq{
 				RequestorID: "user1",
-				Title:       "VPN failed!  ư    d            ",
-				Description: "Please help me check the VPN connection.",
+				Title:       "zxqjkwvqzxqjkwvqzxqjkwvqzxqjkwvq",
+				Description: "zxqjkwvqzxqjkwvqzxqjkwvqzxqjkwvqzxqjkwvqzxqjkwvqzxqjkwvqzxqjkwvq",
 				Priority:    model.PriorityLow,
 				Category:    model.CategoryIT,
 				SlaDueAt:    &dueAt,

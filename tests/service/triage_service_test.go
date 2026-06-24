@@ -22,7 +22,7 @@ func TestExecuteTriage_RuleEngine_ShortCircuit_Success(t *testing.T) {
 	mockTriageRepo := new(testmock.MockTriageRepository)
 	mockAI := new(mockAIAdapter)
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, &config.Config{})
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, &config.Config{})
 
 	// Mock active rule patterns
 	mockTriageRepo.On("GetActiveRulePatterns", mock.Anything).Return([]response.RulePatternResponse{
@@ -93,7 +93,7 @@ func TestExecuteTriage_RuleEngine_NoMatch(t *testing.T) {
 	mockTriageRepo := new(testmock.MockTriageRepository)
 	mockAI := new(mockAIAdapter)
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, &config.Config{})
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, &config.Config{})
 
 	// Mock active rule patterns
 	mockTriageRepo.On("GetActiveRulePatterns", mock.Anything).Return([]response.RulePatternResponse{
@@ -165,7 +165,7 @@ func TestExecuteTriage_RuleEngine_CategoryMismatch_Override(t *testing.T) {
 	mockTriageRepo := new(testmock.MockTriageRepository)
 	mockAI := new(mockAIAdapter)
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, &config.Config{})
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, &config.Config{})
 
 	// Mock active rule patterns
 	mockTriageRepo.On("GetActiveRulePatterns", mock.Anything).Return([]response.RulePatternResponse{
@@ -239,7 +239,7 @@ func TestExecuteTriage_RuleEngine_ShortCircuit_MediumPriority(t *testing.T) {
 	mockTriageRepo := new(testmock.MockTriageRepository)
 	mockAI := new(mockAIAdapter)
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, &config.Config{})
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, &config.Config{})
 
 	// Mock active rule patterns (returning a medium priority rule)
 	mockTriageRepo.On("GetActiveRulePatterns", mock.Anything).Return([]response.RulePatternResponse{

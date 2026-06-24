@@ -2,7 +2,7 @@ package ai
 
 const (
 	RuleEnginePromptVersion = "rule_engine_v1.0"
-	DefaultSLAPolicy        = "Max resolution time is determined by priority: High (4h), Medium (24h), Low (48h)."
+	DefaultSLAPolicy        = "Max resolution time is determined as follows: High (4h), Medium (24h), Low (48h)."
 )
 
 // SubDeptDutiesAndAction represents the duties and actions for a sub-department

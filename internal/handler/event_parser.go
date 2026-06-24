@@ -14,11 +14,8 @@ import (
 	"support-ticket.com/internal/model"
 )
 
-// csvRequiredColumns are the mandatory headers expected in every CSV import.
 var csvRequiredColumns = []string{"ticket_id", "from_status", "to_status", "assignee_id", "created_at"}
 
-// parseEvents dispatches to the correct parser based on format ("json" or "csv")
-// and returns the parsed events ready to pass to the service.
 func parseEvents(data []byte, format string) ([]model.TicketEvent, error) {
 	if len(data) == 0 {
 		return nil, errmsgs.ErrEmptyBody
@@ -33,7 +30,6 @@ func parseEvents(data []byte, format string) ([]model.TicketEvent, error) {
 	}
 }
 
-// parseJSON deserializes a JSON array of TicketEvent.
 func parseJSON(data []byte) ([]model.TicketEvent, error) {
 	var events []model.TicketEvent
 	if err := json.Unmarshal(data, &events); err != nil {
@@ -42,15 +38,13 @@ func parseJSON(data []byte) ([]model.TicketEvent, error) {
 	return events, nil
 }
 
-// parseCSV deserializes a CSV file into a slice of TicketEvent.
-// Expected header (case-insensitive): ticket_id, from_status, to_status, assignee_id, created_at[, note]
 func parseCSV(data []byte) ([]model.TicketEvent, error) {
 	records, err := csv.NewReader(bytes.NewReader(data)).ReadAll()
 	if err != nil {
 		return nil, common.NewBadRequest(common.ErrCodeInvalidBody, "invalid CSV: "+err.Error())
 	}
 	if len(records) < 2 {
-		return nil, nil // header-only or empty → service will return ErrEmptyBatch
+		return nil, nil 
 	}
 
 	colIndex, err := buildColIndex(records[0])
@@ -69,8 +63,6 @@ func parseCSV(data []byte) ([]model.TicketEvent, error) {
 	return events, nil
 }
 
-// buildColIndex builds a case-insensitive column-name→index map and validates
-// that all required columns are present.
 func buildColIndex(header []string) (map[string]int, error) {
 	colIndex := make(map[string]int, len(header))
 	for i, h := range header {
@@ -85,8 +77,6 @@ func buildColIndex(header []string) (map[string]int, error) {
 	return colIndex, nil
 }
 
-// parseCSVRow converts a single CSV row into a TicketEvent.
-// rowNum is 1-indexed and used only for error messages.
 func parseCSVRow(row []string, colIndex map[string]int, rowNum int) (model.TicketEvent, error) {
 	if len(row) < len(colIndex) {
 		return model.TicketEvent{}, common.NewBadRequest(common.ErrCodeInvalidBody,
@@ -107,10 +97,10 @@ func parseCSVRow(row []string, colIndex map[string]int, rowNum int) (model.Ticke
 				rowNum, row[colIndex["created_at"]]))
 	}
 
-	var note *string
+	var note string
 	if idx, ok := colIndex["note"]; ok {
 		if v := strings.TrimSpace(row[idx]); v != "" {
-			note = &v
+			note = v
 		}
 	}
 
@@ -124,7 +114,6 @@ func parseCSVRow(row []string, colIndex map[string]int, rowNum int) (model.Ticke
 	}, nil
 }
 
-// parseCSVTime tries RFC3339 first, then falls back to "YYYY-MM-DD HH:MM:SS".
 func parseCSVTime(s string) (time.Time, error) {
 	if t, err := time.Parse(time.RFC3339, s); err == nil {
 		return t, nil

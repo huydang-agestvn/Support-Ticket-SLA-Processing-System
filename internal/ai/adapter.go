@@ -19,11 +19,12 @@ type TriageResult struct {
 }
 
 type TriagePromptData struct {
-	Ticket      model.Ticket
-	Events      []model.TicketEvent
-	SLAPolicy   string
-	DailyReport *model.TicketReport
-	TimeLeft    string
+	Ticket           model.Ticket
+	Events           []model.TicketEvent
+	SLAPolicy        string
+	DailyReport      *model.TicketReport
+	TimeLeft         string
+	KnowledgeContext string // RAG: retrieved from Vector DB, empty if unavailable
 }
 
 // TriageAdapter is the interface for the AI provider

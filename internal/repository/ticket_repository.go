@@ -118,12 +118,10 @@ func (r *ticketRepositoryImpl) FindAll(ctx context.Context, filter request.Ticke
 
 func (r *ticketRepositoryImpl) UpdateStatusWithEvent(ctx context.Context, ticket *model.Ticket, event *model.TicketEvent) error {
 	return r.getDB(ctx).Transaction(func(tx *gorm.DB) error {
-		// 1. Update ticket
 		if err := tx.Save(ticket).Error; err != nil {
 			return fmt.Errorf("update ticket status: %w", err)
 		}
 
-		// 2. Insert event
 		if err := tx.Create(event).Error; err != nil {
 			return fmt.Errorf("insert ticket event: %w", err)
 		}
