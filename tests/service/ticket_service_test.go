@@ -26,6 +26,7 @@ func TestTicketService_Create(t *testing.T) {
 		req           request.CreateTicketReq
 		mockRepo      func(*testmock.MockTicketRepository)
 		expectedError string
+		expectedTitle string
 	}{
 		{
 			name: "Success",
@@ -40,6 +41,21 @@ func TestTicketService_Create(t *testing.T) {
 			mockRepo: func(m *testmock.MockTicketRepository) {
 				m.On("Create", ctx, mock.AnythingOfType("*model.Ticket")).Return(nil)
 			},
+		},
+		{
+			name: "TrimsWhitespace",
+			req: request.CreateTicketReq{
+				RequestorID: "user1",
+				Title:       "VPN failed!                   ",
+				Description: "  Please help me check the VPN connection.  ",
+				Priority:    model.PriorityHigh,
+				Category:    model.CategoryIT,
+				SlaDueAt:    &dueAt,
+			},
+			mockRepo: func(m *testmock.MockTicketRepository) {
+				m.On("Create", ctx, mock.AnythingOfType("*model.Ticket")).Return(nil)
+			},
+			expectedTitle: "VPN failed!",
 		},
 		{
 			name: "DBError",
@@ -81,6 +97,19 @@ func TestTicketService_Create(t *testing.T) {
 			mockRepo:      func(m *testmock.MockTicketRepository) {},
 			expectedError: "ticket content blocked by safety filter: insult",
 		},
+		{
+			name: "ContentSafetyBlockedTitleGibberish",
+			req: request.CreateTicketReq{
+				RequestorID: "user1",
+				Title:       "VPN failed!  ư    d            ",
+				Description: "Please help me check the VPN connection.",
+				Priority:    model.PriorityLow,
+				Category:    model.CategoryIT,
+				SlaDueAt:    &dueAt,
+			},
+			mockRepo:      func(m *testmock.MockTicketRepository) {},
+			expectedError: "ticket content blocked by safety filter: gibberish",
+		},
 	}
 
 	for _, tt := range tests {
@@ -105,7 +134,11 @@ func TestTicketService_Create(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, res)
-				assert.Equal(t, tt.req.Title, res.Title)
+				expectedTitle := tt.expectedTitle
+				if expectedTitle == "" {
+					expectedTitle = tt.req.Title
+				}
+				assert.Equal(t, expectedTitle, res.Title)
 				assert.Equal(t, model.StatusNew, res.Status)
 				assert.NotNil(t, res.SLADueAt)
 			}
