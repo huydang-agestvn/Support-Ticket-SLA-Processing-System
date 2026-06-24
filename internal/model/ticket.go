@@ -104,11 +104,25 @@ func (s TicketStatus) CanTransitionTo(next TicketStatus) bool {
 }
 
 func (t *Ticket) Validate() error {
-	if strings.TrimSpace(t.Title) == "" {
+	titleLen := len([]rune(strings.TrimSpace(t.Title)))
+	desLen := len([]rune(strings.TrimSpace(t.Description)))
+	if titleLen == 0 {
 		return common.NewBadRequest(common.ErrCodeInvalidInput, "title is required")
 	}
-	if strings.TrimSpace(t.Description) == "" {
+	if titleLen < 20 {
+		return common.NewBadRequest(common.ErrCodeInvalidInput, "title must be at least 20 characters long")
+	}
+	if titleLen > 200 {
+		return common.NewBadRequest(common.ErrCodeInvalidInput, "title cannot exceed 200 characters")
+	}
+	if desLen == 0 {
 		return common.NewBadRequest(common.ErrCodeInvalidInput, "description is required")
+	}
+	if desLen < 50 {
+		return common.NewBadRequest(common.ErrCodeInvalidInput, "description must be at least 50 characters long")
+	}
+	if desLen > 500 {
+		return common.NewBadRequest(common.ErrCodeInvalidInput, "description cannot exceed 500 characters")
 	}
 	if strings.TrimSpace(t.RequestorID) == "" {
 		return common.NewBadRequest(common.ErrCodeInvalidInput, "requestor_id is required")

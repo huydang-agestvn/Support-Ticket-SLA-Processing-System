@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -81,8 +82,8 @@ func TestTicket_Validate(t *testing.T) {
 
 	validTicket := func() *model.Ticket {
 		return &model.Ticket{
-			Title:       "Valid Title",
-			Description: "Valid Description",
+			Title:       "This is a valid ticket title with enough length",
+			Description: "This is a valid description that is long enough to pass the validation check of fifty characters limit.",
 			RequestorID: "req-1",
 			Priority:    model.PriorityHigh,
 			Category:    model.CategoryIT,
@@ -102,7 +103,11 @@ func TestTicket_Validate(t *testing.T) {
 	}{
 		{"Valid", func(t *model.Ticket) {}, false, ""},
 		{"Empty Title", func(t *model.Ticket) { t.Title = "   " }, true, "title is required"},
+		{"Short Title", func(t *model.Ticket) { t.Title = "Too short title" }, true, "at least 20 characters long"},
+		{"Long Title", func(t *model.Ticket) { t.Title = strings.Repeat("A", 201) }, true, "cannot exceed 200 characters"},
 		{"Empty Description", func(t *model.Ticket) { t.Description = "" }, true, "description is required"},
+		{"Short Description", func(t *model.Ticket) { t.Description = "Too short" }, true, "at least 50 characters long"},
+		{"Long Description", func(t *model.Ticket) { t.Description = strings.Repeat("A", 501) }, true, "cannot exceed 500 characters"},
 		{"Empty Requestor", func(t *model.Ticket) { t.RequestorID = "" }, true, "requestor_id is required"},
 		{"Invalid Priority", func(t *model.Ticket) { t.Priority = "invalid" }, true, "unknown priority 'invalid'"},
 		{"Invalid Category", func(t *model.Ticket) { t.Category = "invalid" }, true, "unknown category 'invalid'"},
