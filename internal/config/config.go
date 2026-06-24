@@ -70,10 +70,14 @@ type Config struct {
 	AIWorkerPoolSize    int
 
 	// Embedding Microservice
-	EmbeddingServiceURL      string
-	EmbeddingModel           string
-	AIRagThreshold           float64 
-	AIRagContextThreshold    float64 
+	EmbeddingServiceURL   string
+	EmbeddingModel        string
+	AIRagThreshold        float64
+	AIRagContextThreshold float64
+
+	// Ticket safety ML scorer
+	TicketSafetyMLURL     string
+	TicketSafetyMLTimeout int
 }
 
 func init() {
@@ -123,15 +127,19 @@ func LoadConfig() *Config {
 	aiRagThresholdStr := getEnv("AI_RAG_THRESHOLD")
 	aiRagThreshold, err := strconv.ParseFloat(aiRagThresholdStr, 64)
 	if err != nil || aiRagThreshold == 0.0 {
-		aiRagThreshold = 0.9 
+		aiRagThreshold = 0.9
 	}
 
 	aiRagContextThresholdStr := getEnv("AI_RAG_CONTEXT_THRESHOLD")
 	aiRagContextThreshold, err := strconv.ParseFloat(aiRagContextThresholdStr, 64)
 	if err != nil || aiRagContextThreshold == 0.0 {
-		aiRagContextThreshold = 0.4 
+		aiRagContextThreshold = 0.4
 	}
 
+	ticketSafetyMLTimeout := getEnvIntWithFallback("TICKET_SAFETY_ML_TIMEOUT_SECS", "ML_SIDECAR_TIMEOUT_SECS")
+	if ticketSafetyMLTimeout == 0 {
+		ticketSafetyMLTimeout = 3
+	}
 
 	cfg := &Config{
 		// Database: Found environment variables for database configuration
@@ -186,6 +194,9 @@ func LoadConfig() *Config {
 		EmbeddingModel:        getEmbeddingModel(),
 		AIRagThreshold:        aiRagThreshold,
 		AIRagContextThreshold: aiRagContextThreshold,
+
+		TicketSafetyMLURL:     getTicketSafetyMLURL(),
+		TicketSafetyMLTimeout: ticketSafetyMLTimeout,
 	}
 
 	return cfg
@@ -257,6 +268,17 @@ func getEnvInt(key string) int {
 	return intVal
 }
 
+func getEnvIntWithFallback(primaryKey, fallbackKey string) int {
+	if value := getEnv(primaryKey); value != "" {
+		intVal, err := strconv.Atoi(value)
+		if err != nil {
+			slog.ErrorContext(context.Background(), "Error converting %s to integer: %v", primaryKey, err)
+		}
+		return intVal
+	}
+	return getEnvInt(fallbackKey)
+}
+
 func loadEnv() error {
 	paths := []string{".env", "../.env", "../../.env", "../../../.env"}
 	for _, p := range paths {
@@ -282,4 +304,15 @@ func getEmbeddingModel() string {
 		return "nomic-embed-text"
 	}
 	return model
+}
+
+func getTicketSafetyMLURL() string {
+	url := getEnv("TICKET_SAFETY_ML_URL")
+	if url == "" {
+		url = getEnv("ML_SIDECAR_URL")
+	}
+	if url == "" {
+		return "http://ticket-safety-ml:8000/score"
+	}
+	return url
 }

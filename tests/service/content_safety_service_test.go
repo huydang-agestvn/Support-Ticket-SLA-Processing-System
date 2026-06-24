@@ -60,6 +60,13 @@ func TestContentSafetyService_CheckTicket(t *testing.T) {
 			expectedCategory: service.ContentSafetyCategoryInsult,
 		},
 		{
+			name:             "TargetedITStaffAbuse",
+			title:            "Complaint about IT support handling",
+			description:      "The IT staff are worthless and should not be allowed to handle support tickets.",
+			expectedBlocked:  true,
+			expectedCategory: service.ContentSafetyCategoryInsult,
+		},
+		{
 			name:            "SensitiveIncidentReportAllowed",
 			title:           "Harassment report",
 			description:     "I want to report sexual harassment at work.",
@@ -206,6 +213,8 @@ func TestContentSafetyService_BlocksClearlyNonWorkSensitiveContent(t *testing.T)
 		"OnlyFans promotion.",
 		"XXX videos available here.",
 		"Buy illegal drugs from this website.",
+		"A sex video link was posted in this internal support request.",
+		"Free sex clips were posted in this internal support request.",
 	}
 
 	for _, text := range tests {
@@ -232,6 +241,13 @@ func TestContentSafetyService_BlocksSpamAndGibberish(t *testing.T) {
 		{name: "RareLetterBigrams", text: "aldhakdgaidkadnnhoahpwdph", category: service.ContentSafetyCategoryGibberish},
 		{name: "RareLetterBigramsAcrossWords", text: "adkaugdaadadkja dbdavwdhadkaga", category: service.ContentSafetyCategoryGibberish},
 		{name: "RareLetterBigramsWithDiacritic", text: "VPN failed! adwadhăadawdadawdhqiaddawakd", category: service.ContentSafetyCategoryGibberish},
+		{name: "AlphanumericGibberish", text: "aidawdgadaadkan34u294b", category: service.ContentSafetyCategoryGibberish},
+		{name: "AlphanumericGibberishMultiToken", text: "xkq34pzm bvw92fjd", category: service.ContentSafetyCategoryGibberish},
+		{name: "ShortRandomAlphaToken", text: "aiwebvafqda support request", category: service.ContentSafetyCategoryGibberish},
+		{name: "ShortRandomAlphaTokenTwo", text: "qzxvbnmpoi support request", category: service.ContentSafetyCategoryGibberish},
+		{name: "ShortRandomAlphaTokenEightChars", text: "adawdawd support request", category: service.ContentSafetyCategoryGibberish},
+		{name: "SymbolDigitNoise", text: "@@@###$$$%%%1234567890", category: service.ContentSafetyCategoryGibberish},
+		{name: "LongNumericNoise", text: "29047298472946920472094", category: service.ContentSafetyCategoryGibberish},
 		{name: "IsolatedLetterNoise", title: "VPN failed!  ư    d            ", category: service.ContentSafetyCategoryGibberish},
 		{name: "IsolatedLetterNoiseWithNormalDescription", title: "VPN failed!  ư    d            ", text: "Please help me check the VPN connection.", category: service.ContentSafetyCategoryGibberish},
 		{name: "RepeatedWords", text: "hello hello hello hello hello hello", category: service.ContentSafetyCategoryGibberish},
@@ -307,6 +323,7 @@ func TestContentSafetyService_RequiredAllowedCases(t *testing.T) {
 		{name: "LongFacilitiesTerm", title: "Electromagnetic lock malfunction", text: "The characterization of the access issue points to a controller replacement."},
 		{name: "NormalExclamationPunctuation", title: "VPN failed!", text: "It disconnects after login."},
 		{name: "NormalShortPronounAndArticle", title: "I need a VPN", text: "Please help."},
+		{name: "SystemComplaintAllowed", title: "System performance complaint", text: "The IT system is terrible today and the VPN keeps disconnecting after login."},
 		{name: "VietnameseSupportTicket", title: "Không đăng nhập được", text: "Tôi không thể đăng nhập vào hệ thống sau khi đổi mật khẩu."},
 	}
 

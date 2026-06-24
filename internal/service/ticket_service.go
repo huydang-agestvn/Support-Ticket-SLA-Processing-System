@@ -14,6 +14,7 @@ import (
 	"support-ticket.com/internal/errmsgs"
 	"support-ticket.com/internal/model"
 	"support-ticket.com/internal/repository"
+	"support-ticket.com/internal/safetyrule"
 )
 
 type TicketService interface {
@@ -29,11 +30,11 @@ type ticketServiceImpl struct {
 	contentSafety ContentSafetyService
 }
 
-func NewTicketService(repo repository.TicketRepository, eventRepo repository.TicketEventRepository) TicketService {
+func NewTicketService(repo repository.TicketRepository, eventRepo repository.TicketEventRepository, ml ...safetyrule.MLClassifier) TicketService {
 	return &ticketServiceImpl{
 		repo:          repo,
 		eventRepo:     eventRepo,
-		contentSafety: NewContentSafetyService(),
+		contentSafety: NewContentSafetyService(ml...),
 	}
 }
 

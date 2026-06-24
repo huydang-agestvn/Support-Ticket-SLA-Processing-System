@@ -15,6 +15,7 @@ import (
 	"support-ticket.com/internal/errmsgs"
 	"support-ticket.com/internal/model"
 	"support-ticket.com/internal/repository"
+	"support-ticket.com/internal/safetyrule"
 )
 
 type TriageService interface {
@@ -42,6 +43,7 @@ func NewTriageService(
 	aiAdapter ai.TriageAdapter,
 	embeddingClient *ai.EmbeddingClient,
 	cfg *config.Config,
+	ml ...safetyrule.MLClassifier,
 ) TriageService {
 	return &triageServiceImpl{
 		ticketRepo:      ticketRepo,
@@ -51,7 +53,7 @@ func NewTriageService(
 		aiAdapter:       aiAdapter,
 		embeddingClient: embeddingClient,
 		cfg:             cfg,
-		contentSafety:   NewContentSafetyService(),
+		contentSafety:   NewContentSafetyService(ml...),
 	}
 }
 
@@ -277,8 +279,8 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 	var ragContext string
 
 	if embeddingErr == nil && vec != nil && s.kbRepo != nil {
-		shortCircuitSimilarityThreshold := 0.5 
-		contextSimilarityThreshold := 0.4    
+		shortCircuitSimilarityThreshold := 0.5
+		contextSimilarityThreshold := 0.4
 		if s.cfg != nil {
 			if s.cfg.AIRagThreshold > 0 {
 				shortCircuitSimilarityThreshold = s.cfg.AIRagThreshold

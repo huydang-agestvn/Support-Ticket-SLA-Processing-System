@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: ticket-sla-postgres
     command: postgres -c timezone=Asia/Ho_Chi_Minh -c log_timezone=Asia/Ho_Chi_Minh
     environment:
@@ -125,6 +125,8 @@ services:
       AI_TIMEOUT_SECS: ${AI_TIMEOUT_SECS}
       AI_MAX_RETRIES: ${AI_MAX_RETRIES}
       AI_PROMPT_VERSION: ${AI_PROMPT_VERSION}
+      TICKET_SAFETY_ML_URL: ${TICKET_SAFETY_ML_URL:-http://ticket-safety-ml:8000/score}
+      TICKET_SAFETY_ML_TIMEOUT_SECS: ${TICKET_SAFETY_ML_TIMEOUT_SECS:-3}
     volumes:
       - app_logs:/app/logs
     command: sh -c "mkdir -p /app/logs && ./ticket-sla-api 2>&1 | tee /app/logs/app.log"
@@ -135,6 +137,14 @@ services:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  ticket-safety-ml:
+    build: ./ticket-safety-ml
+    ports:
+      - "8001:8000"
+    volumes:
+      - huggingface_cache:/root/.cache/huggingface
+    restart: unless-stopped
 
   loki:
     image: grafana/loki:3.0.0
@@ -172,3 +182,4 @@ volumes:
   minio_data:
   grafana_data:
   app_logs:
+  huggingface_cache:
