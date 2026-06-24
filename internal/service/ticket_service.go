@@ -189,6 +189,7 @@ func (s *ticketServiceImpl) UpdateTicketStatus(ctx context.Context, id uint, req
 		AssigneeID: ticket.AssigneeID,
 		FromStatus: ticket.Status,
 		ToStatus:   req.Status,
+		Note:       req.Note,
 		CreatedAt:  time.Now(),
 	}
 	event.Validate()

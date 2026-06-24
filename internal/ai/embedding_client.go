@@ -9,28 +9,23 @@ import (
 	"time"
 )
 
-// EmbeddingClient calls Ollama's native /api/embeddings endpoint to generate vectors.
 type EmbeddingClient struct {
-	baseURL     string
-	model       string
-	httpClient  *http.Client
+	baseURL    string
+	model      string
+	httpClient *http.Client
 }
 
-// ollamaEmbedRequest matches Ollama's POST /api/embeddings schema
 type ollamaEmbedRequest struct {
-	Model  string `json:"model"`
-	Prompt string `json:"prompt"`
+	Model string `json:"model"`
+	Input string `json:"input"`
 }
 
-// ollamaEmbedResponse matches Ollama's response schema
 type ollamaEmbedResponse struct {
-	Embedding []float32 `json:"embedding"`
+	Embeddings [][]float32 `json:"embeddings"`
 }
 
-// NewEmbeddingClient creates a client that calls Ollama for embeddings.
-// baseURL: e.g. "http://localhost:11434"
-// model:   e.g. "nomic-embed-text" (pulled via `ollama pull nomic-embed-text`)
 func NewEmbeddingClient(baseURL, model string, timeoutSecs int) *EmbeddingClient {
+	fmt.Println("Creating embedding client with base URL:", baseURL, "and model:", model)
 	return &EmbeddingClient{
 		baseURL: baseURL,
 		model:   model,
@@ -40,14 +35,13 @@ func NewEmbeddingClient(baseURL, model string, timeoutSecs int) *EmbeddingClient
 	}
 }
 
-// GetEmbedding sends text to Ollama and returns a float32 embedding vector.
 func (c *EmbeddingClient) GetEmbedding(ctx context.Context, text string) ([]float32, error) {
-	body, err := json.Marshal(ollamaEmbedRequest{Model: c.model, Prompt: text})
+	body, err := json.Marshal(ollamaEmbedRequest{Model: c.model, Input: text})
 	if err != nil {
 		return nil, fmt.Errorf("embedding client: failed to marshal request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/embeddings", bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/embed", bytes.NewBuffer(body))
 	if err != nil {
 		return nil, fmt.Errorf("embedding client: failed to create request: %w", err)
 	}
@@ -68,9 +62,9 @@ func (c *EmbeddingClient) GetEmbedding(ctx context.Context, text string) ([]floa
 		return nil, fmt.Errorf("embedding client: failed to decode ollama response: %w", err)
 	}
 
-	if len(result.Embedding) == 0 {
+	if len(result.Embeddings) == 0 || len(result.Embeddings[0]) == 0 {
 		return nil, fmt.Errorf("embedding client: ollama returned empty embedding (model '%s' loaded?)", c.model)
 	}
 
-	return result.Embedding, nil
+	return result.Embeddings[0], nil
 }

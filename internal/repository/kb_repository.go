@@ -12,12 +12,12 @@ import (
 
 type TicketMatch struct {
 	model.SampleTicket
-	Distance float64 `gorm:"column:distance"`
+	Similarity float64 `gorm:"column:similarity"`
 }
 
 type DepartmentMatch struct {
 	model.SubDepartment
-	Distance float64 `gorm:"column:distance"`
+	Similarity float64 `gorm:"column:similarity"`
 }
 
 type KnowledgeBaseRepository interface {
@@ -39,9 +39,9 @@ func (r *kbRepo) SearchSimilarTickets(ctx context.Context, ticketEmbedding []flo
 
 	err := r.db.WithContext(ctx).
 		Table("sample_tickets").
-		Select("*, (embedding <=> ?) as distance", vectorVal).
-		Where("embedding <=> ? < ?", vectorVal, threshold).
-		Order(clause.Expr{SQL: "embedding <=> ?", Vars: []interface{}{vectorVal}}).
+		Select("*, 1 - (embedding <=> ?) as similarity", vectorVal).
+		Where("1 - (embedding <=> ?) >= ?", vectorVal, threshold).
+		Clauses(clause.OrderBy{Expression: clause.Expr{SQL: "embedding <=> ?", Vars: []interface{}{vectorVal}}}).
 		Limit(limit).
 		Scan(&results).Error
 
@@ -54,9 +54,9 @@ func (r *kbRepo) SearchSimilarDepartments(ctx context.Context, ticketEmbedding [
 
 	err := r.db.WithContext(ctx).
 		Table("sub_departments").
-		Select("*, (embedding <=> ?) as distance", vectorVal).
-		Where("is_active = ? AND embedding <=> ? < ?", true, vectorVal, threshold).
-		Order(clause.Expr{SQL: "embedding <=> ?", Vars: []interface{}{vectorVal}}).
+		Select("*, 1 - (embedding <=> ?) as similarity", vectorVal).
+		Where("is_active = ? AND 1 - (embedding <=> ?) >= ?", true, vectorVal, threshold).
+		Clauses(clause.OrderBy{Expression: clause.Expr{SQL: "embedding <=> ?", Vars: []interface{}{vectorVal}}}).
 		Limit(limit).
 		Scan(&results).Error
 

@@ -129,31 +129,23 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 	return ticket, promptData, nil
 }
 
-// buildRAGContext formats the retrieved department policies and sample tickets
 // into a plain-text context string to inject into the AI prompt.
 func (s *triageServiceImpl) buildRAGContext(departments []repository.DepartmentMatch, tickets []repository.TicketMatch) string {
-	if len(departments) == 0 && len(tickets) == 0 {
+	if len(departments) == 0 {
 		return ""
 	}
 
 	var sb strings.Builder
 	sb.WriteString("# Relevant Knowledge Base Context (from Vector DB)\n")
-	
+
 	counter := 1
 	for _, dept := range departments {
-		sb.WriteString(fmt.Sprintf("%d. [policy | dept: %s] %s\n", counter, dept.Code, dept.Description))
-		counter++
-	}
-
-	for _, t := range tickets {
-		content := fmt.Sprintf("%s %s", t.Title, t.Description)
-		sb.WriteString(fmt.Sprintf("%d. [example | dept: %s] %s\n", counter, t.SubDepartmentCode, content))
+		sb.WriteString(fmt.Sprintf("%d. [policy | dept: %s | name: %s | floor: %s] %s\n", counter, dept.Code, dept.Name, dept.Floor, dept.Description))
 		counter++
 	}
 
 	return sb.String()
 }
-
 
 func (s *triageServiceImpl) ensureTicketContentSafe(ctx context.Context, ticket *model.Ticket) error {
 	if s.contentSafety == nil {
@@ -170,7 +162,7 @@ func (s *triageServiceImpl) ensureTicketContentSafe(ctx context.Context, ticket 
 }
 
 func logBlockedTicket(ctx context.Context, ticketID uint, userID string, result ContentSafetyResult, action string) {
-		slog.WarnContext(ctx, "ticket blocked by content safety filter",
+	slog.WarnContext(ctx, "ticket blocked by content safety filter",
 		slog.String("action", action),
 		slog.String("request_id", requestIDFromContext(ctx)),
 		slog.Uint64("ticket_id", uint64(ticketID)),
@@ -272,53 +264,74 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 	var vec []float32
 	var embeddingErr error
 	if s.embeddingClient != nil {
-		// 1. Field Selector: normalize ticket text
+		// 1. Field Selector: normalize ticket text (title + description combined)
 		normalizedText := ai.NormalizeTicketForEmbedding(ticket.Title, ticket.Description)
+		slog.InfoContext(ctx, "RAG: normalized text for embedding", slog.String("text", normalizedText))
 		// 2. Generate embedding vector via Ollama
 		vec, embeddingErr = s.embeddingClient.GetEmbedding(ctx, normalizedText)
 		if embeddingErr != nil {
-			slog.WarnContext(ctx, "RAG: failed to get embedding, proceeding without RAG/Short-circuit", slog.Any("error", embeddingErr))
+			slog.WarnContext(ctx, "RAG: failed to get embedding, proceeding without RAG", slog.Any("error", embeddingErr))
 		}
 	}
 
 	var ragContext string
 
 	if embeddingErr == nil && vec != nil && s.kbRepo != nil {
-		threshold := 0.5
-		if s.cfg != nil && s.cfg.AIRagThreshold > 0 {
-			threshold = s.cfg.AIRagThreshold
+		shortCircuitSimilarityThreshold := 0.5 
+		contextSimilarityThreshold := 0.4    
+		if s.cfg != nil {
+			if s.cfg.AIRagThreshold > 0 {
+				shortCircuitSimilarityThreshold = s.cfg.AIRagThreshold
+			}
+			if s.cfg.AIRagContextThreshold > 0 {
+				contextSimilarityThreshold = s.cfg.AIRagContextThreshold
+			}
+		}
+		if contextSimilarityThreshold >= shortCircuitSimilarityThreshold {
+			contextSimilarityThreshold = shortCircuitSimilarityThreshold - 0.4
 		}
 
-		// Retrieve Top 3 tickets
-		tickets, err := s.kbRepo.SearchSimilarTickets(ctx, vec, 3, threshold)
-		if err != nil {
-			slog.WarnContext(ctx, "RAG: search tickets failed", slog.Any("error", err))
+		similarTickets, ticketSearchErr := s.kbRepo.SearchSimilarTickets(ctx, vec, 3, contextSimilarityThreshold)
+		if ticketSearchErr != nil {
+			slog.WarnContext(ctx, "RAG: search tickets failed", slog.Any("error", ticketSearchErr))
 		}
 
-		// RAG Short-circuit: check if Top 1 ticket matches with >= 0.85 similarity (distance < 0.15)
-		if len(tickets) > 0 && tickets[0].Distance < 0.15 {
-			closestTicket := tickets[0]
-			similarity := 1.0 - closestTicket.Distance
-			slog.InfoContext(ctx, "RAG short-circuit triggered: resolved ticket matched with high similarity",
+		// Log top-1 match similarity for diagnostics
+		if len(similarTickets) > 0 {
+			slog.InfoContext(ctx, "RAG: top-1 match similarity",
 				slog.Uint64("ticket_id", uint64(ticketID)),
-				slog.Uint64("matched_sample_ticket_id", uint64(closestTicket.ID)),
-				slog.Float64("similarity", similarity),
+				slog.Uint64("matched_sample_id", uint64(similarTickets[0].ID)),
+				slog.Float64("similarity", similarTickets[0].Similarity),
+				slog.Float64("similarity_pct", similarTickets[0].Similarity*100),
+				slog.Float64("short_circuit_threshold", shortCircuitSimilarityThreshold),
+				slog.Bool("will_short_circuit", similarTickets[0].Similarity >= shortCircuitSimilarityThreshold),
+			)
+		}
+
+		// RAG Short-circuit: Top-1 similarity >= threshold → high similarity → skip AI, return cached result
+		if len(similarTickets) > 0 && similarTickets[0].Similarity >= shortCircuitSimilarityThreshold {
+			closest := similarTickets[0]
+			slog.InfoContext(ctx, "RAG short-circuit: high-similarity sample found, bypassing AI",
+				slog.Uint64("ticket_id", uint64(ticketID)),
+				slog.Uint64("matched_sample_id", uint64(closest.ID)),
+				slog.Float64("similarity", closest.Similarity),
+				slog.Float64("similarity_pct", closest.Similarity*100),
+				slog.Float64("threshold", shortCircuitSimilarityThreshold),
 			)
 
 			dbResult := &model.AITicketTriageResult{
 				TicketID:              ticket.ID,
-				Category:              closestTicket.TriageCategory,
-				UrgencyLevel:          closestTicket.TriageUrgencyLevel,
-				SLABreachRisk:         closestTicket.TriageSLABreachRisk,
-				ReasonSummary:         fmt.Sprintf("RAG Short-circuit: matched historical sample ticket ID %d (similarity: %.2f%%). Reason: %s", closestTicket.ID, similarity*100, closestTicket.TriageReasonSummary),
-				RecommendedNextAction: closestTicket.TriageRecommendedNextAction,
-				ConfidenceScore:       1.0, // Maximum confidence since we found a near-exact match
+				Category:              closest.TriageCategory,
+				UrgencyLevel:          closest.TriageUrgencyLevel,
+				SLABreachRisk:         closest.TriageSLABreachRisk,
+				ReasonSummary:         closest.TriageReasonSummary,
+				RecommendedNextAction: closest.TriageRecommendedNextAction,
+				ConfidenceScore:       closest.TriageConfidenceScore,
 				FallbackUsed:          false,
-				PromptVersion:         "rag_short_circuit_v1.0",
 			}
 
 			if err := s.triageRepo.Create(ctx, dbResult); err != nil {
-				slog.ErrorContext(ctx, "failed to save triage result from RAG short-circuit",
+				slog.ErrorContext(ctx, "failed to save RAG short-circuit result",
 					slog.Uint64("ticket_id", uint64(ticketID)),
 					slog.Any("db_error", err),
 				)
@@ -337,18 +350,21 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 			}, nil
 		}
 
-		// Retrieve Top 2 departments
-		departments, err := s.kbRepo.SearchSimilarDepartments(ctx, vec, 2, threshold)
-		if err != nil {
-			slog.WarnContext(ctx, "RAG: search departments failed", slog.Any("error", err))
+		// No short-circuit: enrich AI prompt with top-N context from vector DB
+		departments, deptSearchErr := s.kbRepo.SearchSimilarDepartments(ctx, vec, 1, contextSimilarityThreshold)
+		if deptSearchErr != nil {
+			slog.WarnContext(ctx, "RAG: search departments failed", slog.Any("error", deptSearchErr))
 		}
 
-		// Format context for LLM
-		ragContext = s.buildRAGContext(departments, tickets)
+		ragContext = s.buildRAGContext(departments, similarTickets)
+		slog.InfoContext(ctx, "RAG context built, proceeding to AI",
+			slog.Uint64("ticket_id", uint64(ticketID)),
+			slog.Int("matched_tickets", len(similarTickets)),
+			slog.Int("matched_departments", len(departments)),
+		)
 	}
 
 	promptData.KnowledgeContext = ragContext
-
 
 	// Layer 4: AI Classification — send enriched prompt to LLM via Fallback Chain
 	timeoutSecs := 15
@@ -359,6 +375,11 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 	defer cancel()
 
 	aiResult, aiErr := s.aiAdapter.AnalyzeTicket(aiCtx, promptData)
+
+	if aiResult.ConfidenceScore > 1.0 {
+		aiResult.ConfidenceScore = aiResult.ConfidenceScore / 100.0
+	}
+
 	if aiErr != nil {
 		slog.WarnContext(ctx, "AI adapter failed, evaluating fallback",
 			slog.Uint64("ticket_id", uint64(ticketID)),

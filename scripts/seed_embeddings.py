@@ -1,13 +1,15 @@
 import os
 import re
 import sys
+import time
 import requests
 import psycopg2
 from psycopg2.extras import execute_batch
 from dotenv import load_dotenv
 
-# Load environment variables from the root .env file
-load_dotenv(dotenv_path="../.env")
+# Load environment variables from the root .env file relative to this script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(dotenv_path=os.path.join(script_dir, "../.env"))
 
 # Database configuration
 DB_HOST     = os.getenv("DB_HOST", "localhost")
@@ -31,14 +33,27 @@ def clean_text(text: str) -> str:
 
 
 def get_embedding(text: str) -> list[float]:
-    """Call Ollama /api/embeddings endpoint — same model as Go backend uses."""
-    resp = requests.post(
-        f"{OLLAMA_URL}/api/embeddings",
-        json={"model": OLLAMA_MODEL, "prompt": text},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()["embedding"]
+    """Call Ollama /api/embed endpoint — same model as Go backend uses."""
+    max_retries = 3
+    for attempt in range(1, max_retries + 1):
+        try:
+            resp = requests.post(
+                f"{OLLAMA_URL}/api/embed",
+                json={"model": OLLAMA_MODEL, "input": text},
+                timeout=120,  # 120s to allow cold-start model loading
+            )
+            resp.raise_for_status()
+            embeddings = resp.json().get("embeddings", [])
+            if not embeddings:
+                raise ValueError("No embeddings returned from Ollama")
+            return embeddings[0]
+        except requests.exceptions.Timeout:
+            if attempt < max_retries:
+                wait = attempt * 10
+                print(f"\n  [Timeout] Attempt {attempt}/{max_retries} — model loading, retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
 
 
 def check_ollama():

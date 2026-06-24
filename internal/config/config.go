@@ -70,9 +70,10 @@ type Config struct {
 	AIWorkerPoolSize    int
 
 	// Embedding Microservice
-	EmbeddingServiceURL string
-	EmbeddingModel      string
-	AIRagThreshold      float64
+	EmbeddingServiceURL      string
+	EmbeddingModel           string
+	AIRagThreshold           float64 
+	AIRagContextThreshold    float64 
 }
 
 func init() {
@@ -122,7 +123,13 @@ func LoadConfig() *Config {
 	aiRagThresholdStr := getEnv("AI_RAG_THRESHOLD")
 	aiRagThreshold, err := strconv.ParseFloat(aiRagThresholdStr, 64)
 	if err != nil || aiRagThreshold == 0.0 {
-		aiRagThreshold = 0.6
+		aiRagThreshold = 0.9 
+	}
+
+	aiRagContextThresholdStr := getEnv("AI_RAG_CONTEXT_THRESHOLD")
+	aiRagContextThreshold, err := strconv.ParseFloat(aiRagContextThresholdStr, 64)
+	if err != nil || aiRagContextThreshold == 0.0 {
+		aiRagContextThreshold = 0.4 
 	}
 
 
@@ -175,9 +182,10 @@ func LoadConfig() *Config {
 		AIMaxBatchSize:      aiMaxBatchSize,
 		AIWorkerPoolSize:    aiWorkerPoolSize,
 
-		EmbeddingServiceURL: getEmbeddingServiceURL(),
-		EmbeddingModel:      getEmbeddingModel(),
-		AIRagThreshold:      aiRagThreshold,
+		EmbeddingServiceURL:   getEmbeddingServiceURL(),
+		EmbeddingModel:        getEmbeddingModel(),
+		AIRagThreshold:        aiRagThreshold,
+		AIRagContextThreshold: aiRagContextThreshold,
 	}
 
 	return cfg
@@ -249,8 +257,6 @@ func getEnvInt(key string) int {
 	return intVal
 }
 
-// loadEnv tries to load .env from the current and parent directories
-// Useful when running tests from subdirectories like internal/service/
 func loadEnv() error {
 	paths := []string{".env", "../.env", "../../.env", "../../../.env"}
 	for _, p := range paths {
@@ -261,7 +267,6 @@ func loadEnv() error {
 	return fmt.Errorf("no .env file found")
 }
 
-// getEmbeddingServiceURL returns the configured embedding service URL.
 func getEmbeddingServiceURL() string {
 	url := getEnv("EMBEDDING_SERVICE_URL")
 	if url == "" {
