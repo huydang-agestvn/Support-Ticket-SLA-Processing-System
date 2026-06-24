@@ -576,7 +576,7 @@ func (s *triageServiceImpl) calculateRuleEngineSLARisk(
 			reasonDurationInfo = fmt.Sprintf("SLA is overdue by %s, requiring immediate escalation", now.Sub(*slaDueAt).Round(time.Minute).String())
 		} else {
 			timeLeft := slaDueAt.Sub(now)
-			if timeLeft <= 2*time.Hour {
+			if timeLeft <= 4*time.Hour {
 				slaBreachRisk = "high"
 				reasonDurationInfo = fmt.Sprintf("there are only %s left before SLA breach, leaving very little room for delay", timeLeft.Round(time.Minute).String())
 			} else if timeLeft <= 24*time.Hour {

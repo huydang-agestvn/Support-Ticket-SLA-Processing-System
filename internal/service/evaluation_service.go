@@ -252,7 +252,7 @@ func (s *evaluationServiceImpl) evaluateCases(
 		promptData := ai.TriagePromptData{
 			Ticket:      ticket,
 			Events:      ticket.Events,
-			SLAPolicy:   "Max resolution time is determined by priority: High (4h), Medium (24h), Low (48h).",
+			SLAPolicy:   "Max resolution time is determined as follows: High (4h), Medium (24h), Low (48h).",
 			DailyReport: report,
 			TimeLeft:    s.buildSLAEvidence(ticket, ticketNow),
 		}

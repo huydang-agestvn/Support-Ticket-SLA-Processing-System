@@ -264,6 +264,11 @@ func (s *triageServiceImpl) triageSingleTicket(ctx context.Context, t model.Tick
 	defer cancel()
 
 	aiResult, aiErr := s.aiAdapter.AnalyzeTicket(aiCtx, promptData)
+	if aiErr == nil && aiResult != nil {
+		if aiResult.ConfidenceScore > 1.0 {
+			aiResult.ConfidenceScore = aiResult.ConfidenceScore / 100.0
+		}
+	}
 	if aiErr != nil {
 		slog.WarnContext(ctx, "AI adapter failed, evaluating fallback",
 			slog.Uint64("ticket_id", uint64(t.ID)),

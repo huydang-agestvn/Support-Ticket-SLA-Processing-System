@@ -65,10 +65,12 @@ func (o *OllamaAdapter) AnalyzeTicketWithVersion(ctx context.Context, data Triag
 			"urgency_level": map[string]any{
 				"type":        "string",
 				"description": "Urgency level",
+				"enum":        []string{"Low", "Medium", "High"},
 			},
 			"sla_breach_risk": map[string]any{
 				"type":        "string",
 				"description": "Risk of SLA breach",
+				"enum":        []string{"Low", "Medium", "High"},
 			},
 			"reason_summary": map[string]any{
 				"type":        "string",
