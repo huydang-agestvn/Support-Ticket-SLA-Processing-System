@@ -18,7 +18,6 @@ import (
 	"support-ticket.com/internal/migration"
 	"support-ticket.com/internal/repository"
 	"support-ticket.com/internal/router"
-	"support-ticket.com/internal/seeding"
 	"support-ticket.com/internal/service"
 )
 
@@ -54,11 +53,6 @@ func (a *App) Run() error {
 	// 3. Run Migrations
 	if err := migration.RunMigrations(a.db); err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
-	}
-
-	// 4. Run Seeding
-	if err := seeding.SeedAIEvaluationCases(a.db); err != nil {
-		return fmt.Errorf("failed to run seeding: %w", err)
 	}
 
 	// 5. Setup Dependency Injection

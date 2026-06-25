@@ -3563,4 +3563,269 @@ INSERT INTO sample_tickets (
         0.97
     );
 
+-- ----------------------------------------------------------------
+-- AI Evaluation Cases
+-- ----------------------------------------------------------------
+
+INSERT INTO ai_evaluation_cases (
+    id,
+    test_title,
+    input_snapshot,
+    expected_category,
+    expected_urgency,
+    expected_sla_breach_risk,
+    created_at,
+    updated_at,
+    created_by,
+    updated_by
+) VALUES
+    (
+        1,
+        'Category & Urgency - Core IT Infrastructure Failure',
+        '{"id":101,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":null,"title":"Database Connection Pool Exhausted on Floor 18","description":"Production database is dropping connections. All backend APIs failing downstream in Room dev003.","priority":"high","status":"new","created_at":"2026-06-25T07:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-25T18:00:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T09:30:00+07:00","events":[]}',
+        'IT002',
+        'high',
+        'medium',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        2,
+        'Category & Urgency - Standard HR Request',
+        '{"id":102,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":null,"title":"Request template for annual self-review on Floor 12A","description":"Where can I download the latest performance evaluation template for backend engineers? I am currently working in Room dev001 on Floor 12A.","priority":"low","status":"new","created_at":"2026-06-25T09:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-29T17:00:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[]}',
+        'HR002',
+        'low',
+        'low',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        3,
+        'Category & Urgency - Physical Facilities Maintenance',
+        '{"id":103,"requestor_id":"b082136e-ba3a-4494-a095-126d05c7c2e7","assignee_id":"9ee00625-0436-4f11-8bb1-b9e4f3f7bf88","title":"Air conditioner leaking water in boardroom on Floor 12A","description":"Water is dripping directly onto the conference table power outlets in the Floor 12A boardroom.","priority":"medium","status":"assigned","created_at":"2026-06-25T09:15:00+07:00","resolved_at":null,"sla_due_at":"2026-06-26T17:00:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[{"id":1,"ticket_id":103,"from_status":"new","to_status":"assigned","requestor_id":"facilities-bot","assignee_id":"9ee00625-0436-4f11-8bb1-b9e4f3f7bf88","note":"Assigned to floor technician","created_at":"2026-06-25T09:20:00+07:00"}]}',
+        'FC001',
+        'medium',
+        'low',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        4,
+        'SLA Breach Risk - Imminent Deadline (1 Hour Left)',
+        '{"id":104,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":"9ee00625-0436-4f11-8bb1-b9e4f3f7bf88","title":"Onboarding credentials for incoming VP of Engineering on Floor 19","description":"Executive arrives shortly at Room pmo001 on Floor 19. Access credentials have not been provisioned yet.","priority":"high","status":"assigned","created_at":"2026-06-25T11:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-25T16:30:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[{"id":1,"ticket_id":104,"from_status":"new","to_status":"assigned","requestor_id":"hr-onboarding","assignee_id":"9ee00625-0436-4f11-8bb1-b9e4f3f7bf88","note":"Routed to sysadmin pool","created_at":"2026-06-25T11:15:00+07:00"}]}',
+        'IT003',
+        'high',
+        'high',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        5,
+        'SLA Breach Risk - Imminent Threshold Closeby',
+        '{"id":105,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":"9ee00625-0436-4f11-8bb1-b9e4f3f7bf88","title":"Repair server room backup generator sensor on Floor 18","description":"Faulty safety alerts popping up on monitoring panels in Room dev004 on Floor 18. Deadline is approaching quickly.","priority":"high","status":"assigned","created_at":"2026-06-25T09:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-25T16:00:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[]}',
+        'FC001',
+        'high',
+        'high',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        6,
+        'SLA Breach Risk - Stuck In Progress near window',
+        '{"id":106,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":"3be00111-0436-4f11-8bb1-b9e4f3f7bf99","title":"Urgent payroll data correction for Floor 12A C&B team","description":"Discovered widespread mid-month salary calculation errors. The HR team in Room fin001 on Floor 12A needs a database patch.","priority":"high","status":"in_progress","created_at":"2026-06-25T12:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-25T16:00:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[{"id":1,"ticket_id":106,"from_status":"new","to_status":"assigned","requestor_id":"hr-lead","assignee_id":"3be00111-0436-4f11-8bb1-b9e4f3f7bf99","note":"Assigned to C&B lead","created_at":"2026-06-25T12:30:00+07:00"},{"id":2,"ticket_id":106,"from_status":"assigned","to_status":"in_progress","requestor_id":"3be00111-0436-4f11-8bb1-b9e4f3f7bf99","assignee_id":"3be00111-0436-4f11-8bb1-b9e4f3f7bf99","note":"Reviewing accounting database logs","created_at":"2026-06-25T13:00:00+07:00"}]}',
+        'HR001',
+        'high',
+        'high',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        7,
+        'Duplicate Events - Repeating identical assignment loops',
+        '{"id":107,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":"9ee00625-0436-4f11-8bb1-b9e4f3f7bf88","title":"VPN token renewal failure for engineer on Floor 18","description":"Token generation script returns 500 error. The engineer in Room qa002 on Floor 18 is completely blocked.","priority":"medium","status":"assigned","created_at":"2026-06-25T09:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-26T17:00:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[{"id":1,"ticket_id":107,"from_status":"new","to_status":"assigned","requestor_id":"system","assignee_id":"9ee00625-0436-4f11-8bb1-b9e4f3f7bf88","note":"Auto-assigned","created_at":"2026-06-25T09:01:00+07:00"},{"id":2,"ticket_id":107,"from_status":"assigned","to_status":"assigned","requestor_id":"system","assignee_id":"9ee00625-0436-4f11-8bb1-b9e4f3f7bf88","note":"Duplicate event auto-trigger - No status change","created_at":"2026-06-25T09:02:00+07:00"}]}',
+        'IT002',
+        'medium',
+        'low',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        8,
+        'Duplicate Events - Sudden status jumping and reversals',
+        '{"id":108,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":null,"title":"Replace broken office chair wheels on Floor 18","description":"Requesting a replacement for broken office chair wheels in the dev003 room located on Floor 18.","priority":"low","status":"new","created_at":"2026-06-25T10:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-25T21:30:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[{"id":1,"ticket_id":108,"from_status":"new","to_status":"assigned","requestor_id":"operator","assignee_id":"5aa00111-0436-4f11-8bb1-b9e4f3f7bf22","note":"Assigned","created_at":"2026-06-25T10:30:00+07:00"},{"id":2,"ticket_id":108,"from_status":"assigned","to_status":"new","requestor_id":"operator","assignee_id":null,"note":"Reverted back to new due to operator error","created_at":"2026-06-25T11:00:00+07:00"}]}',
+        'FC001',
+        'low',
+        'low',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        9,
+        'Unclear Description - Mangled English Internet Slang & Acronyms',
+        '{"id":109,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":null,"title":"System crash and login failure on Floor 18","description":"Critical login failure on Floor 18. Screen went black and cannot access production database from Room dev004.","priority":"low","status":"new","created_at":"2026-06-25T15:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-27T15:30:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[]}',
+        'IT003',
+        'high',
+        'low',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        10,
+        'Unclear Description - Brief text with no core details',
+        '{"id":110,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":null,"title":"Unable to print documents on Floor 18 printer","description":"The network printer in Room qa002 on Floor 18 is not responding to any print jobs from my laptop.","priority":"low","status":"new","created_at":"2026-06-25T15:15:00+07:00","resolved_at":null,"sla_due_at":"2026-06-27T15:15:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[]}',
+        'IT002',
+        'medium',
+        'low',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        11,
+        'Contradictory Context - Alarmist Title but Low Urgency Body',
+        '{"id":111,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":null,"title":"Swap old extension cord in Floor 12A meeting room","description":"Can someone help swap the old extension cord in meeting room mt001 on Floor 12A? It works but looks messy.","priority":"high","status":"new","created_at":"2026-06-25T11:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-27T15:30:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[]}',
+        'FC001',
+        'low',
+        'low',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        12,
+        'Contradictory Context - Low Title but Highly Dangerous Body',
+        '{"id":112,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":null,"title":"Exposed high-voltage wires under leak in Floor 18 pantry","description":"There are exposed high-voltage spark wires right under the water leakage point in the pantry 18 room.","priority":"low","status":"new","created_at":"2026-06-25T14:20:00+07:00","resolved_at":null,"sla_due_at":"2026-06-25T16:20:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[]}',
+        'FC001',
+        'high',
+        'high',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        13,
+        'System Stack Trace Dump - K8s CrashLoopBackOff',
+        '{"id":113,"requestor_id":"alert-manager-bot","assignee_id":null,"title":"K8s Pod CrashLoopBackOff on Floor 19 auth service","description":"Fatal error in Room pmo001 on Floor 19: failed to initialize secure store connection, context deadline exceeded.","priority":"high","status":"new","created_at":"2026-06-25T14:25:00+07:00","resolved_at":null,"sla_due_at":"2026-06-25T16:25:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[]}',
+        'IT002',
+        'high',
+        'high',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        14,
+        'SLA Breach Risk - Untouched ''New'' status for 24+ hours',
+        '{"id":114,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":null,"title":"Health insurance premium renewal assistance on Floor 12A","description":"Need the HR team in Room fin001 on Floor 12A to sign dependent declaration forms before the regional cutoff.","priority":"medium","status":"new","created_at":"2026-06-24T15:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-25T17:30:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[]}',
+        'HR001',
+        'medium',
+        'high',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        15,
+        'Category & Urgency - Security Access Management',
+        '{"id":115,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":null,"title":"Revoke production DB access for contractor on Floor 19","description":"Contractor has offboarded from Room pmo001 on Floor 19. Need immediate database permission revocation.","priority":"high","status":"new","created_at":"2026-06-25T15:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-26T17:00:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[]}',
+        'IT003',
+        'high',
+        'low',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        16,
+        'Unclear Description - Semi-structured mixed logging text',
+        '{"id":116,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":null,"title":"Log anomaly detected on Floor 19 servers","description":"Suspicious activity in Room pmo001 on Floor 19: repeated 403 status on HR salary endpoints from local IP.","priority":"medium","status":"new","created_at":"2026-06-25T15:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-26T21:00:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[]}',
+        'IT003',
+        'high',
+        'low',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        17,
+        'Category & Urgency - General HR Inquiry',
+        '{"id":117,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":null,"title":"Paternity leave policy duration query for Floor 12A staff","description":"How many consecutive paid weeks off does the company allocate for new fathers? Sent from Room dev001 on Floor 12A.","priority":"low","status":"new","created_at":"2026-06-25T09:00:00+07:00","resolved_at":null,"sla_due_at":"2026-07-01T09:00:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[]}',
+        'HR001',
+        'low',
+        'low',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        18,
+        'Duplicate Events - Massive identical event logs',
+        '{"id":118,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":null,"title":"Empty water cooler bottle on Floor 18 lounge","description":"Please deliver a replacement water bottle to the Floor 18 lounge room near the reception area.","priority":"low","status":"new","created_at":"2026-06-25T09:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-27T09:00:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[{"id":1,"ticket_id":118,"from_status":"new","to_status":"new","requestor_id":"user-1","note":"Initial request ping","created_at":"2026-06-25T09:05:00+07:00"},{"id":2,"ticket_id":118,"from_status":"new","to_status":"new","requestor_id":"user-1","note":"Initial request ping","created_at":"2026-06-25T09:05:00+07:00"}]}',
+        'FC003',
+        'low',
+        'low',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        19,
+        'Unclear Description - Cryptic Short Title & Vague Body',
+        '{"id":119,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":null,"title":"Missing official stamp for HR contracts on Floor 12A","description":"The employee contract paperwork in Room fin001 on Floor 12A is missing the official company stamp.","priority":"low","status":"new","created_at":"2026-06-25T09:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-29T09:00:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[]}',
+        'HR003',
+        'low',
+        'low',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    ),
+    (
+        20,
+        'SLA Breach Risk - Medium urgency near threshold',
+        '{"id":120,"requestor_id":"0a5389df-ba3a-4494-a095-126d05c7c2e7","assignee_id":"9ee00625-0436-4f11-8bb1-b9e4f3f7bf88","title":"On-call mouse replacement request on Floor 18","description":"Developer mouse is broken in Room dev003 on Floor 18. Requesting a standard office supply replacement.","priority":"low","status":"assigned","created_at":"2026-06-25T09:00:00+07:00","resolved_at":null,"sla_due_at":"2026-06-25T16:00:00+07:00","cancelled_at":null,"evaluation_current_time":"2026-06-25T15:30:00+07:00","events":[{"id":1,"ticket_id":120,"from_status":"new","to_status":"assigned","requestor_id":"procurement-team","assignee_id":"9ee00625-0436-4f11-8bb1-b9e4f3f7bf88","note":"Assigned to desk logistics","created_at":"2026-06-25T09:10:00+07:00"}]}',
+        'IT001',
+        'low',
+        'high',
+        NOW(),
+        NOW(),
+        'system',
+        'system'
+    )
+ON CONFLICT (id) DO UPDATE SET
+    test_title = EXCLUDED.test_title,
+    input_snapshot = EXCLUDED.input_snapshot,
+    expected_category = EXCLUDED.expected_category,
+    expected_urgency = EXCLUDED.expected_urgency,
+    expected_sla_breach_risk = EXCLUDED.expected_sla_breach_risk,
+    updated_at = now();
+
 COMMIT;
+
