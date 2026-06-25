@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    image: postgres:16-alpine
     container_name: ticket-sla-postgres
     command: postgres -c timezone=Asia/Ho_Chi_Minh -c log_timezone=Asia/Ho_Chi_Minh
     environment:

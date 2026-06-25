@@ -246,7 +246,7 @@ func TestContentSafetyService_BlocksSpamAndGibberish(t *testing.T) {
 		{name: "AlphanumericGibberishMultiToken", text: "xkq34pzm bvw92fjd", category: service.ContentSafetyCategoryGibberish},
 		{name: "ShortRandomAlphaToken", text: "aiwebvafqda support request", category: service.ContentSafetyCategoryGibberish},
 		{name: "ShortRandomAlphaTokenTwo", text: "qzxvbnmpoi support request", category: service.ContentSafetyCategoryGibberish},
-		{name: "ShortRandomAlphaTokenEightChars", text: "adawdawd support request", category: service.ContentSafetyCategoryGibberish},
+		{name: "ShortRandomAlphaTokenEightChars", text: "qzxvbnmp support request", category: service.ContentSafetyCategoryGibberish},
 		{name: "SymbolDigitNoise", text: "@@@###$$$%%%1234567890", category: service.ContentSafetyCategoryGibberish},
 		{name: "SymbolDigitNoiseAfterValidText", text: "Please check my VPN connection after login. !@#$%^&*()_+1234567890", category: service.ContentSafetyCategoryGibberish},
 		{name: "MixedSymbolDigitNoise", text: "abc123!!!@@@###999xyz", category: service.ContentSafetyCategoryGibberish},
@@ -366,6 +366,11 @@ func TestContentSafetyService_AllowsKnowledgeBaseSeedTickets(t *testing.T) {
 			name:  "IT002WifiVPNOutage",
 			title: "Entire accounting department lost Wi-Fi and VPN access connection",
 			text:  "Dear IT Helpdesk, the entire accounting team on Floor 18 suddenly lost Wi-Fi connection and cannot authenticate via VPN. We are in the middle of closing the month-end financial statements. Please check the local access point immediately.",
+		},
+		{
+			name:  "IT002VPNSpeedDegradation",
+			title: "Inconsistent VPN speeds during peak afternoon hours",
+			text:  "Every day around 3 PM, the VPN connection slows down to 100kbps, making it impossible to pull large docker images from the registry.",
 		},
 		{
 			name:  "IT002HomebrewPermissions",

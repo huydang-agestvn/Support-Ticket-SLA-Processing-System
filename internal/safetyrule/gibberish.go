@@ -19,7 +19,7 @@ const (
 	minNumericNoiseDigits        = 16
 	minShortRandomAlphaLength    = 8
 	maxShortRandomAlphaLength    = 16
-	maxShortRandomKnownRatio     = 0.75
+	maxShortRandomKnownRatio     = 0.50
 	minRepeatedUnitWordLength    = 12
 	minRepeatedUnitCount         = 3
 	minMixedSymbolNoiseLength    = 16
@@ -353,6 +353,7 @@ func vowelRatio(word string) float64 {
 }
 
 func containsUnnaturalAlphanumericSegments(tokens []string) bool {
+	suspiciousShortTokens := map[string]bool{}
 	for _, token := range tokens {
 		if !isAlphanumericASCII(token) || !containsASCIILetterAndDigit(token) {
 			continue
@@ -362,12 +363,19 @@ func containsUnnaturalAlphanumericSegments(tokens []string) bool {
 				continue
 			}
 			total, rare, rareRun := bigramStats(segment)
-			if isUnnaturalBigramDistribution(total, rare, rareRun) || isUnnaturalLongAlphanumericSegment(segment, total, rare) {
+			if isUnnaturalLongAlphanumericSegment(segment, total, rare) {
 				return true
+			}
+			if isUnnaturalBigramDistribution(total, rare, rareRun) {
+				suspiciousShortTokens[token] = true
 			}
 		}
 	}
-	return false
+
+	if len(suspiciousShortTokens) >= 2 {
+		return true
+	}
+	return len(suspiciousShortTokens) == 1 && len(tokens) <= 2
 }
 
 func isUnnaturalLongAlphanumericSegment(segment string, total, rare int) bool {
@@ -443,6 +451,9 @@ func containsUnnaturalLetterBigrams(words []string) bool {
 		if commonSupportWords[word] {
 			continue
 		}
+		if len(word) < minSegmentBigramLength {
+			continue
+		}
 
 		wordTotal, wordRare, wordRareRun := bigramStats(word)
 		if len(word) >= minBigramGibberishWordLength && isUnnaturalBigramDistribution(wordTotal, wordRare, wordRareRun) {
@@ -461,7 +472,7 @@ func containsUnnaturalLetterBigrams(words []string) bool {
 	}
 
 	return totalBigrams >= minBigramGibberishWordLength-1 &&
-		len(words) <= 3 &&
+		len(words) <= 5 &&
 		float64(rareBigrams)/float64(totalBigrams) >= maxRareBigramRatio
 }
 
@@ -483,7 +494,7 @@ func containsShortRandomAlphaToken(words []string) bool {
 			continue
 		}
 		knownRatio := float64(total-rare) / float64(total)
-		if knownRatio <= maxShortRandomKnownRatio || rareRun >= 2 {
+		if knownRatio <= maxShortRandomKnownRatio || rareRun >= 3 {
 			suspiciousWords[word] = true
 		}
 	}
@@ -585,5 +596,10 @@ var commonSupportWords = map[string]bool{
 	"request": true, "response": true, "router": true, "service": true, "software": true,
 	"submitted": true, "suddenly": true, "support": true, "system": true, "technical": true, "terrible": true, "ticket": true,
 	"transaction": true, "troubleshooting": true, "update": true, "upgrade": true, "workplace": true,
-	"keyboard": true, "keychron": true,
+	"keyboard": true, "keychron": true, "organization": true, "initialize": true, "repository": true,
+	"offboarded": true, "contractor": true, "temperature": true, "engineering": true, "specialized": true,
+	"cartridges": true, "cartridge": true, "verification": true, "inconsistent": true, "resignation": true,
+	"scheduling": true, "revocation": true, "consultant": true, "decoration": true, "meeting": true,
+	"workshop": true, "quarterly": true, "townhall": true, "catering": true, "afternoon": true,
+	"impossible": true, "registry": true,
 }
