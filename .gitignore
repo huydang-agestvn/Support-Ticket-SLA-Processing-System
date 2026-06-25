@@ -34,4 +34,5 @@ go.work.sum
 ai-model/
 export_jsonl.go
 dataset.jsonl
-scripts/venv
+scripts/
+internal/migration/tickets_data

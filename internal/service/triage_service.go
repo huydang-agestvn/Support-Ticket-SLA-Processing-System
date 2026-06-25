@@ -192,13 +192,11 @@ func requestIDFromContext(ctx context.Context) string {
 func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*response.TriageResponse, error) {
 	slog.InfoContext(ctx, "initiating AI triage", slog.Uint64("ticket_id", uint64(ticketID)))
 
+	// Layer 1: Content Safety Filter + input validation (inside buildTriageContext)
 	ticket, promptData, err := s.buildTriageContext(ctx, ticketID)
 	if err != nil {
 		return nil, err
 	}
-
-	// Layer 1: Content Safety Filter — handled inside buildTriageContext() above
-	// (blocks profanity, spam, gibberish before any processing)
 
 	// Layer 2: Rule Engine — short-circuit for high-confidence keyword/regex matches
 	if ruleResult, matched, correctedCategory := s.evaluateUrgencyRuleEngine(ctx, ticket.Title, ticket.Description, string(ticket.Category), ticket.SLADueAt); matched {
@@ -210,24 +208,7 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 				slog.String("urgency_level", ruleResult.UrgencyLevel),
 				slog.String("sla_breach_risk", ruleResult.SLABreachRisk),
 			)
-
-			// Asynchronously update ticket category in database
-			go func(tID uint, cat string) {
-				bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-				if err := s.ticketRepo.UpdateCategory(bgCtx, tID, model.TicketCategory(cat)); err != nil {
-					slog.Error("failed to asynchronously update ticket category in DB",
-						slog.Uint64("ticket_id", uint64(tID)),
-						slog.String("category", cat),
-						slog.Any("error", err),
-					)
-				} else {
-					slog.Info("asynchronously updated ticket category in DB successfully",
-						slog.Uint64("ticket_id", uint64(tID)),
-						slog.String("category", cat),
-					)
-				}
-			}(ticketID, correctedCategory)
+			s.asyncUpdateTicketCategory(ticketID, correctedCategory)
 		} else {
 			slog.InfoContext(ctx, "Urgency Level Rule Engine short-circuit triggered",
 				slog.Uint64("ticket_id", uint64(ticketID)),
@@ -236,204 +217,39 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 				slog.String("sla_breach_risk", ruleResult.SLABreachRisk),
 			)
 		}
-
-		dbResult := &model.AITicketTriageResult{
-			TicketID:              ticket.ID,
-			Category:              ruleResult.Category,
-			UrgencyLevel:          ruleResult.UrgencyLevel,
-			SLABreachRisk:         ruleResult.SLABreachRisk,
-			ReasonSummary:         ruleResult.ReasonSummary,
-			RecommendedNextAction: ruleResult.RecommendedNextAction,
-			ConfidenceScore:       ruleResult.ConfidenceScore,
-			FallbackUsed:          ruleResult.FallbackUsed,
-			PromptVersion:         ruleResult.PromptVersion,
+		dbResult := triageResultFromResponse(ticket.ID, ruleResult)
+		if err := s.saveTriageResult(ctx, ticketID, dbResult); err != nil {
+			return nil, err
 		}
-
-		if err := s.triageRepo.Create(ctx, dbResult); err != nil {
-			slog.ErrorContext(ctx, "failed to save triage result from rule engine",
-				slog.Uint64("ticket_id", uint64(ticketID)),
-				slog.Any("db_error", err),
-			)
-			return nil, fmt.Errorf("failed to save triage result: %w", err)
-		}
-
 		return ruleResult, nil
 	}
 
 	// Layer 3: Field Selector + RAG Retrieval
-	var vec []float32
-	var embeddingErr error
-	if s.embeddingClient != nil {
-		// 1. Field Selector: normalize ticket text (title + description combined)
-		normalizedText := ai.NormalizeTicketForEmbedding(ticket.Title, ticket.Description)
-		slog.InfoContext(ctx, "RAG: normalized text for embedding", slog.String("text", normalizedText))
-		// 2. Generate embedding vector via Ollama
-		vec, embeddingErr = s.embeddingClient.GetEmbedding(ctx, normalizedText)
-		if embeddingErr != nil {
-			slog.WarnContext(ctx, "RAG: failed to get embedding, proceeding without RAG", slog.Any("error", embeddingErr))
-		}
+	vec, _ := s.generateEmbedding(ctx, ticket.Title, ticket.Description)
+	ragContext, shortCircuitResp, ragErr := s.executeRAGLayer(ctx, ticketID, ticket, vec, promptData)
+	if ragErr != nil {
+		return nil, ragErr
 	}
-
-	var ragContext string
-
-	if embeddingErr == nil && vec != nil && s.kbRepo != nil {
-		shortCircuitSimilarityThreshold := 0.5 
-		contextSimilarityThreshold := 0.4    
-		if s.cfg != nil {
-			if s.cfg.AIRagThreshold > 0 {
-				shortCircuitSimilarityThreshold = s.cfg.AIRagThreshold
-			}
-			if s.cfg.AIRagContextThreshold > 0 {
-				contextSimilarityThreshold = s.cfg.AIRagContextThreshold
-			}
-		}
-		if contextSimilarityThreshold >= shortCircuitSimilarityThreshold {
-			contextSimilarityThreshold = shortCircuitSimilarityThreshold - 0.4
-		}
-
-		similarTickets, ticketSearchErr := s.kbRepo.SearchSimilarTickets(ctx, vec, 3, contextSimilarityThreshold)
-		if ticketSearchErr != nil {
-			slog.WarnContext(ctx, "RAG: search tickets failed", slog.Any("error", ticketSearchErr))
-		}
-
-		// Log top-1 match similarity for diagnostics
-		if len(similarTickets) > 0 {
-			slog.InfoContext(ctx, "RAG: top-1 match similarity",
-				slog.Uint64("ticket_id", uint64(ticketID)),
-				slog.Uint64("matched_sample_id", uint64(similarTickets[0].ID)),
-				slog.Float64("similarity", similarTickets[0].Similarity),
-				slog.Float64("similarity_pct", similarTickets[0].Similarity*100),
-				slog.Float64("short_circuit_threshold", shortCircuitSimilarityThreshold),
-				slog.Bool("will_short_circuit", similarTickets[0].Similarity >= shortCircuitSimilarityThreshold),
-			)
-		}
-
-		// RAG Short-circuit: Top-1 similarity >= threshold → high similarity → skip AI, return cached result
-		if len(similarTickets) > 0 && similarTickets[0].Similarity >= shortCircuitSimilarityThreshold {
-			closest := similarTickets[0]
-			slog.InfoContext(ctx, "RAG short-circuit: high-similarity sample found, bypassing AI",
-				slog.Uint64("ticket_id", uint64(ticketID)),
-				slog.Uint64("matched_sample_id", uint64(closest.ID)),
-				slog.Float64("similarity", closest.Similarity),
-				slog.Float64("similarity_pct", closest.Similarity*100),
-				slog.Float64("threshold", shortCircuitSimilarityThreshold),
-			)
-
-			dbResult := &model.AITicketTriageResult{
-				TicketID:              ticket.ID,
-				Category:              closest.TriageCategory,
-				UrgencyLevel:          closest.TriageUrgencyLevel,
-				SLABreachRisk:         closest.TriageSLABreachRisk,
-				ReasonSummary:         closest.TriageReasonSummary,
-				RecommendedNextAction: closest.TriageRecommendedNextAction,
-				ConfidenceScore:       closest.TriageConfidenceScore,
-				FallbackUsed:          false,
-			}
-
-			if err := s.triageRepo.Create(ctx, dbResult); err != nil {
-				slog.ErrorContext(ctx, "failed to save RAG short-circuit result",
-					slog.Uint64("ticket_id", uint64(ticketID)),
-					slog.Any("db_error", err),
-				)
-				return nil, fmt.Errorf("failed to save triage result: %w", err)
-			}
-
-			return &response.TriageResponse{
-				Category:              dbResult.Category,
-				UrgencyLevel:          dbResult.UrgencyLevel,
-				SLABreachRisk:         dbResult.SLABreachRisk,
-				ReasonSummary:         dbResult.ReasonSummary,
-				RecommendedNextAction: dbResult.RecommendedNextAction,
-				ConfidenceScore:       dbResult.ConfidenceScore,
-				FallbackUsed:          dbResult.FallbackUsed,
-				PromptVersion:         dbResult.PromptVersion,
-			}, nil
-		}
-
-		// No short-circuit: enrich AI prompt with top-N context from vector DB
-		departments, deptSearchErr := s.kbRepo.SearchSimilarDepartments(ctx, vec, 1, contextSimilarityThreshold)
-		if deptSearchErr != nil {
-			slog.WarnContext(ctx, "RAG: search departments failed", slog.Any("error", deptSearchErr))
-		}
-
-		ragContext = s.buildRAGContext(departments, similarTickets)
-		slog.InfoContext(ctx, "RAG context built, proceeding to AI",
-			slog.Uint64("ticket_id", uint64(ticketID)),
-			slog.Int("matched_tickets", len(similarTickets)),
-			slog.Int("matched_departments", len(departments)),
-		)
+	if shortCircuitResp != nil {
+		return shortCircuitResp, nil
 	}
-
 	promptData.KnowledgeContext = ragContext
 
 	// Layer 4: AI Classification — send enriched prompt to LLM via Fallback Chain
-	timeoutSecs := 15
-	if s.cfg != nil && s.cfg.AITimeoutSecs > 0 {
-		timeoutSecs = s.cfg.AITimeoutSecs
-	}
-	aiCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSecs)*time.Second)
-	defer cancel()
+	aiRaw, aiErr := s.runAIClassification(ctx, ticketID, promptData)
+	finalResult := ai.ApplyFallbackIfNeeded(aiRaw, aiErr, ticket)
 
-	aiResult, aiErr := s.aiAdapter.AnalyzeTicket(aiCtx, promptData)
-
-	if aiResult.ConfidenceScore > 1.0 {
-		aiResult.ConfidenceScore = aiResult.ConfidenceScore / 100.0
-	}
-
-	if aiErr != nil {
-		slog.WarnContext(ctx, "AI adapter failed, evaluating fallback",
-			slog.Uint64("ticket_id", uint64(ticketID)),
-			slog.Any("ai_error", aiErr),
-		)
-	} else if aiResult != nil && aiResult.ConfidenceScore < 0.5 {
-		slog.WarnContext(ctx, "AI returned low confidence, fallback will be triggered",
-			slog.Uint64("ticket_id", uint64(ticketID)),
-			slog.Float64("confidence_score", aiResult.ConfidenceScore),
-			slog.String("ai_category", aiResult.Category),
-			slog.String("ai_reason", aiResult.ReasonSummary),
-		)
-	}
-
-	finalResult := ai.ApplyFallbackIfNeeded(aiResult, aiErr, ticket)
-
-	dbResult := &model.AITicketTriageResult{
-		TicketID:              ticket.ID,
-		Category:              finalResult.Category,
-		UrgencyLevel:          finalResult.UrgencyLevel,
-		SLABreachRisk:         finalResult.SLABreachRisk,
-		ReasonSummary:         finalResult.ReasonSummary,
-		RecommendedNextAction: finalResult.RecommendedNextAction,
-		ConfidenceScore:       finalResult.ConfidenceScore,
-		FallbackUsed:          finalResult.FallbackUsed,
-		PromptVersion:         finalResult.PromptVersion,
-	}
-
-	// Layer 5: Save result + return response
-	if err := s.triageRepo.Create(ctx, dbResult); err != nil {
-		slog.ErrorContext(ctx, "failed to save triage result",
-			slog.Uint64("ticket_id", uint64(ticketID)),
-			slog.Any("db_error", err),
-		)
-		return nil, fmt.Errorf("failed to save triage result: %w", err)
+	// Layer 5: Persist result + return response
+	dbResult := triageResultFromAI(ticket.ID, finalResult)
+	if err := s.saveTriageResult(ctx, ticketID, dbResult); err != nil {
+		return nil, err
 	}
 
 	slog.InfoContext(ctx, "triage completed successfully",
 		slog.Uint64("ticket_id", uint64(ticketID)),
 		slog.Bool("fallback_used", finalResult.FallbackUsed),
 	)
-
-	apiResponse := &response.TriageResponse{
-		Category:              finalResult.Category,
-		UrgencyLevel:          finalResult.UrgencyLevel,
-		SLABreachRisk:         finalResult.SLABreachRisk,
-		ReasonSummary:         finalResult.ReasonSummary,
-		RecommendedNextAction: finalResult.RecommendedNextAction,
-		ConfidenceScore:       finalResult.ConfidenceScore,
-		FallbackUsed:          finalResult.FallbackUsed,
-		PromptVersion:         finalResult.PromptVersion,
-	}
-
-	return apiResponse, nil
+	return toTriageResponse(dbResult), nil
 }
 
 func (s *triageServiceImpl) GetLatestTriageResult(ctx context.Context, ticketID uint) (*response.TriageResponse, error) {
@@ -608,4 +424,254 @@ func (s *triageServiceImpl) calculateRuleEngineSLARisk(
 		action, p.Name, p.Floor)
 
 	return slaBreachRisk, reasonSummary, recommendedNextAction
+}
+
+// toTriageResponse converts an AITicketTriageResult model to a TriageResponse DTO.
+func toTriageResponse(r *model.AITicketTriageResult) *response.TriageResponse {
+	return &response.TriageResponse{
+		Category:              r.Category,
+		UrgencyLevel:          r.UrgencyLevel,
+		SLABreachRisk:         r.SLABreachRisk,
+		ReasonSummary:         r.ReasonSummary,
+		RecommendedNextAction: r.RecommendedNextAction,
+		ConfidenceScore:       r.ConfidenceScore,
+		FallbackUsed:          r.FallbackUsed,
+		PromptVersion:         r.PromptVersion,
+	}
+}
+
+// saveTriageResult persists a triage result to the database.
+func (s *triageServiceImpl) saveTriageResult(ctx context.Context, ticketID uint, dbResult *model.AITicketTriageResult) error {
+	if err := s.triageRepo.Create(ctx, dbResult); err != nil {
+		slog.ErrorContext(ctx, "failed to save triage result",
+			slog.Uint64("ticket_id", uint64(ticketID)),
+			slog.Any("db_error", err),
+		)
+		return fmt.Errorf("failed to save triage result: %w", err)
+	}
+	return nil
+}
+
+// triageResultFromResponse builds an AITicketTriageResult from a TriageResponse DTO.
+func triageResultFromResponse(ticketID uint, r *response.TriageResponse) *model.AITicketTriageResult {
+	return &model.AITicketTriageResult{
+		TicketID:              ticketID,
+		Category:              r.Category,
+		UrgencyLevel:          r.UrgencyLevel,
+		SLABreachRisk:         r.SLABreachRisk,
+		ReasonSummary:         r.ReasonSummary,
+		RecommendedNextAction: r.RecommendedNextAction,
+		ConfidenceScore:       r.ConfidenceScore,
+		FallbackUsed:          r.FallbackUsed,
+		PromptVersion:         r.PromptVersion,
+	}
+}
+
+// triageResultFromAI builds an AITicketTriageResult from a raw ai.TriageResult.
+func triageResultFromAI(ticketID uint, r *ai.TriageResult) *model.AITicketTriageResult {
+	return &model.AITicketTriageResult{
+		TicketID:              ticketID,
+		Category:              r.Category,
+		UrgencyLevel:          r.UrgencyLevel,
+		SLABreachRisk:         r.SLABreachRisk,
+		ReasonSummary:         r.ReasonSummary,
+		RecommendedNextAction: r.RecommendedNextAction,
+		ConfidenceScore:       r.ConfidenceScore,
+		FallbackUsed:          r.FallbackUsed,
+		PromptVersion:         r.PromptVersion,
+	}
+}
+
+// asyncUpdateTicketCategory asynchronously corrects the ticket category in the database.
+func (s *triageServiceImpl) asyncUpdateTicketCategory(ticketID uint, correctedCategory string) {
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := s.ticketRepo.UpdateCategory(bgCtx, ticketID, model.TicketCategory(correctedCategory)); err != nil {
+			slog.Error("failed to asynchronously update ticket category in DB",
+				slog.Uint64("ticket_id", uint64(ticketID)),
+				slog.String("category", correctedCategory),
+				slog.Any("error", err),
+			)
+		} else {
+			slog.Info("asynchronously updated ticket category in DB successfully",
+				slog.Uint64("ticket_id", uint64(ticketID)),
+				slog.String("category", correctedCategory),
+			)
+		}
+	}()
+}
+
+// resolveRAGThresholds returns (shortCircuitThreshold, contextThreshold) from config with safe defaults.
+func (s *triageServiceImpl) resolveRAGThresholds() (shortCircuit, contextThreshold float64) {
+	shortCircuit = 0.5
+	contextThreshold = 0.4
+	if s.cfg != nil {
+		if s.cfg.AIRagThreshold > 0 {
+			shortCircuit = s.cfg.AIRagThreshold
+		}
+		if s.cfg.AIRagContextThreshold > 0 {
+			contextThreshold = s.cfg.AIRagContextThreshold
+		}
+	}
+	if contextThreshold >= shortCircuit {
+		contextThreshold = shortCircuit - 0.4
+	}
+	return shortCircuit, contextThreshold
+}
+
+// generateEmbedding normalizes ticket text and returns an embedding vector.
+// Returns nil vector (and nil error) if no embeddingClient is configured.
+func (s *triageServiceImpl) generateEmbedding(ctx context.Context, title, description string) ([]float32, error) {
+	if s.embeddingClient == nil {
+		return nil, nil
+	}
+	normalizedText := ai.NormalizeTicketForEmbedding(title, description)
+	slog.InfoContext(ctx, "RAG: normalized text for embedding", slog.String("text", normalizedText))
+	vec, err := s.embeddingClient.GetEmbedding(ctx, normalizedText)
+	if err != nil {
+		slog.WarnContext(ctx, "RAG: failed to get embedding, proceeding without RAG", slog.Any("error", err))
+		return nil, err
+	}
+	return vec, nil
+}
+
+// executeRAGLayer performs vector search, short-circuits on high-similarity match,
+// or returns enriched RAG context string for the AI prompt.
+// Returns (ragContext, triageResponse, error). If triageResponse != nil, caller should return it immediately.
+func (s *triageServiceImpl) executeRAGLayer(ctx context.Context, ticketID uint, ticket *model.Ticket, vec []float32, promptData ai.TriagePromptData) (string, *response.TriageResponse, error) {
+	if vec == nil || s.kbRepo == nil {
+		return "", nil, nil
+	}
+
+	shortCircuitThreshold, contextThreshold := s.resolveRAGThresholds()
+
+	similarTickets, err := s.kbRepo.SearchSimilarTickets(ctx, vec, 3, contextThreshold)
+	if err != nil {
+		slog.WarnContext(ctx, "RAG: search tickets failed", slog.Any("error", err))
+	}
+
+	if len(similarTickets) > 0 {
+		top := similarTickets[0]
+		slog.InfoContext(ctx, "RAG: top-1 match similarity",
+			slog.Uint64("ticket_id", uint64(ticketID)),
+			slog.Uint64("matched_sample_id", uint64(top.ID)),
+			slog.Float64("similarity", top.Similarity),
+			slog.Float64("similarity_pct", top.Similarity*100),
+			slog.Float64("short_circuit_threshold", shortCircuitThreshold),
+			slog.Bool("will_short_circuit", top.Similarity >= shortCircuitThreshold),
+		)
+
+		if top.Similarity >= shortCircuitThreshold {
+			slog.InfoContext(ctx, "RAG short-circuit: high-similarity sample found, bypassing AI",
+				slog.Uint64("ticket_id", uint64(ticketID)),
+				slog.Uint64("matched_sample_id", uint64(top.ID)),
+				slog.Float64("similarity", top.Similarity),
+				slog.Float64("threshold", shortCircuitThreshold),
+			)
+
+			reasonSummary := top.TriageReasonSummary
+			slaBreachRisk := top.TriageSLABreachRisk
+			timeLeftStr := "Unknown"
+
+			if ticket.SLADueAt != nil {
+				now := time.Now()
+				if now.After(*ticket.SLADueAt) {
+					reasonSummary += fmt.Sprintf(" SLA is overdue by %s", now.Sub(*ticket.SLADueAt).Round(time.Minute).String())
+					slaBreachRisk = "overdue"
+					timeLeftStr = "Overdue"
+				} else {
+					timeLeft := ticket.SLADueAt.Sub(now)
+					timeLeftStr = timeLeft.Round(time.Minute).String()
+					reasonSummary += fmt.Sprintf(" Time remaining before SLA breach: %s", timeLeftStr)
+					if timeLeft <= 4*time.Hour {
+						slaBreachRisk = "high"
+					} else if timeLeft <= 24*time.Hour && slaBreachRisk == "low" {
+						slaBreachRisk = "medium"
+					}
+				}
+			}
+
+			if len(promptData.Events) > 0 {
+				lastEvent := promptData.Events[len(promptData.Events)-1]
+				reasonSummary += fmt.Sprintf(". The history event: %s with note: %s", string(lastEvent.ToStatus), lastEvent.Note)
+			}
+
+			recommendedNextAction := top.TriageRecommendedNextAction
+			if ticket.Status != model.StatusNew && len(promptData.Events) > 0 {
+				nextActionData := ai.NextActionPromptData{
+					ReasonSummary: reasonSummary,
+					TimeLeft:      timeLeftStr,
+					Events:        promptData.Events,
+				}
+				slog.InfoContext(ctx, "invoking Next-Action Agent for short-circuited ticket", slog.Uint64("ticket_id", uint64(ticketID)))
+				action, err := s.aiAdapter.DetermineNextAction(ctx, nextActionData)
+				if err != nil {
+					slog.WarnContext(ctx, "failed to get next action from AI, falling back to static", slog.Any("error", err))
+				} else if action != "" {
+					recommendedNextAction = action
+				}
+			}
+
+			dbResult := &model.AITicketTriageResult{
+				TicketID:              ticket.ID,
+				Category:              top.TriageCategory,
+				UrgencyLevel:          top.TriageUrgencyLevel,
+				SLABreachRisk:         slaBreachRisk,
+				ReasonSummary:         reasonSummary,
+				RecommendedNextAction: recommendedNextAction,
+				ConfidenceScore:       top.Similarity,
+				FallbackUsed:          false,
+			}
+			if err := s.saveTriageResult(ctx, ticketID, dbResult); err != nil {
+				return "", nil, err
+			}
+			return "", toTriageResponse(dbResult), nil
+		}
+	}
+
+	departments, deptErr := s.kbRepo.SearchSimilarDepartments(ctx, vec, 1, contextThreshold)
+	if deptErr != nil {
+		slog.WarnContext(ctx, "RAG: search departments failed", slog.Any("error", deptErr))
+	}
+
+	ragContext := s.buildRAGContext(departments, similarTickets)
+	slog.InfoContext(ctx, "RAG context built, proceeding to AI",
+		slog.Uint64("ticket_id", uint64(ticketID)),
+		slog.Int("matched_tickets", len(similarTickets)),
+		slog.Int("matched_departments", len(departments)),
+	)
+	return ragContext, nil, nil
+}
+
+// runAIClassification calls the AI adapter with a timeout, normalizes confidence score, and logs warnings.
+func (s *triageServiceImpl) runAIClassification(ctx context.Context, ticketID uint, promptData ai.TriagePromptData) (*ai.TriageResult, error) {
+	timeoutSecs := 15
+	if s.cfg != nil && s.cfg.AITimeoutSecs > 0 {
+		timeoutSecs = s.cfg.AITimeoutSecs
+	}
+	aiCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSecs)*time.Second)
+	defer cancel()
+
+	aiResult, aiErr := s.aiAdapter.AnalyzeTicket(aiCtx, promptData)
+
+	if aiResult != nil && aiResult.ConfidenceScore > 1.0 {
+		aiResult.ConfidenceScore = aiResult.ConfidenceScore / 100.0
+	}
+
+	if aiErr != nil {
+		slog.WarnContext(ctx, "AI adapter failed, evaluating fallback",
+			slog.Uint64("ticket_id", uint64(ticketID)),
+			slog.Any("ai_error", aiErr),
+		)
+	} else if aiResult != nil && aiResult.ConfidenceScore < 0.5 {
+		slog.WarnContext(ctx, "AI returned low confidence, fallback will be triggered",
+			slog.Uint64("ticket_id", uint64(ticketID)),
+			slog.Float64("confidence_score", aiResult.ConfidenceScore),
+			slog.String("ai_category", aiResult.Category),
+			slog.String("ai_reason", aiResult.ReasonSummary),
+		)
+	}
+
+	return aiResult, aiErr
 }
