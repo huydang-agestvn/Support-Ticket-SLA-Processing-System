@@ -39,6 +39,7 @@ var Rules = []Rule{
 	groupedRule("partially_masked_common_profanity", CategoryProfanity, "ticket contains partially masked inappropriate language", MatchUnicode, `f`+obfuscationSeparator+`u?`+obfuscationSeparator+`c`+obfuscationSeparator+`k(?:s|ing|in)?`, `sh`+obfuscationSeparator+`t`, `b`+obfuscationSeparator+`tch`, `c`+obfuscationSeparator+`nt`),
 	groupedRule("abbreviated_common_profanity", CategoryProfanity, "ticket contains abbreviated inappropriate language", MatchUnicode, `f`+obfuscationSeparator+`k(?:s|ing|in)?`, `f`+obfuscationSeparator+`c`+obfuscationSeparator+`k(?:s|ing|in)?`, `f`+obfuscationSeparator+`u`+obfuscationSeparator+`k(?:s|ing|in)?`),
 	groupedRule("obfuscated_common_profanity", CategoryProfanity, "ticket contains obfuscated inappropriate language", MatchUnicode, obfuscatedWordPattern("fuck"), obfuscatedWordPattern("shit"), obfuscatedWordPattern("bitch"), obfuscatedWordPattern("cunt")),
+	groupedRule("obfuscated_leet_profanity", CategoryProfanity, "ticket contains repeated leet inappropriate language", MatchObfuscated, obfuscatedWordPattern("fuck"), obfuscatedWordPattern("shit"), obfuscatedWordPattern("bitch"), obfuscatedWordPattern("asshole"), obfuscatedWordPattern("bastard"), obfuscatedWordPattern("cunt")),
 	groupedRule("obfuscated_common_insult", CategoryInsult, "ticket contains obfuscated insulting language", MatchUnicode, obfuscatedWordPattern("idiot"), `st[\s._*\-]*[ou]+[\s._*\-]*p[\s._*\-]*i[\s._*\-]*d`, obfuscatedWordPattern("moron")),
 	groupedRule("gambling_spam", CategorySpam, "ticket contains gambling promotional content", MatchNormalized, `casino promotion`, `place a bet`, `betting promotion`, `gambling promotion`),
 	groupedRule("adult_content_spam", CategorySpam, "ticket contains adult promotional content", MatchNormalized, `porn links`, `free porn`, `adult links`, `xxx links`, `nsfw links`),
@@ -68,7 +69,7 @@ func groupedRule(name, category, reason string, input MatchInput, alternatives .
 func obfuscatedWordPattern(word string) string {
 	parts := make([]string, 0, len(word))
 	for _, r := range word {
-		parts = append(parts, regexp.QuoteMeta(string(r)))
+		parts = append(parts, regexp.QuoteMeta(string(r))+`+`)
 	}
 	return strings.Join(parts, obfuscationSeparator)
 }
