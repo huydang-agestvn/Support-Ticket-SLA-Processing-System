@@ -10,7 +10,7 @@ type TriageResponse struct {
 	RecommendedNextAction string  `json:"recommended_next_action"`
 	ConfidenceScore       float64 `json:"confidence_score"`
 	FallbackUsed          bool    `json:"fallback_used"`
-	PromptVersion         string  `json:"prompt_version"`
+	PromptVersion         string  `json:"prompt_version,omitempty"`
 }
 
 type BatchTriageResponseItem struct {
@@ -22,7 +22,7 @@ type BatchTriageResponseItem struct {
 	RecommendedNextAction string  `json:"recommended_next_action"`
 	ConfidenceScore       float64 `json:"confidence_score"`
 	FallbackUsed          bool    `json:"fallback_used"`
-	PromptVersion         string  `json:"prompt_version"`
+	PromptVersion         string  `json:"prompt_version,omitempty"`
 }
 
 type BatchTriageResponse struct {

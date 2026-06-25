@@ -10,7 +10,7 @@ type AITicketTriageResult struct {
 	RecommendedNextAction string  `json:"recommended_next_action" gorm:"column:recommended_next_action;type:text"`
 	ConfidenceScore       float64 `json:"confidence_score" gorm:"column:confidence_score;type:numeric(5,4)"`
 	FallbackUsed          bool    `json:"fallback_used" gorm:"column:fallback_used;default:false"`
-	PromptVersion         string  `json:"prompt_version" gorm:"column:prompt_version;type:varchar(50)"`
+	PromptVersion         string  `json:"prompt_version,omitempty" gorm:"column:prompt_version;type:varchar(50)"`
 
 	AuditModel 
 
