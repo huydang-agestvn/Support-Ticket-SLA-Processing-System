@@ -20,6 +20,9 @@ const (
 	minShortRandomAlphaLength    = 8
 	maxShortRandomAlphaLength    = 16
 	maxShortRandomKnownRatio     = 0.75
+	minRepeatedUnitWordLength    = 12
+	minRepeatedUnitCount         = 3
+	minMixedSymbolNoiseLength    = 16
 )
 
 type MatchResult struct {
@@ -41,6 +44,12 @@ func detectGibberish(raw, normalized string) (MatchResult, bool) {
 	if total >= minSymbolDigitNoiseLength && symbols >= 6 && digits >= 6 && letters == 0 {
 		return gibberishMatch("symbol_digit_noise", "ticket content is mostly symbols and numbers"), true
 	}
+	if containsSymbolDigitNoiseToken(raw) {
+		return gibberishMatch("symbol_digit_noise", "ticket content contains random-looking symbols and numbers"), true
+	}
+	if containsMixedSymbolDigitNoise(raw) {
+		return gibberishMatch("mixed_symbol_digit_noise", "ticket content contains random-looking symbols and numbers"), true
+	}
 
 	tokens := strings.Fields(normalized)
 	if looksLikeNumericNoise(tokens) {
@@ -60,6 +69,9 @@ func detectGibberish(raw, normalized string) (MatchResult, bool) {
 	}
 	if hasRepeatedRun(normalized, 12, unicode.IsLetter) || hasRepeatedRun(raw, 10, isPunctuation) {
 		return gibberishMatch("repeated_characters", "ticket content contains repeated characters"), true
+	}
+	if containsRepeatedUnit(words) {
+		return gibberishMatch("repeated_nonsense", "ticket content appears to be meaningless repetition"), true
 	}
 	if len(words) >= 6 && mostRepeatedWordRatio(words) >= 0.80 {
 		return gibberishMatch("repeated_words", "ticket content repeats the same words"), true
@@ -114,6 +126,34 @@ func countLetters(text string) int {
 		}
 	}
 	return count
+}
+
+func containsMixedSymbolDigitNoise(text string) bool {
+	for _, token := range strings.Fields(text) {
+		letters, digits, symbols := countSafetyTextClasses(token)
+		total := letters + digits + symbols
+		if total < minMixedSymbolNoiseLength {
+			continue
+		}
+		if letters >= 3 && digits >= 3 && symbols >= 4 && float64(symbols)/float64(total) >= 0.25 {
+			return true
+		}
+	}
+	return false
+}
+
+func containsSymbolDigitNoiseToken(text string) bool {
+	for _, token := range strings.Fields(text) {
+		letters, digits, symbols := countSafetyTextClasses(token)
+		total := letters + digits + symbols
+		if total < minSymbolDigitNoiseLength {
+			continue
+		}
+		if letters == 0 && digits >= 6 && symbols >= 6 {
+			return true
+		}
+	}
+	return false
 }
 
 func meaningfulWords(normalized string) []string {
@@ -226,17 +266,77 @@ func looksLikeRepeatedNonsense(words []string) bool {
 	return false
 }
 
-func containsUnnaturalVowelRatio(words []string) bool {
+func containsRepeatedUnit(words []string) bool {
 	for _, word := range words {
-		if !isAlphabeticASCIIWord(word) || len(word) < minVowelRatioWordLength {
+		if !isAlphabeticASCIIWord(word) || len(word) < minRepeatedUnitWordLength {
 			continue
 		}
-		ratio := vowelRatio(word)
-		if ratio < minNaturalVowelRatio || ratio > maxNaturalVowelRatio {
+		if commonSupportWords[word] {
+			continue
+		}
+		if hasRepeatedUnit(word) {
 			return true
 		}
 	}
 	return false
+}
+
+func hasRepeatedUnit(word string) bool {
+	runes := []rune(word)
+	for unitSize := 2; unitSize <= len(runes)/minRepeatedUnitCount; unitSize++ {
+		if len(runes)%unitSize != 0 {
+			continue
+		}
+		unit := string(runes[:unitSize])
+		if isSingleRuneRepeated(unit) {
+			continue
+		}
+		repeated := true
+		for start := unitSize; start < len(runes); start += unitSize {
+			if string(runes[start:start+unitSize]) != unit {
+				repeated = false
+				break
+			}
+		}
+		if repeated {
+			return true
+		}
+	}
+	return false
+}
+
+func isSingleRuneRepeated(text string) bool {
+	runes := []rune(text)
+	if len(runes) == 0 {
+		return false
+	}
+	for _, r := range runes[1:] {
+		if r != runes[0] {
+			return false
+		}
+	}
+	return true
+}
+
+func containsUnnaturalVowelRatio(words []string) bool {
+	suspiciousWords := map[string]bool{}
+	for _, word := range words {
+		if !isAlphabeticASCIIWord(word) || len(word) < minVowelRatioWordLength {
+			continue
+		}
+		if commonSupportWords[word] {
+			continue
+		}
+		ratio := vowelRatio(word)
+		if ratio < minNaturalVowelRatio || ratio > maxNaturalVowelRatio {
+			suspiciousWords[word] = true
+		}
+	}
+
+	if len(suspiciousWords) >= 2 {
+		return true
+	}
+	return len(suspiciousWords) == 1 && len(words) <= 3
 }
 
 func vowelRatio(word string) float64 {
@@ -334,26 +434,39 @@ func alphabeticSegments(token string) []string {
 func containsUnnaturalLetterBigrams(words []string) bool {
 	totalBigrams := 0
 	rareBigrams := 0
+	suspiciousWords := map[string]bool{}
 
 	for _, word := range words {
 		if !isAlphabeticASCIIWord(word) {
 			continue
 		}
+		if commonSupportWords[word] {
+			continue
+		}
 
 		wordTotal, wordRare, wordRareRun := bigramStats(word)
 		if len(word) >= minBigramGibberishWordLength && isUnnaturalBigramDistribution(wordTotal, wordRare, wordRareRun) {
-			return true
+			suspiciousWords[word] = true
 		}
 
 		totalBigrams += wordTotal
 		rareBigrams += wordRare
 	}
 
+	if len(suspiciousWords) >= 2 {
+		return true
+	}
+	if len(suspiciousWords) == 1 {
+		return len(words) <= 3
+	}
+
 	return totalBigrams >= minBigramGibberishWordLength-1 &&
+		len(words) <= 3 &&
 		float64(rareBigrams)/float64(totalBigrams) >= maxRareBigramRatio
 }
 
 func containsShortRandomAlphaToken(words []string) bool {
+	suspiciousWords := map[string]bool{}
 	for _, word := range words {
 		if !isAlphabeticASCIIWord(word) {
 			continue
@@ -371,10 +484,14 @@ func containsShortRandomAlphaToken(words []string) bool {
 		}
 		knownRatio := float64(total-rare) / float64(total)
 		if knownRatio <= maxShortRandomKnownRatio || rareRun >= 2 {
-			return true
+			suspiciousWords[word] = true
 		}
 	}
-	return false
+
+	if len(suspiciousWords) >= 2 {
+		return true
+	}
+	return len(suspiciousWords) == 1 && len(words) <= 3
 }
 
 func isAlphabeticASCIIWord(word string) bool {
@@ -459,13 +576,14 @@ var commonSupportWords = map[string]bool{
 	"anything": true, "approval": true, "asset": true, "attached": true, "authentication": true, "authorization": true,
 	"backend": true, "balance": true, "boyfriend": true, "broken": true, "browser": true, "callback": true,
 	"certificate": true, "characterization": true, "configuration": true, "connect": true, "connection": true, "controller": true,
-	"credential": true, "database": true, "detected": true, "developer": true, "disconnect": true, "distribution": true,
-	"electromagnetic": true, "employee": true, "equipment": true, "failed": true, "failure": true,
-	"facilities": true, "gateway": true, "hardware": true, "incident": true, "internal": true,
+	"credential": true, "database": true, "deployment": true, "detected": true, "developer": true, "disconnect": true, "distribution": true,
+	"download": true, "electromagnetic": true, "employee": true, "equipment": true, "failed": true, "failure": true,
+	"facilities": true, "feedback": true, "gateway": true, "hardware": true, "helpdesk": true, "homebrew": true, "incident": true, "internal": true,
 	"internationalization": true, "investigation": true, "laptop": true, "login": true, "maintenance": true,
 	"malfunction": true, "manager": true, "network": true, "occurred": true, "password": true, "payment": true,
-	"permission": true, "printer": true, "production": true, "reconciliation": true, "replacement": true,
+	"permission": true, "physical": true, "printer": true, "production": true, "reconciliation": true, "replacement": true,
 	"request": true, "response": true, "router": true, "service": true, "software": true,
-	"submitted": true, "support": true, "system": true, "technical": true, "terrible": true, "ticket": true,
+	"submitted": true, "suddenly": true, "support": true, "system": true, "technical": true, "terrible": true, "ticket": true,
 	"transaction": true, "troubleshooting": true, "update": true, "upgrade": true, "workplace": true,
+	"keyboard": true, "keychron": true,
 }

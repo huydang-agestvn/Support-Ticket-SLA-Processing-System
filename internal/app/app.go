@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -20,7 +18,6 @@ import (
 	"support-ticket.com/internal/migration"
 	"support-ticket.com/internal/repository"
 	"support-ticket.com/internal/router"
-	"support-ticket.com/internal/safetyrule"
 	"support-ticket.com/internal/seeding"
 	"support-ticket.com/internal/service"
 )
@@ -111,12 +108,11 @@ func (a *App) setupDependencies() {
 
 	kbRepo := repository.NewKnowledgeBaseRepository(a.db)
 	embeddingClient := ai.NewEmbeddingClient(a.cfg.EmbeddingServiceURL, a.cfg.EmbeddingModel, a.cfg.AITimeoutSecs)
-	contentSafetyML := a.contentSafetyClassifier()
 
-	ticketService := service.NewTicketService(ticketRepo, eventRepo, contentSafetyML)
+	ticketService := service.NewTicketService(ticketRepo, eventRepo)
 	eventService := service.NewTicketEventService(eventRepo, ticketRepo, auditLogger)
 	reportService := service.NewReportService(reportRepo)
-	triageService := service.NewTriageService(ticketRepo, reportRepo, triageRepo, kbRepo, aiAdapter, embeddingClient, a.cfg, contentSafetyML)
+	triageService := service.NewTriageService(ticketRepo, reportRepo, triageRepo, kbRepo, aiAdapter, embeddingClient, a.cfg)
 	evaluationService := service.NewEvaluationService(evaluationRepo, reportRepo, aiAdapter)
 
 	ticketHandler := handler.NewTicketHandler(ticketService)
@@ -157,22 +153,6 @@ func (a *App) setupDependencies() {
 	// 6. Initialize EmailService and Cron Scheduler
 	emailService := service.NewEmailService(a.cfg)
 	a.scheduler = cron.NewScheduler(reportService, emailService)
-}
-
-func (a *App) contentSafetyClassifier() safetyrule.MLClassifier {
-	if a.cfg == nil || strings.TrimSpace(a.cfg.TicketSafetyMLURL) == "" {
-		return safetyrule.NoopMLClassifier{}
-	}
-
-	timeoutSecs := a.cfg.TicketSafetyMLTimeout
-	if timeoutSecs <= 0 {
-		timeoutSecs = 3
-	}
-
-	return safetyrule.NewHTTPMLClassifier(
-		a.cfg.TicketSafetyMLURL,
-		time.Duration(timeoutSecs)*time.Second,
-	)
 }
 
 func (a *App) startServer() error {

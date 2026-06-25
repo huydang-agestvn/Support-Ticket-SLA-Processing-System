@@ -15,7 +15,6 @@ import (
 	"support-ticket.com/internal/errmsgs"
 	"support-ticket.com/internal/model"
 	"support-ticket.com/internal/repository"
-	"support-ticket.com/internal/safetyrule"
 )
 
 type TriageService interface {
@@ -43,7 +42,6 @@ func NewTriageService(
 	aiAdapter ai.TriageAdapter,
 	embeddingClient *ai.EmbeddingClient,
 	cfg *config.Config,
-	ml ...safetyrule.MLClassifier,
 ) TriageService {
 	return &triageServiceImpl{
 		ticketRepo:      ticketRepo,
@@ -53,7 +51,7 @@ func NewTriageService(
 		aiAdapter:       aiAdapter,
 		embeddingClient: embeddingClient,
 		cfg:             cfg,
-		contentSafety:   NewContentSafetyService(ml...),
+		contentSafety:   NewContentSafetyService(),
 	}
 }
 

@@ -74,10 +74,6 @@ type Config struct {
 	EmbeddingModel        string
 	AIRagThreshold        float64
 	AIRagContextThreshold float64
-
-	// Ticket safety ML scorer
-	TicketSafetyMLURL     string
-	TicketSafetyMLTimeout int
 }
 
 func init() {
@@ -136,11 +132,6 @@ func LoadConfig() *Config {
 		aiRagContextThreshold = 0.4
 	}
 
-	ticketSafetyMLTimeout := getEnvIntWithFallback("TICKET_SAFETY_ML_TIMEOUT_SECS", "ML_SIDECAR_TIMEOUT_SECS")
-	if ticketSafetyMLTimeout == 0 {
-		ticketSafetyMLTimeout = 3
-	}
-
 	cfg := &Config{
 		// Database: Found environment variables for database configuration
 		DBHost:     getEnv("DB_HOST"),
@@ -194,9 +185,6 @@ func LoadConfig() *Config {
 		EmbeddingModel:        getEmbeddingModel(),
 		AIRagThreshold:        aiRagThreshold,
 		AIRagContextThreshold: aiRagContextThreshold,
-
-		TicketSafetyMLURL:     getTicketSafetyMLURL(),
-		TicketSafetyMLTimeout: ticketSafetyMLTimeout,
 	}
 
 	return cfg
@@ -304,15 +292,4 @@ func getEmbeddingModel() string {
 		return "nomic-embed-text"
 	}
 	return model
-}
-
-func getTicketSafetyMLURL() string {
-	url := getEnv("TICKET_SAFETY_ML_URL")
-	if url == "" {
-		url = getEnv("ML_SIDECAR_URL")
-	}
-	if url == "" {
-		return "http://ticket-safety-ml:8000/score"
-	}
-	return url
 }

@@ -238,6 +238,7 @@ func TestContentSafetyService_BlocksSpamAndGibberish(t *testing.T) {
 	}{
 		{name: "Symbols", text: "@@@@@@@@@@@@@@@", category: service.ContentSafetyCategoryGibberish},
 		{name: "RepeatedNonsense", text: "asdfasdfasdfasdf", category: service.ContentSafetyCategoryGibberish},
+		{name: "RepeatedShortUnitNonsense", text: "abcabcabcabcabcabcabc", category: service.ContentSafetyCategoryGibberish},
 		{name: "RareLetterBigrams", text: "aldhakdgaidkadnnhoahpwdph", category: service.ContentSafetyCategoryGibberish},
 		{name: "RareLetterBigramsAcrossWords", text: "adkaugdaadadkja dbdavwdhadkaga", category: service.ContentSafetyCategoryGibberish},
 		{name: "RareLetterBigramsWithDiacritic", text: "VPN failed! adwadhăadawdadawdhqiaddawakd", category: service.ContentSafetyCategoryGibberish},
@@ -247,6 +248,8 @@ func TestContentSafetyService_BlocksSpamAndGibberish(t *testing.T) {
 		{name: "ShortRandomAlphaTokenTwo", text: "qzxvbnmpoi support request", category: service.ContentSafetyCategoryGibberish},
 		{name: "ShortRandomAlphaTokenEightChars", text: "adawdawd support request", category: service.ContentSafetyCategoryGibberish},
 		{name: "SymbolDigitNoise", text: "@@@###$$$%%%1234567890", category: service.ContentSafetyCategoryGibberish},
+		{name: "SymbolDigitNoiseAfterValidText", text: "Please check my VPN connection after login. !@#$%^&*()_+1234567890", category: service.ContentSafetyCategoryGibberish},
+		{name: "MixedSymbolDigitNoise", text: "abc123!!!@@@###999xyz", category: service.ContentSafetyCategoryGibberish},
 		{name: "LongNumericNoise", text: "29047298472946920472094", category: service.ContentSafetyCategoryGibberish},
 		{name: "IsolatedLetterNoise", title: "VPN failed!  ư    d            ", category: service.ContentSafetyCategoryGibberish},
 		{name: "IsolatedLetterNoiseWithNormalDescription", title: "VPN failed!  ư    d            ", text: "Please help me check the VPN connection.", category: service.ContentSafetyCategoryGibberish},
@@ -282,6 +285,11 @@ func TestContentSafetyService_RequiredBlockedCases(t *testing.T) {
 		{name: "ObfuscatedProfanitySpaces", title: "f u c k", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
 		{name: "ObfuscatedProfanityHyphens", title: "f-u-c-k", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
 		{name: "ObfuscatedProfanityStars", title: "f*u*c*k", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
+		{name: "ObfuscatedProfanityAtSign", title: "f@ck laptop failure", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
+		{name: "ObfuscatedProfanityHashSign", title: "f#ck laptop failure", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
+		{name: "ObfuscatedProfanityRepeatedStars", title: "f***ck laptop failure", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
+		{name: "ObfuscatedProfanityRepeatedStarsSuffix", title: "f***cking laptop failure", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
+		{name: "ObfuscatedProfanityDroppedC", title: "f***king laptop failure", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
 		{name: "LeetSubstitution", title: "This is sh1t", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryProfanity},
 		{name: "ZeroWidthBypass", title: "id\u200Biot", text: "Please fix the internal tool.", category: service.ContentSafetyCategoryInsult},
 		{name: "ExcessiveURLs", title: "Links", text: "See http://a.test http://b.test http://c.test http://d.test http://e.test http://f.test", category: service.ContentSafetyCategorySpam},
@@ -316,15 +324,69 @@ func TestContentSafetyService_RequiredAllowedCases(t *testing.T) {
 		{name: "PasswordResetWithEmail", title: "Password reset", text: "Please reset the password for jane.doe@example.com."},
 		{name: "HTTP500Error", title: "API returned 500", text: "The payment API returns HTTP 500 after login."},
 		{name: "SerialNumber", title: "Laptop asset issue", text: "Asset code LT-2026-00012345 will not boot."},
+		{name: "RandomLookingErrorCodeInContext", title: "Application login error code appears", text: "The login page shows error code XQZJKVPN after MFA and then fails to continue."},
 		{name: "TransactionIdentifier", title: "Payment callback failed", text: "Transaction 987654321012345 needs reconciliation."},
 		{name: "RepeatedTechnicalTerms", title: "VPN VPN VPN troubleshooting", text: "VPN drops during VPN reconnect after the VPN client update."},
 		{name: "NormalLogPunctuation", title: "Stack trace", text: "panic: runtime error: invalid memory address; goroutine 12 [running]: service.(*Worker).Run()"},
 		{name: "LongSupportTerms", title: "Authentication troubleshooting", text: "Internationalization configuration failed after administrator authorization."},
+		{name: "InternationalizationDeployment", title: "Internationalization configuration failed after deployment", text: "The internationalization configuration cannot be loaded correctly after deployment to production even though the configuration files are present."},
+		{name: "TechnicalVocabularyDeployment", title: "Container orchestration deployment issue", text: "The Kubernetes ingress controller configuration fails after deployment and the observability dashboard shows repeated authentication timeouts."},
+		{name: "TechnicalVocabularyProvisioning", title: "Provisioning automation failed", text: "The infrastructure provisioning workflow cannot complete because the authorization middleware rejects the deployment manifest."},
 		{name: "LongFacilitiesTerm", title: "Electromagnetic lock malfunction", text: "The characterization of the access issue points to a controller replacement."},
 		{name: "NormalExclamationPunctuation", title: "VPN failed!", text: "It disconnects after login."},
 		{name: "NormalShortPronounAndArticle", title: "I need a VPN", text: "Please help."},
 		{name: "SystemComplaintAllowed", title: "System performance complaint", text: "The IT system is terrible today and the VPN keeps disconnecting after login."},
 		{name: "VietnameseSupportTicket", title: "Không đăng nhập được", text: "Tôi không thể đăng nhập vào hệ thống sau khi đổi mật khẩu."},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := svc.CheckTicket(tt.title, tt.text)
+
+			assert.False(t, result.Blocked)
+			assert.Empty(t, result.Category)
+		})
+	}
+}
+
+func TestContentSafetyService_AllowsKnowledgeBaseSeedTickets(t *testing.T) {
+	svc := service.NewContentSafetyService()
+
+	tests := []struct {
+		name  string
+		title string
+		text  string
+	}{
+		{
+			name:  "IT001KeyboardReplacement",
+			title: "Defective mechanical keyboard replacement request",
+			text:  "Dear Helpdesk, several keys (A, S, Space) on my issued Keychron mechanical keyboard have completely stopped responding this morning. I am unable to write code effectively. Can I get a replacement keyboard today?",
+		},
+		{
+			name:  "IT002WifiVPNOutage",
+			title: "Entire accounting department lost Wi-Fi and VPN access connection",
+			text:  "Dear IT Helpdesk, the entire accounting team on Floor 18 suddenly lost Wi-Fi connection and cannot authenticate via VPN. We are in the middle of closing the month-end financial statements. Please check the local access point immediately.",
+		},
+		{
+			name:  "IT002HomebrewPermissions",
+			title: "Homebrew permissions error on corporate macOS laptop",
+			text:  "When trying to run brew install git on my macOS laptop, I receive a permission denied error for /usr/local/Cellar. I need help fixing the directory ownership.",
+		},
+		{
+			name:  "IT003YubiKeyAccess",
+			title: "Lost physical YubiKey hardware token and access request",
+			text:  "I lost my physical YubiKey token yesterday during my commute. I currently cannot log into AWS or our code repositories. I need the lost key revoked and a new one registered.",
+		},
+		{
+			name:  "HR002TrainingFeedback",
+			title: "Feedback on the recent leadership training workshop",
+			text:  "I attended the leadership workshop last Friday and wanted to submit some constructive feedback regarding the course material and pacing.",
+		},
+		{
+			name:  "HR002LMSCertificate",
+			title: "Certificate of completion needed for compliance training",
+			text:  "I completed the mandatory data privacy compliance training on the LMS yesterday, but I cannot download my certificate. It shows an error.",
+		},
 	}
 
 	for _, tt := range tests {

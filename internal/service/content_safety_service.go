@@ -1,9 +1,7 @@
 package service
 
 import (
-	"context"
 	"regexp"
-	"strings"
 
 	"support-ticket.com/internal/safetyrule"
 )
@@ -29,19 +27,12 @@ type ContentSafetyService interface {
 }
 
 type ruleBasedContentSafetyService struct {
-	rules        []safetyrule.Rule
-	mlClassifier safetyrule.MLClassifier
+	rules []safetyrule.Rule
 }
 
-func NewContentSafetyService(ml ...safetyrule.MLClassifier) ContentSafetyService {
-	classifier := safetyrule.MLClassifier(safetyrule.NoopMLClassifier{})
-	if len(ml) > 0 && ml[0] != nil {
-		classifier = ml[0]
-	}
-
+func NewContentSafetyService() ContentSafetyService {
 	return &ruleBasedContentSafetyService{
-		rules:        safetyrule.Rules,
-		mlClassifier: classifier,
+		rules: safetyrule.Rules,
 	}
 }
 
@@ -70,20 +61,6 @@ func (s *ruleBasedContentSafetyService) CheckTicket(title, description string) C
 	if result, blocked := detectSpam(reps.Raw, reps.Normalized); blocked {
 		return result
 	}
-	for _, fieldReps := range []safetyrule.SafetyTextRepresentations{
-		safetyrule.BuildSafetyTextRepresentations(title, ""),
-		safetyrule.BuildSafetyTextRepresentations("", description),
-	} {
-		if fieldReps.IsEmpty() {
-			continue
-		}
-		if result, blocked := s.detectMLBlock(fieldReps.Raw, true); blocked {
-			return result
-		}
-	}
-	if result, blocked := s.detectMLBlock(reps.Raw, false); blocked {
-		return result
-	}
 
 	return ContentSafetyResult{}
 }
@@ -95,82 +72,6 @@ func (s *ruleBasedContentSafetyService) matchRules(reps safetyrule.SafetyTextRep
 		}
 	}
 	return ContentSafetyResult{}, false
-}
-
-func (s *ruleBasedContentSafetyService) detectMLBlock(text string, includeWindows bool) (ContentSafetyResult, bool) {
-	if s.mlClassifier == nil {
-		return ContentSafetyResult{}, false
-	}
-
-	for _, candidate := range mlScoreCandidates(text, includeWindows) {
-		score, err := s.mlClassifier.Score(context.Background(), candidate)
-		if err != nil {
-			return ContentSafetyResult{}, false
-		}
-
-		category := ContentSafetyCategoryInsult
-		rule := "ml_toxicity_score"
-		reason := "ticket content was classified as toxic by the ML safety model"
-		maxScore := score.ToxicScore
-		if score.ObsceneScore > score.ToxicScore {
-			category = ContentSafetyCategoryProfanity
-			rule = "ml_obscene_score"
-			reason = "ticket content was classified as obscene by the ML safety model"
-			maxScore = score.ObsceneScore
-		}
-		if maxScore < 0.6 {
-			continue
-		}
-
-		return ContentSafetyResult{
-			Blocked:     true,
-			Flagged:     true,
-			Score:       maxScore,
-			Category:    category,
-			Reason:      reason,
-			MatchedRule: rule,
-		}, true
-	}
-
-	return ContentSafetyResult{}, false
-}
-
-func mlScoreCandidates(text string, includeWindows bool) []string {
-	text = strings.TrimSpace(text)
-	if text == "" {
-		return nil
-	}
-
-	candidates := []string{text}
-	if !includeWindows {
-		return candidates
-	}
-
-	seen := map[string]bool{text: true}
-	words := strings.Fields(text)
-	if len(words) < 4 {
-		return candidates
-	}
-
-	const maxCandidates = 30
-	for size := 4; size <= 8; size++ {
-		if len(words) < size {
-			continue
-		}
-		for start := 0; start+size <= len(words); start++ {
-			candidate := strings.Join(words[start:start+size], " ")
-			if seen[candidate] {
-				continue
-			}
-			seen[candidate] = true
-			candidates = append(candidates, candidate)
-			if len(candidates) >= maxCandidates {
-				return candidates
-			}
-		}
-	}
-
-	return candidates
 }
 
 func ruleInput(input safetyrule.MatchInput, reps safetyrule.SafetyTextRepresentations) string {
