@@ -69,3 +69,7 @@ func (f *FakeAdapter) AnalyzeTicketWithVersion(ctx context.Context, data TriageP
 		PromptVersion:         promptVersion,
 	}, nil
 }
+
+func (f *FakeAdapter) DetermineNextAction(ctx context.Context, data NextActionPromptData) (string, error) {
+	return "Fake next action.", nil
+}

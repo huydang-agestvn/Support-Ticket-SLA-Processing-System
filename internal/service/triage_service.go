@@ -226,7 +226,7 @@ func (s *triageServiceImpl) ExecuteTriage(ctx context.Context, ticketID uint) (*
 
 	// Layer 3: Field Selector + RAG Retrieval
 	vec, _ := s.generateEmbedding(ctx, ticket.Title, ticket.Description)
-	ragContext, shortCircuitResp, ragErr := s.executeRAGLayer(ctx, ticketID, ticket, vec)
+	ragContext, shortCircuitResp, ragErr := s.executeRAGLayer(ctx, ticketID, ticket, vec, promptData)
 	if ragErr != nil {
 		return nil, ragErr
 	}
@@ -539,7 +539,7 @@ func (s *triageServiceImpl) generateEmbedding(ctx context.Context, title, descri
 // executeRAGLayer performs vector search, short-circuits on high-similarity match,
 // or returns enriched RAG context string for the AI prompt.
 // Returns (ragContext, triageResponse, error). If triageResponse != nil, caller should return it immediately.
-func (s *triageServiceImpl) executeRAGLayer(ctx context.Context, ticketID uint, ticket *model.Ticket, vec []float32) (string, *response.TriageResponse, error) {
+func (s *triageServiceImpl) executeRAGLayer(ctx context.Context, ticketID uint, ticket *model.Ticket, vec []float32, promptData ai.TriagePromptData) (string, *response.TriageResponse, error) {
 	if vec == nil || s.kbRepo == nil {
 		return "", nil, nil
 	}
@@ -569,14 +569,58 @@ func (s *triageServiceImpl) executeRAGLayer(ctx context.Context, ticketID uint, 
 				slog.Float64("similarity", top.Similarity),
 				slog.Float64("threshold", shortCircuitThreshold),
 			)
+
+			reasonSummary := top.TriageReasonSummary
+			slaBreachRisk := top.TriageSLABreachRisk
+			timeLeftStr := "Unknown"
+
+			if ticket.SLADueAt != nil {
+				now := time.Now()
+				if now.After(*ticket.SLADueAt) {
+					reasonSummary += fmt.Sprintf(" SLA is overdue by %s", now.Sub(*ticket.SLADueAt).Round(time.Minute).String())
+					slaBreachRisk = "overdue"
+					timeLeftStr = "Overdue"
+				} else {
+					timeLeft := ticket.SLADueAt.Sub(now)
+					timeLeftStr = timeLeft.Round(time.Minute).String()
+					reasonSummary += fmt.Sprintf(" Time remaining before SLA breach: %s", timeLeftStr)
+					if timeLeft <= 4*time.Hour {
+						slaBreachRisk = "high"
+					} else if timeLeft <= 24*time.Hour && slaBreachRisk == "low" {
+						slaBreachRisk = "medium"
+					}
+				}
+			}
+
+			if len(promptData.Events) > 0 {
+				lastEvent := promptData.Events[len(promptData.Events)-1]
+				reasonSummary += fmt.Sprintf(". The history event: %s with note: %s", string(lastEvent.ToStatus), lastEvent.Note)
+			}
+
+			recommendedNextAction := top.TriageRecommendedNextAction
+			if ticket.Status != model.StatusNew && len(promptData.Events) > 0 {
+				nextActionData := ai.NextActionPromptData{
+					ReasonSummary: reasonSummary,
+					TimeLeft:      timeLeftStr,
+					Events:        promptData.Events,
+				}
+				slog.InfoContext(ctx, "invoking Next-Action Agent for short-circuited ticket", slog.Uint64("ticket_id", uint64(ticketID)))
+				action, err := s.aiAdapter.DetermineNextAction(ctx, nextActionData)
+				if err != nil {
+					slog.WarnContext(ctx, "failed to get next action from AI, falling back to static", slog.Any("error", err))
+				} else if action != "" {
+					recommendedNextAction = action
+				}
+			}
+
 			dbResult := &model.AITicketTriageResult{
 				TicketID:              ticket.ID,
 				Category:              top.TriageCategory,
 				UrgencyLevel:          top.TriageUrgencyLevel,
-				SLABreachRisk:         top.TriageSLABreachRisk,
-				ReasonSummary:         top.TriageReasonSummary,
-				RecommendedNextAction: top.TriageRecommendedNextAction,
-				ConfidenceScore:       top.TriageConfidenceScore,
+				SLABreachRisk:         slaBreachRisk,
+				ReasonSummary:         reasonSummary,
+				RecommendedNextAction: recommendedNextAction,
+				ConfidenceScore:       top.Similarity,
 				FallbackUsed:          false,
 			}
 			if err := s.saveTriageResult(ctx, ticketID, dbResult); err != nil {

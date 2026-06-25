@@ -76,6 +76,33 @@ func (a *FallbackChainAdapter) analyzeWithFallback(
 	return lastResult, nil
 }
 
+func (a *FallbackChainAdapter) DetermineNextAction(ctx context.Context, data NextActionPromptData) (string, error) {
+	if len(a.adapters) == 0 {
+		return "", errors.New("no AI adapters are configured")
+	}
+
+	var lastAction string
+	var lastErr error
+
+	for index, adapter := range a.adapters {
+		if adapter == nil {
+			lastErr = fmt.Errorf("AI adapter at index %d is not configured", index)
+			continue
+		}
+
+		action, err := adapter.DetermineNextAction(ctx, data)
+		if err == nil && action != "" {
+			return action, nil
+		}
+		
+		lastErr = err
+		lastAction = action
+		slog.WarnContext(ctx, "failed to determine next action with current adapter, falling back", slog.Int("index", index), slog.Any("error", err))
+	}
+
+	return lastAction, fmt.Errorf("all AI adapters failed to determine next action, last error: %w", lastErr)
+}
+
 func logFallbackAttempt(ctx context.Context, message string, data TriagePromptData, result *TriageResult, err error, adapterIndex int) {
 	attrs := []slog.Attr{
 		slog.Uint64("ticket_id", uint64(data.Ticket.ID)),

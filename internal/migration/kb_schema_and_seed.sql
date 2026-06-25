@@ -173,96 +173,104 @@ BEGIN;
 
 -- IT001
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('IT001', 'new laptop request', 'keyword', 'high'),
-    ('IT001', 'broken keyboard', 'keyword', 'high'),
-    ('IT001', 'broken mouse', 'keyword', 'high'),
     ('IT001', 'monitor not working', 'keyword', 'high'),
-    ('IT001', 'headset replacement', 'keyword', 'high'),
     ('IT001', 'laptop charger broken', 'keyword', 'high'),
-    ('IT001', 'temporary equipment loan', 'keyword', 'medium'),
-    ('IT001', 'hardware warranty', 'keyword', 'medium'),
-    ('IT001', 'damaged screen', 'keyword', 'medium');
+    ('IT001', 'damaged screen', 'keyword', 'high'),
+    ('IT001', 'new laptop request', 'keyword', 'medium'),
+    ('IT001', 'broken keyboard', 'keyword', 'medium'),
+    ('IT001', 'broken mouse', 'keyword', 'medium'),
+    ('IT001', 'headset replacement', 'keyword', 'medium'),
+    ('IT001', 'temporary equipment loan', 'keyword', 'low'),
+    ('IT001', 'hardware warranty', 'keyword', 'low'),
+    ('IT001', 'request laptop stand', 'keyword', 'low');
 
 -- IT002
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
     ('IT002', 'no internet connection', 'keyword', 'high'),
-    ('IT002', 'wifi not working', 'keyword', 'high'),
+    ('IT002', 'network down', 'keyword', 'high'),
     ('IT002', 'vpn not connecting', 'keyword', 'high'),
     ('IT002', 'cannot connect to vpn', 'keyword', 'high'),
+    ('IT002', 'wifi not working', 'keyword', 'high'),
     ('IT002', 'software installation error', 'keyword', 'medium'),
     ('IT002', 'os installation', 'keyword', 'medium'),
     ('IT002', 'shared drive access', 'keyword', 'medium'),
-    ('IT002', 'network down', 'keyword', 'medium'),
-    ('IT002', 'slow internet', 'keyword', 'medium');
+    ('IT002', 'slow internet', 'keyword', 'low'),
+    ('IT002', 'software trial request', 'keyword', 'low');
 
 -- IT003
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('IT003', 'reset password', 'keyword', 'high'),
-    ('IT003', 'forgot password', 'keyword', 'high'),
-    ('IT003', 'account locked', 'keyword', 'high'),
-    ('IT003', 'active directory', 'keyword', 'high'),
     ('IT003', 'suspected phishing', 'keyword', 'high'),
     ('IT003', 'malware alert', 'keyword', 'high'),
-    ('IT003', 'suspicious email', 'keyword', 'medium'),
+    ('IT003', 'account locked', 'keyword', 'high'),
+    ('IT003', 'reset password', 'keyword', 'high'),
     ('IT003', 'mfa issue', 'keyword', 'medium'),
-    ('IT003', 'two factor authentication', 'keyword', 'medium');
+    ('IT003', 'two factor authentication', 'keyword', 'medium'),
+    ('IT003', 'active directory', 'keyword', 'medium'),
+    ('IT003', 'suspicious email', 'keyword', 'medium'),
+    ('IT003', 'forgot password', 'keyword', 'medium'),
+    ('IT003', 'request guest wifi access', 'keyword', 'low');
 
 -- FC001
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
+    ('FC001', 'power outage', 'keyword', 'high'),
+    ('FC001', 'water leak', 'keyword', 'high'),
     ('FC001', 'air conditioning broken', 'keyword', 'high'),
-    ('FC001', 'ac not cooling', 'keyword', 'high'),
-    ('FC001', 'broken chair', 'keyword', 'high'),
-    ('FC001', 'broken desk', 'keyword', 'high'),
+    ('FC001', 'fire alarm issue', 'keyword', 'high'),
+    ('FC001', 'ac not cooling', 'keyword', 'medium'),
+    ('FC001', 'broken desk', 'keyword', 'medium'),
     ('FC001', 'light not working', 'keyword', 'medium'),
-    ('FC001', 'water leak', 'keyword', 'medium'),
-    ('FC001', 'power outage', 'keyword', 'medium'),
-    ('FC001', 'cleaning request', 'keyword', 'low');
+    ('FC001', 'broken chair', 'keyword', 'medium'),
+    ('FC001', 'cleaning request', 'keyword', 'low'),
+    ('FC001', 'trash bin full', 'keyword', 'low');
 
 -- FC002
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('FC002', 'send courier', 'keyword', 'high'),
-    ('FC002', 'book company car', 'keyword', 'high'),
-    ('FC002', 'replace employee badge', 'keyword', 'high'),
     ('FC002', 'lost badge', 'keyword', 'high'),
-    ('FC002', 'book meeting room', 'keyword', 'medium'),
-    ('FC002', 'reserve event space', 'keyword', 'medium');
+    ('FC002', 'replace employee badge', 'keyword', 'high'),
+    ('FC002', 'send courier', 'keyword', 'medium'),
+    ('FC002', 'book company car', 'keyword', 'medium'),
+    ('FC002', 'receive urgent package', 'keyword', 'medium'),
+    ('FC002', 'book meeting room', 'keyword', 'low'),
+    ('FC002', 'reserve event space', 'keyword', 'low');
 
 -- FC003
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('FC003', 'request office supplies', 'keyword', 'high'),
-    ('FC003', 'need printer paper', 'keyword', 'high'),
-    ('FC003', 'out of pens', 'keyword', 'high'),
-    ('FC003', 'no coffee', 'keyword', 'medium'),
-    ('FC003', 'pantry restock', 'keyword', 'medium'),
-    ('FC003', 'printer ink request', 'keyword', 'medium');
+    ('FC003', 'need printer paper', 'keyword', 'medium'),
+    ('FC003', 'out of pens', 'keyword', 'medium'),
+    ('FC003', 'printer ink request', 'keyword', 'medium'),
+    ('FC003', 'request office supplies', 'keyword', 'low'),
+    ('FC003', 'no coffee', 'keyword', 'low'),
+    ('FC003', 'pantry restock', 'keyword', 'low'),
+    ('FC003', 'request new notebook', 'keyword', 'low');
 
 -- HR001
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
     ('HR001', 'payroll error', 'keyword', 'high'),
     ('HR001', 'wrong salary', 'keyword', 'high'),
-    ('HR001', 'social insurance', 'keyword', 'high'),
-    ('HR001', 'bhxh', 'keyword', 'high'),
     ('HR001', 'maternity leave benefit', 'keyword', 'high'),
+    ('HR001', 'social insurance', 'keyword', 'medium'),
+    ('HR001', 'bhxh', 'keyword', 'medium'),
     ('HR001', 'health insurance pvi', 'keyword', 'medium'),
     ('HR001', 'bao viet insurance', 'keyword', 'medium'),
     ('HR001', 'personal income tax', 'keyword', 'medium'),
-    ('HR001', 'dependent declaration', 'keyword', 'medium');
+    ('HR001', 'dependent declaration', 'keyword', 'low'),
+    ('HR001', 'request payslip copy', 'keyword', 'low');
 
 -- HR002
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('HR002', 'register training course', 'keyword', 'high'),
-    ('HR002', 'request training budget', 'keyword', 'high'),
-    ('HR002', 'prepare desk for new hire', 'keyword', 'medium'),
-    ('HR002', 'external course registration', 'keyword', 'medium'),
+    ('HR002', 'prepare desk for new hire', 'keyword', 'high'),
     ('HR002', 'recruitment request', 'keyword', 'medium'),
-    ('HR002', 'new employee orientation', 'keyword', 'medium');
+    ('HR002', 'new employee orientation', 'keyword', 'medium'),
+    ('HR002', 'register training course', 'keyword', 'low'),
+    ('HR002', 'request training budget', 'keyword', 'low'),
+    ('HR002', 'external course registration', 'keyword', 'low');
 
 -- HR003
 INSERT INTO rule_patterns (sub_department_code, pattern, pattern_type, priority) VALUES
-    ('HR003', 'resignation procedure', 'keyword', 'high'),
-    ('HR003', 'offboarding process', 'keyword', 'high'),
-    ('HR003', 'workplace conflict', 'keyword', 'high'),
     ('HR003', 'harassment report', 'keyword', 'high'),
+    ('HR003', 'workplace conflict', 'keyword', 'high'),
+    ('HR003', 'resignation procedure', 'keyword', 'medium'),
+    ('HR003', 'offboarding process', 'keyword', 'medium'),
     ('HR003', 'team building suggestion', 'keyword', 'low'),
     ('HR003', 'year end party feedback', 'keyword', 'low');
 
@@ -286,6 +294,7 @@ INSERT INTO sample_tickets (
     triage_recommended_next_action,
     triage_confidence_score
 ) VALUES
+    
     (
         'FC001',
         'Severe water leak coming from the ceiling in Floor 18 boardroom',
@@ -293,7 +302,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'high',
         'high',
-        'Water leaks threatening electronics and office property are high-urgency facilities maintenance issues under FC001.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves severe water leak coming from the ceiling in floor 18 boardroom. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Shut off the water valve for the affected ceiling section, move all electronics, and dispatch the building maintenance technician.',
         0.98
     ),
@@ -304,7 +313,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'AC system failure and temperature adjustments fall under the FC001 workplace utilities team.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves air conditioning system not cooling in floor 19 open office zone. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Check the HVAC control panel settings, inspect the air filter for blockages, and contact the AC technician if chillers are offline.',
         0.96
     ),
@@ -315,7 +324,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'medium',
-        'Door lock repairs and sensor troubleshooting fall under FC001 facilities maintenance.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves broken automatic glass door sensor at floor 19 main entrance. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Inspect the door sensor wiring, clean the optical lens, and reset the door controller board.',
         0.95
     ),
@@ -326,7 +335,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'high',
         'high',
-        'Exposed electrical wiring represents a high-risk safety hazard, routing it to FC001 electrical team.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves exposed electric wire on floor 18 floor outlet box. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Isolate the power circuit breaker for that outlet row immediately, and dispatch an electrician to repair the socket.',
         0.97
     ),
@@ -337,7 +346,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'AC unit noise and mechanical wear troubleshooting falls under FC001 HVAC maintenance.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves rattling noise from ceiling ac unit in meeting room 3a. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Open the AC casing in Room 3A, inspect the fan blower wheel and motor mounting screws, and tighten any loose parts.',
         0.94
     ),
@@ -348,7 +357,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Office lighting bulb swaps and ballast replacements are managed by FC001.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves flickering lights in floor 19 corridor causing eye strain. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Replace the flickering fluorescent bulbs with new tubes, and check the light ballast if the flickering persists.',
         0.93
     ),
@@ -359,7 +368,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Restroom plumbing clogs and minor repairs are handled by FC001 plumbing maintenance.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves blocked washbasin drain in floor 18 male restroom. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Use a plunger or plumbing snake to clear the blockage in the restroom sink pipe, and inspect the P-trap.',
         0.95
     ),
@@ -370,7 +379,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Office furniture maintenance and mechanical repairs are managed under FC001 furniture.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves broken desk adjustment lever on height-adjustable workspace. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Replace the broken crank arm or adjust the desk manually to a comfortable height while waiting for parts.',
         0.91
     ),
@@ -381,7 +390,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Janitorial services and carpet spot cleaning requests are handled by FC001.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves coffee stain cleaning request in floor 18 hallway carpet. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Dispatch the janitorial team with a carpet extractor machine to clean the coffee stain.',
         0.96
     ),
@@ -392,7 +401,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Office sanitation and pest control tasks are routed to FC001.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves pest control coordination for fruit flies in pantry sink. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Flush the pantry drain with hot water and enzymatic cleaner, and place fruit fly traps around the bins.',
         0.94
     ),
@@ -403,7 +412,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Office window fixtures and minor repairs are handled under FC001 facility maintenance.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves window blind cord snapped in marketing workspace. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Replace the snapped blind cord or install a new roller mechanism on the window frame.',
         0.92
     ),
@@ -414,7 +423,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'Fire safety lighting and compliance maintenance is routed to FC001.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves emergency exit sign not illuminated on floor 19 east wing exit. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Open the exit sign casing, replace the backup battery and LED bulbs, and verify its emergency illumination status.',
         0.95
     ),
@@ -425,7 +434,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Safety equipment checks and compliance reviews are managed under FC001 facilities.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves fire extinguisher annual inspection date expired in hallway. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Check the fire extinguisher pressure gauge, sign the inspection record, or swap it for a certified unit.',
         0.94
     ),
@@ -436,7 +445,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'Stairwell safety and structural hardware maintenance falls under FC001.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves loose handrail on the central office stairwell between floor 17 and 18. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Send a maintenance worker to tighten the wall brackets and secure the handrail anchors.',
         0.93
     ),
@@ -447,7 +456,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Parking lot and building exterior tarmac maintenance is handled by FC001 facilities.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves pothole repair request for office parking garage entrance lane. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Fill the pothole with rapid-setting asphalt compound, compact it, and verify smooth vehicle transition.',
         0.91
     ),
@@ -458,7 +467,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'medium',
-        'Exterior drainage blockages threatening water ingress are handled by FC001.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves blocked drainage gutter on office rooftop terrace causing pooling. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Clear all leaves and debris from the terrace drainage grate, and check the downspout for internal blockages.',
         0.95
     ),
@@ -469,7 +478,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Restroom ventilation and exhaust maintenance falls under FC001 building utilities.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves exhaust fan not working in floor 19 ladies restroom. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Test the electrical switch for the fan, check the ventilation fan fuse, and replace the motor unit if burnt out.',
         0.93
     ),
@@ -480,7 +489,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'high',
         'high',
-        'Server room cooling failures represent a critical infrastructure emergency, mapping to FC001 HVAC team.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves server room precision ac unit triggering high temperature alarm. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Deploy backup portable AC units to the server room, open server room ventilation vents, and dispatch the HVAC contractor immediately.',
         0.98
     ),
@@ -491,7 +500,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Building electrical testing coordination is managed under FC001 electrical utilities.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves scheduled backup generator testing notification and load check. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Coordinate with building security, check diesel fuel levels, and log the ATS transfer response during the test.',
         0.95
     ),
@@ -502,7 +511,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Ceiling fixture security and structural tightening is managed by FC001 facilities.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves rattling ceiling projector mount in boardroom a. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Access the ceiling bracket using an A-frame ladder, tighten the mounting bolts, and align the projector.',
         0.92
     ),
@@ -513,7 +522,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Office interior design modifications and acoustic treatments are routed to FC001.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves requesting acoustic soundproofing panel installation in phone booth 4. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Order and install adhesive acoustic foam panels on the interior walls of the phone booth.',
         0.91
     ),
@@ -524,7 +533,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Mechanical desk motor repairs are handled by FC001 facilities.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves standing desk motor jammed and won''t go down. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Reset the desk controller unit or replace the jammed lift motor in the desk leg.',
         0.93
     ),
@@ -535,9 +544,9 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Office layout alterations and drywall removal is managed by FC001 facilities.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves partition wall removal request for team collaboration layout. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Assess the partition wall wall structure for wiring, get landlord approval, and schedule drywall removal for the weekend.',
-        0.90
+        0.9
     ),
     (
         'FC001',
@@ -546,7 +555,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Electrical sensors and switch maintenance falls under FC001 electrical.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves motion sensor light switch not triggering in floor 18 archive closet. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Replace the defective PIR motion sensor switch wall unit in the closet.',
         0.93
     ),
@@ -557,7 +566,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Safety equipment compliance checks are managed under FC001 facilities.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves testing emergency shower station in chemical testing lab. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Perform a test activation of the safety shower, log the flow rate, and update the inspection tag.',
         0.94
     ),
@@ -568,7 +577,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'high',
         'high',
-        'Blocked loading dock blocking operations is a high-urgency facilities issue under FC001.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves loading dock roller shutter door stuck half-open. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Dispatch maintenance with the manual override chain to raise the rolling door, and call the gate repair vendor.',
         0.97
     ),
@@ -579,7 +588,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'Plumbing leaks in storage rooms are handled by FC001 plumbing.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves minor flooding in basement storage room after pipe leak. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Tighten the leaking pipe joint, wrap with sealing tape, and extract the water from the floor.',
         0.95
     ),
@@ -590,7 +599,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Building exterior maintenance and ventilation cleaning falls under FC001.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves bird nest blocking building ventilation exhaust grill. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Safely relocate the nest if empty, clean the exhaust grill, and install a mesh wire guard to prevent future nesting.',
         0.92
     ),
@@ -601,7 +610,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Parking striping and facilities marking is managed by FC001 facilities.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves faded paint on disabled parking spots in visitor garage. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Schedule parking bay line repainting using high-durability floor marking paint.',
         0.88
     ),
@@ -612,7 +621,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Safety alarms maintenance and battery replacement is managed under FC001.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves smoke detector low battery chirping sound in boardroom. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Use a ladder to remove the smoke detector, replace the 9V backup battery, and test the alarm button.',
         0.94
     ),
@@ -623,7 +632,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Physical security camera mounting adjustments are handled by FC001 facilities.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves requesting safety adjustment of office security cameras in lobby. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Reposition the security camera bracket, verify the video feed angle, and lock the mounting nut.',
         0.93
     ),
@@ -634,7 +643,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Drinking water filter replacements and minor plumbing falls under FC001.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves water fountain filter replacement overdue in corridor 18. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Replace the carbon filter cartridge in the water fountain and flush the line for 5 minutes.',
         0.95
     ),
@@ -645,7 +654,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Drywall repairs and office interior wall touch-ups are handled by FC001 facilities.',
+        'The ticket is categorized under FC001 (Workplace & Utilities) floor 18, as the issue involves damaged drywall from chair bumps in meeting room 4c. The policy fit is appropriate since this team handles physical office facility issues, electricity, water, and AC (excluding office supplies, badges, or transportation).',
         'Patch the drywall dents with spackle, sand it flat, and paint with matching interior wall paint.',
         0.92
     ),
@@ -656,7 +665,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'Transportation bookings and corporate taxi coordination fall under FC002 reception and travel logistics.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves corporate taxi booking request for late-night system deployment. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Contact the taxi provider, book 5 rides for the specified time, and send the vouchers to the engineering lead.',
         0.96
     ),
@@ -667,7 +676,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Visitor parking reservations and security desk registrations are handled by the FC002 reception desk.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves visitor parking reservation request for corporate client audit team. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Reserve the 2 basement parking bays in the calendar, log the vehicle details in the security gate database, and notify the host.',
         0.94
     ),
@@ -678,7 +687,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'high',
         'low',
-        'Lost access badges require immediate deactivation for security, routing this to FC002 badge administration.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves lost employee id access badge replacement request. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Deactivate the lost badge in the security control system and print a new access card for the employee.',
         0.97
     ),
@@ -689,7 +698,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'Incoming registered mail logs and package tracking is managed by FC002 reception.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves tracking missing registered mail package from tax authority. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Search the mail receipt database for the tracking number, verify who signed for the letter, and locate it in the sorting room.',
         0.95
     ),
@@ -700,7 +709,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Company fleet booking and travel authorization checks are handled by FC002.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves scheduling corporate vehicle for regional branch sales visit. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Check corporate vehicle availability for Wednesday, assign the SUV to the salesperson, and issue the keys and logbook.',
         0.96
     ),
@@ -711,7 +720,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'Contractor badges and specific shift access profiles are managed under FC002 access control.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves access badge authorization request for temporary cleaning staff. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Verify contract details, print the temporary badges, and program the restricted time access profile.',
         0.95
     ),
@@ -722,7 +731,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Meeting room reservations and layout coordination is handled by FC002 reception.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves reserving floor 19 main training room for multi-day workshop. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Block the training room calendar, coordinate the layout requirements with the maintenance crew, and confirm with the organizer.',
         0.93
     ),
@@ -733,7 +742,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'high',
         'high',
-        'Priority legal document dispatch requires priority courier bookings under FC002.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves priority courier dispatch for signed acquisition contract documents. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Contact the express courier service, dispatch a driver for pickup, and provide the tracking link to the sender.',
         0.97
     ),
@@ -744,7 +753,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'Official corporate stamps and document authorization support is handled by FC002 reception.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves corporate stamp request for legal power of attorney form. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Verify legal approval signature, apply the corporate seal stamp, and log the document details.',
         0.94
     ),
@@ -755,7 +764,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Lobby signage updates and directory listings fall under FC002 front desk operations.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves updating lobby digital directory board with new department layout. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Update the department registry data in the lobby display software console, and verify the changes on the screen.',
         0.92
     ),
@@ -766,9 +775,9 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Lobby aesthetics and vendor florist coordination is managed by FC002 front desk.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves reception desk flower arrangement renewal request. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Contact the florist vendor, request the weekly bouquet swap, and clear the reception counter.',
-        0.90
+        0.9
     ),
     (
         'FC002',
@@ -777,7 +786,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'high',
         'high',
-        'Access gates blocking vehicle traffic require emergency guard coordination under FC002.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves parking garage gate arm malfunctioning and blocking exit lane. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Instruct the parking guards to override and lock the gate arm open, and call the gate technician.',
         0.96
     ),
@@ -788,7 +797,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Storage security and lock combination changes fall under FC002 access security.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves bicycle storage area security lock code change request. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Reset the mechanical lock combination, and send the new code to whitelisted bicycle commuters.',
         0.93
     ),
@@ -799,7 +808,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Building service scheduling and lobby announcements are managed by FC002.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves coordinating external vendor schedule for lobby elevator maintenance. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Post signs in the lobby, notify tenants, and confirm the service window with the elevator vendor.',
         0.94
     ),
@@ -810,7 +819,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'External guest registration and temporary badge creation is handled by FC002 reception.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves visitor access registration for upcoming software training course. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Pre-register the visitors in the security database, print the badges, and email the access instructions.',
         0.95
     ),
@@ -821,7 +830,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Package receipt inspection and damage handling falls under FC002 reception.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves incoming package delivered to lobby reception has broken contents. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Take photos of the damaged box, log the delivery status, and contact the recipient to inspect the contents.',
         0.91
     ),
@@ -832,7 +841,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Lost and found collection and matching is a standard function of FC002 reception.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves lost and found: wallet recovered from floor 18 breakout area. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Log the wallet details, check card names, and contact the employee if they match the corporate registry.',
         0.93
     ),
@@ -843,7 +852,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'Badge log export and security audit compliance requests are serviced by FC002.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves requesting access badge logs for audit validation. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Run the card reader access report in the security software console for the server room doors, and export to CSV.',
         0.94
     ),
@@ -854,7 +863,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'VIP travel coordination and driver booking is managed by FC002 logistics.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves scheduling vip airport pick-up for visiting regional director. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Book the corporate chauffeur service, provide the flight number, and send the driver contact details to the director.',
         0.95
     ),
@@ -865,7 +874,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Restricted building zone access coordination falls under FC002 logistics.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves helipad access request for corporate aerial photography session. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Obtain safety clearance from building management, and assign a guard to escort the photo crew to the roof.',
         0.88
     ),
@@ -876,7 +885,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Relocation moving dock reservations are managed by FC002 reception.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves office moving truck scheduling for department relocation. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Submit the loading dock booking form, request elevator lock-out keys, and coordinate with the moving company.',
         0.94
     ),
@@ -887,7 +896,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Lobby check-in equipment status falls under FC002 reception desk.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves reception desk digital check-in ipad unresponsive. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Perform a hard restart on the iPad, verify Wi-Fi connectivity, and restart the check-in application.',
         0.92
     ),
@@ -898,7 +907,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Mailroom furniture and organizational requests are handled by FC002 logistics.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves mailroom sorting table organizer unit installation. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Order the sorting organizer unit, and coordinate its setup in the mailroom.',
         0.91
     ),
@@ -909,7 +918,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Badge reader buzzer configuration and hardware is managed under FC002.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves access badge sensor beep sound disabled on floor 19 entrance. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Access the card reader hardware settings in the controller console and enable the buzzer feedback.',
         0.93
     ),
@@ -920,7 +929,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'Mailroom delivery discrepancies and corrections fall under FC002 mail logistics.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves mail distribution error: package delivered to incorrect floor bin. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Retrieve the package from the HR bin, deliver it to the engineering team immediately, and remind sorting staff.',
         0.94
     ),
@@ -931,7 +940,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'medium',
-        'Customs clearance issues for incoming components fall under FC002 reception courier support.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves courier package with custom documentation delayed at main seaport customs. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Compile the commercial invoice and tax clearance documents, and email them to the customs broker.',
         0.92
     ),
@@ -942,7 +951,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Front-desk stamp maintenance and reception supplies falls under FC002.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves company seal stamp inkpad dried out at main lobby desk. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Refill the red stamp pad with fresh ink or deliver a replacement inkpad to the reception counter.',
         0.93
     ),
@@ -953,7 +962,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'high',
         'high',
-        'Offline parking card reader causing traffic disruption is a high urgency issue under FC002 access control.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves access card reader offline on basement parking entrance gate. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Reset the parking gate reader controller, verify network ping to the switch, and send a technician.',
         0.96
     ),
@@ -964,7 +973,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'high',
         'high',
-        'Time-sensitive VIP guest pre-registration is managed under FC002 front desk.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves vip guest registration for international client delegates arriving in 1 hour. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Pre-print the guest badges, notify the lobby guards of the VIP arrival, and coordinate floor access.',
         0.95
     ),
@@ -975,7 +984,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Registered mail collection and courier pickups falls under FC002 logistics.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves registered mail collection notification from postal office. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Assign a courier driver to collect the registered document from the local post office using the collection slip.',
         0.94
     ),
@@ -986,7 +995,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'After-hours access scheduling and contractor clearances are managed by FC002.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves after-hours building access approval for building contractor team. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Register the contractors'' names with building security, and enable after-hours entry profiles on their access cards.',
         0.95
     ),
@@ -997,7 +1006,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Lobby screen content updates and visitors announcements are managed by FC002.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves visitor lobby signage content update request for quarterly meeting. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Load the new slides into the lobby digital signage controller and schedule them to run starting Monday.',
         0.93
     ),
@@ -1008,7 +1017,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Shuttle services feedback and routing updates falls under FC002 transportation coordination.',
+        'The ticket is categorized under FC002 (Reception, Mail & Transportation) floor 18, as the issue involves late-night shuttle bus route adjustment suggestion. The policy fit is appropriate since this team handles front-desk services, logistics, mail, courier packages, company vehicles, and badges (excluding facility repairs or office supplies).',
         'Discuss the route adjustment suggestion with the shuttle bus contractor, and evaluate feasibility.',
         0.85
     ),
@@ -1019,7 +1028,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'Printer paper stock replenishment falls under the FC003 office supplies queue.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves out of a4 printer paper in floor 18 main printer hub. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Retrieve three boxes of A4 printer paper from the central warehouse and restock the Floor 18 printer cabinets.',
         0.96
     ),
@@ -1030,7 +1039,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Pantry items, coffee, and tea restock requests are serviced by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves pantry coffee beans empty in floor 19 break area. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Deliver a new batch of whole espresso beans from the pantry supplies inventory and refill the coffee machine hopper.',
         0.95
     ),
@@ -1041,7 +1050,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'First aid supplies replenishment and workplace health resource checks are routed to FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves first aid kit in floor 18 west wing is missing bandages and antiseptic. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Retrieve first aid replacement packets from stock, refill the Floor 18 West box, and update the safety check tag.',
         0.97
     ),
@@ -1052,7 +1061,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Vending machine operation and service vendor coordination falls under FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves vending machine on floor 18 east pantry showing coin jam error. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Clear the coin jam mechanism if accessible, or call the vending machine service vendor to schedule a repair.',
         0.93
     ),
@@ -1063,7 +1072,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Office waste container additions and pantry accessory procurement is managed by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves requesting placement of compostable waste bins in office pantries. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Order 2 compost-compatible collection bins, place them in the pantries, and print the composting guidelines flyer.',
         0.94
     ),
@@ -1074,7 +1083,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'medium',
-        'Pantry appliances maintenance and replacement requests are handled by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves communal refrigerator in floor 18 pantry leaking water from bottom. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Clean the pooled water, check the refrigerator door seals, defrost the freezer, or call the appliance technician.',
         0.95
     ),
@@ -1085,7 +1094,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Conference room writing supplies and eraser replacements are managed by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves whiteboard markers completely dried out in meeting room 4b. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Deliver a new pack of whiteboard markers and an eraser to Meeting Room 4B, and discard the dried-out ones.',
         0.94
     ),
@@ -1096,7 +1105,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Workstation comfort supplies and ergonomic accessories distribution belongs in the FC003 inventory.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves requesting ergonomic keyboard wrist rest and anti-fatigue desk mat. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Check stock for standing desk mats and foam wrist rests, and issue them to the employee.',
         0.91
     ),
@@ -1107,7 +1116,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'Specialized printing consumable refills are routed to the FC003 supplies team.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves requesting specialized color ink cartridges for marketing plotter printer. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Verify current ink inventory, order the HP-72 cyan and magenta cartridges from the vendor, and deliver to marketing.',
         0.94
     ),
@@ -1118,7 +1127,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Water cooler replacements and drinking water inventory operations are handled by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves water cooler dispenser in floor 19 west corridor empty. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Retrieve a 20L drinking water bottle from storage and replace the empty bottle on the Floor 19 dispenser.',
         0.95
     ),
@@ -1129,7 +1138,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Pantry coffee machine maintenance and filter swaps are coordinated by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves coffee machine descaling filter replacement request. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Perform the descale cycle on the coffee machine and replace the internal water filter cartridge.',
         0.92
     ),
@@ -1140,7 +1149,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Pantry cleaning organization and refrigerator hygiene is managed by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves pantry refrigerator stock: expiry date check and cleanout request. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Announce the refrigerator cleanout schedule to employees, discard unlabeled containers on Friday evening, and wipe down shelves.',
         0.93
     ),
@@ -1151,7 +1160,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Pantry disposable paper products restock falls under the FC003 queue.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves out of paper coffee cups in floor 18 pantry dispenser. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Deliver three sleeves of paper hot cups to the Floor 18 pantry cupboard.',
         0.95
     ),
@@ -1162,7 +1171,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Specialized pantry orders and executive meeting refreshments are handled by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves ordering organic green tea bags for executive board meeting pantry. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Procure a box of organic green tea bags from the grocery vendor and place it in the executive boardroom pantry.',
         0.91
     ),
@@ -1173,7 +1182,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Restroom hygiene supplies refilling belongs to FC003 office supplies and sanitation.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves soap dispenser empty in floor 19 male restroom. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Refill the liquid soap reservoir in the restroom dispenser and test the automatic sensor.',
         0.94
     ),
@@ -1184,9 +1193,9 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Conference room accessories and consumable batteries are supplied by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves missing remote control batteries for floor 18 projection system. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Deliver a pair of AAA batteries to the meeting room remote control and verify the projector turns on.',
-        0.90
+        0.9
     ),
     (
         'FC003',
@@ -1195,7 +1204,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'Office machine maintenance and consumable oils are managed under FC003 supplies.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves paper shredder container full and blades jammed in finance area. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Empty the shredded paper waste bag, clear the paper jam from the cutting blades, and apply shredder lubricant oil.',
         0.95
     ),
@@ -1206,7 +1215,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Office stationery and binding supplies procurement falls under FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves ordering plastic document laminating pouches for legal team. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Order a pack of 100 A4 laminating pouches and deliver them to the legal department floor.',
         0.93
     ),
@@ -1217,7 +1226,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Pantry fresh product rotation and storage compliance is handled by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves pantry milk cartons expired in floor 18 refrigerator. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Discard the expired milk cartons, clean any spills in the fridge, and restock fresh milk from the daily shipment.',
         0.95
     ),
@@ -1228,7 +1237,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Office vending machine coordination is handled by the FC003 pantry team.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves vending machine on floor 19 snack selection error. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Log the selection error and contact the vending machine vendor to request a calibration visit.',
         0.92
     ),
@@ -1239,7 +1248,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Ergonomic workspace accessories and mats are provided by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves requesting standing desk anti-fatigue floor mat for call center. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Approve the request and deliver 5 anti-fatigue mats to the call center floor rows.',
         0.91
     ),
@@ -1250,7 +1259,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Office landscaping maintenance and vendor logistics are managed by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves monthly corporate office plant watering service scheduling. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Approve the contractor visit date, notify building security, and coordinate floor access.',
         0.93
     ),
@@ -1261,7 +1270,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Mailroom waste management and bin allocation is handled by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves requesting cardboard recycling bins for floor 19 mailroom. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Provide two cardboard disposal bins and place them near the mail sorting tables.',
         0.94
     ),
@@ -1272,7 +1281,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Client pantry preferences and tea selection requests are routed to FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves specialty tea selection request for marketing client meetings. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Order a pack of earl grey and jasmine tea bags and place them in the marketing meeting pantry cabinet.',
         0.91
     ),
@@ -1283,7 +1292,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'high',
         'high',
-        'Consumables depletion blocking design project delivery is a high urgency issue under FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves out of printer toner cartridges for main designer plotter. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Retrieve a matte black toner cartridge from the central stock, install it in the plotter, and verify printer status.',
         0.96
     ),
@@ -1294,7 +1303,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Office workstation setup consumables and organizational items are managed by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves desk cable organizers and cable ties supply replenishment. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Issue a packet of cable ties and zip organizers from the utility inventory cabinet.',
         0.92
     ),
@@ -1305,7 +1314,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'low',
-        'Pantry appliance mechanical issues fall under FC003 responsibilities.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves defective microwave button panel in floor 18 central breakroom. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Inspect the microwave power panel, label it out-of-order, and dispatch it to the repair shop or order a swap.',
         0.94
     ),
@@ -1316,7 +1325,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Workplace comfort supplies and floor padding are provided by FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves requesting standing desk anti-fatigue mat for reception desk staff. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Retrieve an anti-fatigue mat from stock and deliver it to the Floor 18 reception desk team.',
         0.93
     ),
@@ -1327,7 +1336,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Whiteboard cleaning fluids and markers are handled by the FC003 supplies team.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves whiteboard cleaning spray refill request for floor 19 meeting rooms. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Refill the spray bottles in all Floor 19 meeting rooms and check eraser conditions.',
         0.95
     ),
@@ -1338,7 +1347,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Office tagging and label printer supplies fall under FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves label maker refill tape cartridge purchase request for it warehouse. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Order two rolls of 12mm label printer tape from our office stationery vendor.',
         0.94
     ),
@@ -1349,7 +1358,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'medium',
         'medium',
-        'Drinking water safety and water cooler sanitization falls under FC003 pantry health.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves pantry water cooler sanitization service coordination. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Coordinate with the water supplier vendor to perform deep sanitization on the Floor 19 cooler units.',
         0.96
     ),
@@ -1360,7 +1369,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Office filing and laminating consumables are managed under FC003.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves laminator sheet pockets a3 size replenishment request. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Purchase a box of A3 laminator sheet pockets and place them in the central supply cabinet.',
         0.91
     ),
@@ -1371,7 +1380,7 @@ INSERT INTO sample_tickets (
         'Facilities',
         'low',
         'low',
-        'Waste sorting bins distribution is managed by FC003 office supplies.',
+        'The ticket is categorized under FC003 (Office Supplies & Pantry) floor 18, as the issue involves recycling bins placement request for floor 18 open office layout. The policy fit is appropriate since this team handles distribution of office supplies and managing pantry items (excluding facility repairs, badge access, or transportation bookings).',
         'Deliver three blue paper recycling bins to the Floor 18 open workspace rows.',
         0.93
     ),
@@ -1382,7 +1391,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Overtime calculations and payslip corrections are handled by HR001 Compensation & Benefits.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves discrepancy in monthly overtime (ot) hours payment in june payslip. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Cross-reference the employee OT logs, verify manager approval, and process the adjustment in the next payroll cycle.',
         0.96
     ),
@@ -1393,7 +1402,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Leave balances and system data integrity errors fall under the HR001 C&B team.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves query regarding annual leave balance correction after system migration. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Check the historical leave tracker backups, correct the balance in the database, and notify the employee.',
         0.95
     ),
@@ -1404,7 +1413,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Social insurance benefits (BHXH) and maternity claims processing is managed by HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves maternity leave benefit insurance process and allowance query. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Send the maternity benefit document checklist to the employee, and coordinate the submission to the BHXH office.',
         0.97
     ),
@@ -1415,7 +1424,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Corporate health insurance coverage details are handled by HR001 C&B benefits specialists.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves question regarding bao viet health insurance coverage limits for dental. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Retrieve the employee PVI/Bao Viet benefits booklet, check dental coverage terms, and reply to the employee.',
         0.96
     ),
@@ -1426,7 +1435,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Personal income tax (PIT) dependent registrations and database updates fall under HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves dependent tax deduction registration form submission. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Review the birth certificate document, submit the dependent registry to the tax department, and update the payroll database.',
         0.95
     ),
@@ -1437,7 +1446,7 @@ INSERT INTO sample_tickets (
         'HR',
         'high',
         'high',
-        'Missing salary payments require immediate payroll audit and resolution under HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves salary payment not received on bank account today. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Check the bank transfer batch log for the employee ID, verify transaction status, and process immediate wire if failed.',
         0.98
     ),
@@ -1448,7 +1457,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Employment and income verification letters are drafted by HR001 C&B.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves requesting income verification letter for bank loan application. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Draft the verification letter using the corporate template, secure the director''s signature, and notify the employee.',
         0.94
     ),
@@ -1459,7 +1468,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Bank detail modifications in the payroll system are managed by HR001 C&B.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves updating bank account details for monthly salary payroll. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Verify bank confirmation documents, update the account number in the payroll software, and test file export.',
         0.96
     ),
@@ -1470,7 +1479,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Wellness allowances and reimbursement guidelines are answered by HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves query about company wellness allowance reimbursement limits. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Confirm the wellness allowance policy limits, check invoice compliance, and process the reimbursement claim.',
         0.95
     ),
@@ -1481,7 +1490,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Employee benefit cards and meal allowance tops are managed under HR001 benefits.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves meal allowance card not receiving monthly balance. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Check the allowance top-up registry for the card number, and contact the lunch vendor to reissue the credit.',
         0.93
     ),
@@ -1492,7 +1501,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Year-end bonuses and calculation formulas are explained by HR001 C&B.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves 13th month salary calculation policy query for mid-year hires. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Explain the prorated 13th-month salary policy to the employee based on their start date.',
         0.92
     ),
@@ -1503,7 +1512,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Social insurance book tracking and BHXH transfers are handled by HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves social insurance book (so bhxh) collection query after transfer. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Contact the subsidiary HR team to verify transfer status, and notify the employee when the book is in our storage.',
         0.95
     ),
@@ -1514,7 +1523,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Health insurance card replacements and provider requests are managed by HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves pvi health insurance card replacement request after loss. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Contact the PVI insurance representative to request a card reissue, and provide the digital insurance number.',
         0.94
     ),
@@ -1525,7 +1534,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Pension plans and pay slip deductions checks are handled by HR001 C&B.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves retirement pension contribution discrepancy in monthly deductions. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Inspect the payroll configuration, check for any statutory pension rate updates, and reply to the employee.',
         0.93
     ),
@@ -1536,7 +1545,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Relocation benefits and transfer payouts are processed under HR001 C&B.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves relocation allowance reimbursement request for regional transfer. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Review the relocation policy limits, approve the submitted invoices, and include the allowance in the next payroll run.',
         0.95
     ),
@@ -1547,7 +1556,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Promotion grade updates and retroactive payroll calculations are handled by HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves retroactive pay adjustment missing for mid-year promotion. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Update the employee salary grade in the system, compute the retroactive pay difference, and include it in next month payroll.',
         0.96
     ),
@@ -1558,7 +1567,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'PIT tax status updates and government registrations are managed under HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves tax code change application after marriage status change. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Obtain the marriage certificate, register the status change with the tax authority, and update HRIS.',
         0.94
     ),
@@ -1569,7 +1578,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Contractual allowances and payslip item validation is handled by HR001 C&B.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves corporate phone allowance not appearing in july payslip. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Verify the contract allowance terms, and add the missing phone allowance item to the payroll system.',
         0.93
     ),
@@ -1580,7 +1589,7 @@ INSERT INTO sample_tickets (
         'HR',
         'high',
         'high',
-        'Emergency salary advance requests require fast review and payroll approval under HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves emergency salary advance request for family medical emergency. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Obtain director approval for the emergency advance, configure the payroll deduction, and trigger the wire transfer.',
         0.97
     ),
@@ -1591,7 +1600,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Historical payslip retrieval and physical stamps are handled by HR001 C&B.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves duplicate payslip reissuance request for past year visa application. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Retrieve the 12-month payslip files from the payroll archives, print them, apply the corporate stamp, and notify the employee.',
         0.94
     ),
@@ -1602,7 +1611,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Childcare benefits and eligibility checks are managed under HR001 benefits.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves childcare subsidy application submission and policy question. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Send the childcare subsidy policy documents and application form link to the employee.',
         0.93
     ),
@@ -1613,7 +1622,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Expat housing benefits and tax invoice validation is processed under HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves housing allowance documentation validation for expat staff. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Verify the lease invoice against company tax compliance guidelines, and approve the allowance mapping.',
         0.92
     ),
@@ -1624,7 +1633,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Reimbursement compliance checks and queries are handled by HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves fitness benefit reimbursement invoice rejection explanation. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Review the rejected invoice details, explain to the user that a formal red invoice (e-invoice) is required, and invite resubmission.',
         0.94
     ),
@@ -1635,7 +1644,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Holiday overtime pay rates and payroll compliance questions are answered by HR001 C&B.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves inquiry about overtime pay rate for working on public holidays. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Provide the statutory holiday pay rate details to the employee and guide them on the OT approval flow in HRIS.',
         0.96
     ),
@@ -1646,7 +1655,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Shift differential allowances and retrospective pay calculations are handled by HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves retroactive shift differential allowance missing for night shift engineers. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Audit the night shift attendance logs, calculate the differential difference, and process the payout in next month''s payroll.',
         0.95
     ),
@@ -1657,7 +1666,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Expatriate banking details updates and SWIFT codes config are processed under HR001 payroll.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves requesting update to bank details for international wire transfer. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Verify SWIFT codes with the corporate bank portal, and update the foreign transaction details in the payroll DB.',
         0.94
     ),
@@ -1668,7 +1677,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'PIT tax deduction certificates and annual tax finalization support is managed under HR001 C&B.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves pit tax deduction certificate request for personal income tax finalization. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Print the official tax deduction certificate, sign and stamp it, and notify the employee for physical collection.',
         0.97
     ),
@@ -1679,7 +1688,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Leave policies, carry-over terms, and expiration details are answered by HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves leave carry-over policy query for unused annual leave. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Explain the annual leave carry-over expiration policy (e.g., must use by March 31st) to the employee.',
         0.95
     ),
@@ -1690,7 +1699,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Dependent health insurance additions and payroll premium deductions are managed by HR001 benefits.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves question regarding bao viet health insurance card addition for dependents. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Send the dependent insurance premium pricing list and registration form link to the employee.',
         0.94
     ),
@@ -1701,7 +1710,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Travel and business expense allowances audit is handled by HR001 C&B.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves discrepancy in monthly travel allowance calculation. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Verify the travel tickets against the expense sheets, and correct the travel allowance credit for the employee.',
         0.93
     ),
@@ -1712,7 +1721,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Stock options, ESOP vesting, and capital gains tax calculations are explained by HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves query about stock option vesting schedule and taxation rules. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Send the ESOP guide and the current capital gains PIT tax policy rules to the employee.',
         0.91
     ),
@@ -1723,7 +1732,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Reimbursement claims tracking and validation falls under HR001 C&B operations.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves relocation expenses reimbursement claim status check. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Inspect the relocation invoice approvals, contact the finance team, and update the status in the portal.',
         0.94
     ),
@@ -1734,7 +1743,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Domestic housing allowances and domestic transfer policy falls under HR001.',
+        'The ticket is categorized under HR001 (Compensation & Benefits (C&B)) floor 12A, as the issue involves housing allowance application process for relocated domestic employees. The policy fit is appropriate since this team handles employee pay, benefits, payroll, social insurance, and personal income tax (excluding training registration or resignation procedures).',
         'Send the domestic relocation policy guidelines and housing allowance limits documentation to the employee.',
         0.93
     ),
@@ -1745,7 +1754,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'New hire orientation setup and onboarding logistics falls under HR002 Talent Acquisition & Development.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves onboarding coordinator assignment request for new engineering batch. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Assign an HR coordinator to manage the orientation itinerary, book the training room, and email the interns.',
         0.96
     ),
@@ -1756,7 +1765,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'LMS system access issues and learning portal stability is managed by HR002 L&D operations.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves jira server access request for corporate learning management system (lms). The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Check the LMS platform connection logs, reset the SSO configuration for the learning portal, and notify the vendor.',
         0.94
     ),
@@ -1767,7 +1776,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Training enrollment modifications and class capacity adjustments are handled by HR002 L&D.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves leadership training workshop registration issue for mid-level managers. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Verify manager approval, check if the external trainer can accommodate another attendee, and register the manager.',
         0.95
     ),
@@ -1778,7 +1787,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Talent acquisition interview scheduling coordination is managed under HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves scheduling final round interview panel for senior qa engineer candidate. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Confirm panelist availability, book a meeting room or video bridge, and send the calendar invites to the candidate and panel.',
         0.96
     ),
@@ -1789,7 +1798,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Job openings approvals and recruitment channel management is handled by HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves requisition approval request: hiring additional frontend developer. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Review the job requisition details, verify headcount budget clearance, and activate the posting on career portals.',
         0.95
     ),
@@ -1800,7 +1809,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'medium',
-        'Employee probation evaluations and review timelines are managed under HR002 Talent Management.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves probation review feedback submission delay warning. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Grant the temporary submission extension, notify the payroll team, and monitor the review status.',
         0.94
     ),
@@ -1811,7 +1820,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'External training requests and education budget approvals are routed to HR002 L&D.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves requesting budget approval for external specialized kubernetes training. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Verify budget availability in the departmental L&D bucket, approve the training expense, and send booking instructions.',
         0.93
     ),
@@ -1822,7 +1831,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Compliance training reports and LMS database exports are managed under HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves mandatory safety awareness training compliance report request. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Generate the course completion report from the LMS admin dashboard and export it to the compliance auditor.',
         0.95
     ),
@@ -1833,7 +1842,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Onboarding buddy programs and new hire itineraries are managed by HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves assigning onboarding buddy for incoming product manager. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Record the onboarding buddy assignment in the new hire file and send the program guidelines to the buddy.',
         0.93
     ),
@@ -1844,7 +1853,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Internal mobility and career rotation checks are routed to HR002 Talent Development.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves internal job transfer application verification for q4 rotation. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Verify the employee tenure in their current role, confirm they have no active performance issues, and forward the profile to the hiring team.',
         0.94
     ),
@@ -1855,7 +1864,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'L&D software licenses and portal access is managed under HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves linkedin learning license assignment request for marketing designer. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Allocate an active LinkedIn Learning seat to the employee email and monitor their onboarding status.',
         0.94
     ),
@@ -1866,7 +1875,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Pre-employment logistics and clinic bookings fall under HR002 Talent Acquisition.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves pre-employment medical check-up coordination for candidate. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Send the medical check-up invitation to the candidate, register them at the clinic, and track results.',
         0.93
     ),
@@ -1877,7 +1886,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'L&D budget payouts and certification expense verification is processed by HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves professional certification exam cost reimbursement request. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Verify prior certification approval, confirm the exam certificate is valid, and process the reimbursement invoice.',
         0.94
     ),
@@ -1888,7 +1897,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Referral program checks and probation tracking falls under HR002 recruitment logistics.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves employee referral bonus eligibility check for senior referral. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Check the candidate''s hiring file, verify they completed probation, and submit the referral payout ticket to the finance team.',
         0.95
     ),
@@ -1899,7 +1908,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Curriculum designs and apprenticeship compliance reviews are managed under HR002 L&D.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves apprenticeship training program syllabus approval request. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Schedule a meeting with the engineering program lead to review the syllabus structure and program milestones.',
         0.91
     ),
@@ -1910,7 +1919,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Competency designs and department consultations are handled by HR002 Talent Development.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves competency framework mapping consultation request for marketing roles. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Assign a talent specialist to work with the marketing director to map competencies and grades.',
         0.92
     ),
@@ -1921,7 +1930,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Leadership workshops and succession planning coordination is managed by HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves succession planning workshop registration and calendar booking. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Draft the workshop agenda, send calendar invitations to department heads, and compile assessment files.',
         0.93
     ),
@@ -1932,7 +1941,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Performance evaluation system support is handled by HR002 L&D operations.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves 360-degree feedback tool password reset in evaluation portal. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Reset the employee password in the evaluation platform database and trigger a password reset email.',
         0.94
     ),
@@ -1943,7 +1952,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'LMS system options and mobile app configuration belongs under HR002 operations.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves e-learning platform mobile app offline access issue. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Verify the mobile download settings in the LMS system admin panel, and guide the employee.',
         0.88
     ),
@@ -1954,7 +1963,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'L&D study resources and library purchases are managed by HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves technical book library procurement request for development team. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Approve the book purchase, place the order with the book distributor, and catalog them in the office library.',
         0.91
     ),
@@ -1965,7 +1974,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Recruitment campaigns and career fair events are coordinated by HR002 recruitment.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves campus recruitment event booth logistics coordination. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Register our booth at the university fair, order the promotional brochures, and coordinate the attendance list.',
         0.92
     ),
@@ -1976,7 +1985,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Internship conversions and junior recruitment is managed under HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves internship conversion proposal to permanent junior role. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Verify intern performance reviews, prepare the junior contract offer letter, and send it to the director for approval.',
         0.95
     ),
@@ -1987,7 +1996,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Compliance audits and database reporting falls under HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves mandatory safety training overdue reminder list export. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Export the overdue safety training list from the LMS console, group by department manager, and email the alerts.',
         0.94
     ),
@@ -1998,7 +2007,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Volunteer coordination and talent briefings fall under HR002 Talent Acquisition.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves campus recruitment campaign volunteer registration and briefing. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Email the call for volunteers to the engineering team, and schedule a 30-minute briefings session for registered helpers.',
         0.94
     ),
@@ -2009,7 +2018,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'LMS competency definition updates and roles alignment is managed by HR002 L&D.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves competency matrix review request for junior software engineer roles. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Review the proposed technical rubric revisions and map them to the corresponding role configurations in the LMS database.',
         0.93
     ),
@@ -2020,7 +2029,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Performance calibrations follow-up and policy compliance reviews fall under HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves requesting feedback on the recent q2 performance calibration session. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Schedule a short review meeting with the requesting manager and prepare the calibration notes.',
         0.92
     ),
@@ -2031,7 +2040,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'LMS system integrations and cross-platform notifications falls under HR002 L&D operations.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves lms platform integration with corporate microsoft teams client. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Review LMS integration documentation, submit the integration ticket to the IT system administrator, and test alert triggers.',
         0.95
     ),
@@ -2042,7 +2051,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'PDP resource distribution and manager support tools fall under HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves professional development plan templates request for engineering managers. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Send the PDP templates, guidelines, and career path booklets to the engineering manager''s team folder.',
         0.93
     ),
@@ -2053,7 +2062,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Onboarding document verification and employee file status updates are handled by HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves onboarding document verification delay for newly joined qa tester. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Review the uploaded degree certificate scan, mark it as verified in the HRIS, and notify the employee.',
         0.96
     ),
@@ -2064,7 +2073,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Professional certification reimbursement checks and claims are processed by HR002 L&D.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves requesting certification reimbursement for certified scrum master course. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Verify prior certification approval, confirm the certificate validity, and submit the payout request to finance.',
         0.94
     ),
@@ -2075,7 +2084,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Graduate trainee rotation tracking and department allocations fall under HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves graduate trainee rotation schedule proposal for engineering department. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Review the rotation proposal against trainee study tracks, update the trainee roster, and notify the hosting team leads.',
         0.93
     ),
@@ -2086,7 +2095,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Talent reviews scheduling and organization is handled by HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves talent review calibration workshop invite coordination. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Identify director calendars, block a meeting room, and send the talent review invites with calibration instructions.',
         0.94
     ),
@@ -2097,7 +2106,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Leadership transition resources and succession frameworks fall under HR002.',
+        'The ticket is categorized under HR002 (Talent Acquisition & Learning and Development (L&D)) floor 12A, as the issue involves succession planning framework documentation request for director roles. The policy fit is appropriate since this team handles new employee onboarding support, workstation preparation, and training courses (excluding payroll, benefits, resignation, or workplace conflict).',
         'Send the succession planning framework slides and assessment matrices to the requesting director.',
         0.91
     ),
@@ -2108,7 +2117,7 @@ INSERT INTO sample_tickets (
         'HR',
         'high',
         'high',
-        'Workplace harassment reports represent a critical employee relations incident mapping to HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves harassment report and hostile work environment incident on floor 19. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Immediately schedule separate private interviews with the complainant and the accused, and document the incident logs.',
         0.99
     ),
@@ -2119,7 +2128,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Interpersonal conflicts and team mediation falls under HR003 employee relations.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves conflict resolution and mediation request between two developers. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Schedule a private mediation session with both developers and a senior HR relations specialist.',
         0.96
     ),
@@ -2130,7 +2139,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Personal record updates and database entries are processed by HR003 employee relations.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves update emergency contact information in my employee file. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Verify the update form, modify the emergency contact details in the HR database, and confirm with the employee.',
         0.95
     ),
@@ -2141,7 +2150,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Resignations, offboarding interviews, and departure checklists are handled by HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves offboarding process and resignation intake interview scheduling. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Acknowledge the resignation, schedule the exit interview, and send the offboarding checklist link to the employee.',
         0.97
     ),
@@ -2152,7 +2161,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Policy clarifications and employee compliance inquiries are answered by HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves clarification on company policy regarding personal blog posts. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Send the social media and corporate code of conduct policy documents to the employee, and clarify the blog rules.',
         0.94
     ),
@@ -2163,7 +2172,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Office harmony, noise complaints, and environment complaints fall under HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves office noise complaint and acoustic policy concern on floor 18. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Remind the office floor leads about the quiet zone rules, and encourage staff to use phone booths for calls.',
         0.93
     ),
@@ -2174,7 +2183,7 @@ INSERT INTO sample_tickets (
         'HR',
         'high',
         'high',
-        'Whistleblower reports and ethical investigations are critical matters handled by HR003 relations.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves whistleblower report: suspicious third-party procurement payments. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Forward the report immediately to the audit committee, secure transaction logs, and maintain whistleblower confidentiality.',
         0.98
     ),
@@ -2185,7 +2194,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'EAP program registrations and wellness referrals are handled by HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves employee assistance program (eap) referral request for stress management. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Provide the contact details for the external EAP provider, explain the confidentiality policy, and confirm registration status.',
         0.96
     ),
@@ -2196,7 +2205,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Disability accommodations and office ergonomic adjustments are coordinated by HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves requesting workplace accommodation for temporary disability support. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Approve the desk change, coordinate with facilities to move the workstation, and deliver the footrest.',
         0.94
     ),
@@ -2207,7 +2216,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Corporate events feedback and policy reviews are managed by HR003 culture.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves feedback on recent company year end party organization. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Log the catering complaint, contact the event coordinator, and review vendor quality standards.',
         0.92
     ),
@@ -2218,7 +2227,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Workplace policy accessibility and mother resources are managed under HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves lactation room reservation schedule adjustment on floor 18. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Program the badge access for the lactation room, and add the employee to the shared booking calendar.',
         0.95
     ),
@@ -2229,7 +2238,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Office culture suggestions and sustainability feedback is routed to HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves office environment concern: lack of recycling bins in open plan. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Forward the bin suggestion to the facilities team and confirm plan back to the employee.',
         0.91
     ),
@@ -2240,7 +2249,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Employee grievances and promotion reviews fall under HR003 employee relations.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves grievance report regarding promotion decision transparency. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Schedule a meeting with the employee to discuss their concerns, and review the promotion criteria with the department lead.',
         0.94
     ),
@@ -2251,7 +2260,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Personal record details and database updates are managed under HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves personal record update: new home address and tax residency status. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Verify the lease agreement, update the address in the HR database, and confirm with the employee.',
         0.95
     ),
@@ -2262,7 +2271,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Sabbatical programs and leave policies are explained by HR003 relations.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves requesting sabbatical leave policy details and application process. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Send the sabbatical leave policy document to the employee, and guide them on the director approval process.',
         0.93
     ),
@@ -2273,7 +2282,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Bereavement and compassionate leave extension decisions fall under HR003 relations.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves bereavement leave extension request due to international travel. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Approve the leave extension under compassionate grounds, and update the payroll tracking file.',
         0.94
     ),
@@ -2284,7 +2293,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Religious accommodations and flexible scheduling checks are managed under HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves religious holiday observance accommodation request for eid. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Acknowledge the religious accommodation request and record the flexible work arrangement in the HRIS.',
         0.95
     ),
@@ -2295,7 +2304,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Foreign employee compliance and work permit renewals are handled by HR003 relations.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves work permit renewal documentation verification for foreign developer. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Review the submitted documents for immigration compliance, and submit the renewal application to the labor department.',
         0.96
     ),
@@ -2306,7 +2315,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Workplace wellness programs and volunteer training is coordinated by HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves mental health first aider training participation request. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Register the employee for the wellness workshop and send the training preparation files.',
         0.92
     ),
@@ -2317,7 +2326,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Wellness challenges and culture initiatives are organized under HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves suggesting a company-wide step count fitness challenge. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Review the steps challenge proposal, evaluate tracking apps, and pitch the program to the HR director.',
         0.92
     ),
@@ -2328,7 +2337,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Directory identity details and diversity settings are managed by HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves pronouns and preferred name update request in corporate directory. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Update the employee''s preferred name and pronouns in the HR database and sync the active directory.',
         0.94
     ),
@@ -2339,7 +2348,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Expat relocation services and onboarding support falls under HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves expatriate relocation housing support coordination. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Send the expat onboarding guide, connect the employee with the housing agency, and coordinate target dates.',
         0.95
     ),
@@ -2350,7 +2359,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Code of conduct policies and privacy compliance checks are answered by HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves social media code of conduct clarification request. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Explain the social media photography guidelines to the employee, confirming verbal consent is sufficient for internal events.',
         0.93
     ),
@@ -2361,7 +2370,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Conflict coaching and management guidance is provided under HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves workplace conflict resolution advice request regarding project credit dispute. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Send the conflict resolution guide to the manager and offer a shadowing session to help facilitate.',
         0.94
     ),
@@ -2372,7 +2381,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Policy documentation delivery and employee inquiries are handled by HR003 relations.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves requesting copy of official whistleblower policy document. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Email the latest approved corporate Whistleblower Policy PDF to the requesting employee.',
         0.95
     ),
@@ -2383,7 +2392,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Compassionate support resources and EAP eligibility check falls under HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves employee assistance program referral check for bereavement support. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Provide EAP grief counselor contact information to the manager and verify the session limits.',
         0.93
     ),
@@ -2394,7 +2403,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Anonymous culture suggestions and inclusion feedback falls under HR003 culture.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves anonymous feedback on workplace diversity and inclusion initiatives. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Log the suggestion in the D&I committee backlog, and propose bilingual communications for cultural events.',
         0.94
     ),
@@ -2405,7 +2414,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Marital status data changes and insurance updates are handled by HR003 employee relations.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves marital status change registration for health insurance records. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Update the employee marital status in the HR database and share the dependent health insurance application form.',
         0.94
     ),
@@ -2416,7 +2425,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Office facility booking rules and mother support compliance falls under HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves lactation room booking calendar guidelines clarification. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Re-distribute the lactation room guidelines to registered users and verify the booking slot settings.',
         0.95
     ),
@@ -2427,7 +2436,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Medical flexible work arrangement requests are reviewed and approved under HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves flexible work arrangement proposal for long-term health recovery plan. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Verify the medical certificate details, coordinate with the team manager, and log the temporary arrangement.',
         0.96
     ),
@@ -2438,7 +2447,7 @@ INSERT INTO sample_tickets (
         'HR',
         'low',
         'low',
-        'Offboarding process exit interview scheduling falls under HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves exit interview scheduling request for departing senior sales manager. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Schedule the exit interview with the departing manager and share the exit survey link.',
         0.95
     ),
@@ -2449,7 +2458,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Expat repatriation logistics and tax clearance coordination is handled by HR003 relations.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves expatriate repatriation logistics support request. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Approve the shipping vendor quote, book the flight tickets, and coordinate tax exit filing with the tax consultant.',
         0.96
     ),
@@ -2460,7 +2469,7 @@ INSERT INTO sample_tickets (
         'HR',
         'medium',
         'low',
-        'Workplace medical accommodations and special seating adjustments are coordinated by HR003.',
+        'The ticket is categorized under HR003 (Employee Relations & Culture) floor 12A, as the issue involves workplace accommodation request for ergonomic seating after back surgery. The policy fit is appropriate since this team handles work environment feedback, internal workplace conflicts, and resignation procedures (excluding payroll, benefits, or training registration).',
         'Approve the ergonomic seating request and coordinate with facilities to purchase and place the chair.',
         0.95
     ),
@@ -2471,7 +2480,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'high',
-        'A swollen battery represents a physical hardware defect and a safety hazard, mapping directly to IT001. Immediate replacement is required.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves laptop battery swelling and warping the lower chassis. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Safely decommission the swollen battery laptop, place it in a fire-safe container, and issue a replacement MacBook Pro to the employee.',
         0.98
     ),
@@ -2482,7 +2491,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'medium',
-        'Physical screen damage requires hardware diagnostics and screen replacement or laptop swap under IT001. Travel constraint elevates the SLA urgency.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves cracked screen on lenovo thinkpad after accidental drop. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Assess the screen damage, swap the LCD panel if parts are in stock, or issue a temporary loaner laptop for the employee''s travel.',
         0.96
     ),
@@ -2493,7 +2502,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Internal fan issues require chassis opening and component replacement, which is a physical hardware task under IT001.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves loud grinding noise coming from desktop workstation cooling fan. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Open the workstation chassis, check the fans for obstructions or bearing failure, and replace the failing fan unit.',
         0.95
     ),
@@ -2504,7 +2513,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'RAM upgrades and physical hardware modifications fall under IT001 hardware inventory operations.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves upgrade requests for additional 16gb ram for local docker development. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Check laptop model compatibility for RAM upgrade, verify budget approval, and schedule a time for the employee to drop off the laptop for installation.',
         0.94
     ),
@@ -2515,7 +2524,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Peripheral hardware failure and replacement is managed by the IT001 hardware inventory desk.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves replacement needed for defective webcam showing distorted green colors. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Verify the defect, retrieve a new external webcam from inventory, and issue it to the employee while logging the serial number change.',
         0.93
     ),
@@ -2526,7 +2535,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Specialized accessibility hardware procurement and distribution is routed through IT001.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves procurement of specialized mechanical keyboard for developer accessibility. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Review the medical recommendation, check if the requested keyboard model is on the approved peripheral list, and place the procurement order.',
         0.92
     ),
@@ -2537,7 +2546,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'high',
-        'Primary drive failure and data recovery assessment requires physical hardware intervention, putting this under IT001.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves failed nvme ssd drive causing boot failure on engineering workstation. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Remove the NVMe SSD, test it in an external enclosure, perform data recovery if readable, and install a replacement drive with a fresh OS image.',
         0.97
     ),
@@ -2548,7 +2557,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Standard peripheral hardware failure is handled by the IT001 walk-up helpdesk.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves wireless mouse left click button completely unresponsive. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Collect the broken mouse, update the inventory database to mark it as scrap, and hand a new wireless mouse to the employee.',
         0.95
     ),
@@ -2559,7 +2568,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'low',
-        'Exposed wiring on a high-wattage charger poses an immediate safety and fire risk, handled under IT001.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves frayed usb-c laptop charger cable showing exposed copper wiring. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Instruct the user to stop using the damaged charger immediately, discard it safely, and issue a new replacement charger.',
         0.96
     ),
@@ -2570,7 +2579,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Power supply noise and defect investigation falls under IT001 hardware inspection and replacement.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves external monitor power adapter emitting high-pitched whistling noise. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Swap the noisy power brick with a matching replacement adapter from inventory and send the old brick for disposal.',
         0.93
     ),
@@ -2581,7 +2590,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Asset tag management and hardware tracking falls under IT001 inventory management.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves asset tag recovery and verification for unlabeled warehouse scanner. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Search the serial number in the asset database, print the corresponding barcode asset tag, and apply it to the scanner.',
         0.94
     ),
@@ -2592,7 +2601,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'medium',
-        'Replacement of missing conference room peripherals and adapters is handled by IT001.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves missing hdmi adapter from floor 18 south conference room table. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Retrieve a USB-C to HDMI adapter from storage, secure it to the conference table cable harness, and verify the display link.',
         0.92
     ),
@@ -2603,7 +2612,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Physical screen filters and laptop accessories are distributed by IT001.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves requesting privacy filter screen for hr payroll coordinator laptop. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Check stock for a 14-inch privacy filter and deliver it to the payroll coordinator''s desk.',
         0.94
     ),
@@ -2614,7 +2623,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Thermal maintenance, fan cleaning, and thermal paste application require physical hardware servicing under IT001.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves overheating issues causing thermal throttling during software builds. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Clean the dust out of the laptop''s internal cooling vents and fans, and re-apply high-quality thermal paste if necessary.',
         0.93
     ),
@@ -2625,7 +2634,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Laptop carrying bags and peripheral accessories are managed under IT001 hardware accessories.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves broken plastic hinge on corporate laptop bag strap. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Issue a replacement shoulder strap or laptop bag to the employee from the inventory room.',
         0.91
     ),
@@ -2636,7 +2645,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Physical keyboard key repair or replacement is handled by IT001 hardware support.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves laptop keyboard missing physical key caps after key popped off. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Check if a spare matching keycap can be fitted, or arrange for a keyboard panel replacement.',
         0.94
     ),
@@ -2647,7 +2656,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Audio headset failure and inventory exchange falls under IT001 hardware peripherals.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves headset microphone picking up constant background static noise. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Collect the defective headset, mark it for audit, and hand a new headset to the employee.',
         0.95
     ),
@@ -2658,7 +2667,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Storage drive procurement and distribution is managed under IT001 hardware provisioning.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves requesting 1tb external ssd for offline media cache backup. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Verify manager approval, retrieve a 1TB external SSD from stock, register it to the employee''s asset profile, and deliver it.',
         0.96
     ),
@@ -2669,7 +2678,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'high',
-        'Damaged power supply for a business trip laptop represents an urgent hardware swap under IT001.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves damaged power pin in the barrel connector of loaner laptop charger. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Verify the barrel pin damage, retrieve a matching charger from loaner stock, and hand it to the traveler immediately.',
         0.97
     ),
@@ -2680,7 +2689,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Monitor mounting hardware maintenance and replacement belongs to IT001 desktop setups.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves wobbly monitor stand mount causing screen to tilt sideways. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Send a technician to the employee''s desk with a replacement monitor arm bracket or mount screw to secure the screen.',
         0.92
     ),
@@ -2691,9 +2700,9 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Desk accessories and ergonomic padding requests are serviced by IT001 hardware inventory.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves requesting replacement desk pad and wrist rest due to wear and tear. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Approve the request and issue a new desk pad and ergonomic wrist rest to the employee.',
-        0.90
+        0.9
     ),
     (
         'IT001',
@@ -2702,7 +2711,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Thunderbolt connectivity cable defect is handled under IT001 hardware peripherals.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves defective thunderbolt 3 cable causing frequent dock disconnects. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Replace the defective Thunderbolt cable with a new one from inventory and test the dock link stability.',
         0.94
     ),
@@ -2713,7 +2722,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Decommissioning and hardware check-in for departing employees is managed by IT001 inventory.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves hardware inventory return for departing contractor''s phone and tablet. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Record the return of the iPhone and iPad in the inventory tracking sheet, wipe the devices, and store them securely.',
         0.96
     ),
@@ -2724,7 +2733,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Liquid damage to input devices is diagnosed and replaced under IT001 hardware support.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves liquid spill damage on external mechanical keyboard. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Decommission the damaged keyboard and issue a standard replacement keyboard to the employee.',
         0.94
     ),
@@ -2735,7 +2744,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Physical screen protection maintenance is routed to IT001.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves corporate tablet screen protector shattered after drop in warehouse. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Remove the shattered screen protector, verify LCD touch functionality, and install a new screen protector.',
         0.92
     ),
@@ -2746,7 +2755,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'high',
-        'Bent pins on display cabling before a session is an urgent physical hardware issue under IT001.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves damaged pins on vga-to-displayport converter cable in training room. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Send an IT support specialist to the training room with a new adapter cable immediately to restore video feed.',
         0.96
     ),
@@ -2757,7 +2766,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Ergonomic monitor mounting options are managed by the IT001 hardware setup desk.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves requesting dual monitor arms for new desk installation. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Deliver and install a dual monitor mount on the employee''s desk.',
         0.93
     ),
@@ -2768,7 +2777,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Battery replacement and accessory maintenance is a standard task for IT001 peripherals.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves replacement battery needed for wireless presenter clicker. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Replace the AAA batteries in the presenter remote and check its operation.',
         0.91
     ),
@@ -2779,7 +2788,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'medium',
-        'Smart card reader hardware malfunction is routed to IT001 hardware peripherals.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves defective smart card reader preventing login keycard scans. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Verify device failure, replace the card reader from stock, and test smart card detection.',
         0.93
     ),
@@ -2790,7 +2799,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Loose DC power jack requires physical laptop repair or logic board swap under IT001.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves loose power jack socket on corporate laptop board. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Schedule a hardware diagnostic, open the laptop to inspect the power socket solder joints, or replace the mainboard.',
         0.95
     ),
@@ -2801,7 +2810,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Carrying cases and physical storage for IT diagnostic equipment falls under IT001 hardware.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves damaged carrying handle on primary field diagnostic kit case. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Order a replacement rugged case or swap the equipment into a spare diagnostic kit container.',
         0.85
     ),
@@ -2812,7 +2821,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Partial docking station hardware failure belongs in the IT001 hardware inventory queue.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves usb hub port failure on floor 19 workspace docking station. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Swap the defective docking station with a new unit and update the asset inventory records.',
         0.94
     ),
@@ -2823,7 +2832,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Replacement of damaged patch cords and cabling accessories is handled by IT001 hardware.',
+        'The ticket is categorized under IT001 (Hardware Inventory & Equipment Provisioning) floor 18, as the issue involves broken plastic clip on rj-45 ethernet patch cord in cubicle 182. The policy fit is appropriate since this team handles physical hardware equipment, issuing new equipment, and replacing broken hardware (excluding network configuration, operating system issues, or account access problems).',
         'Provide a new 3-meter RJ-45 patch cable to the user''s cubicle.',
         0.91
     ),
@@ -2834,7 +2843,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'high',
-        'Network-wide DHCP lease allocation failure affects an entire floor, mapping directly to IT002 network support.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves dhcp pool exhaustion preventing wi-fi connections on floor 17. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Check the DHCP server lease tables for Floor 17 VLAN, release expired leases, or expand the subnet IP address pool.',
         0.98
     ),
@@ -2845,7 +2854,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Software-level container virtualization and internal network troubleshooting is managed under IT002 software support.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves docker desktop container networking error after bridge update. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Reset Docker Desktop network settings, repair the vEthernet adapter interface, or reinstall the hypervisor backend.',
         0.94
     ),
@@ -2856,7 +2865,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'DNS resolution and local client cache issues fall under IT002 network support.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves stale local dns cache cache causing incorrect api routing errors. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Verify upstream DNS records, check the client host file settings, and perform a deep flush of the OS and browser DNS cache.',
         0.95
     ),
@@ -2867,7 +2876,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Individual application stability and collaboration software crash debugging is handled by IT002.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves application crash: microsoft teams freezes during screen sharing. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Disable hardware acceleration in Teams settings, verify desktop environment display manager logs, or reinstall the Teams client.',
         0.96
     ),
@@ -2878,7 +2887,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'medium',
-        'Proxy certificate filtering and domain allowlisting is managed by the IT002 network support team.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves corporate proxy blocking outbound connections to aws s3 endpoints. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Check proxy logs for blocked S3 URLs and update the network gateway policy to allow access for the developer subnet.',
         0.97
     ),
@@ -2889,7 +2898,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'high',
-        'Inter-VLAN routing failure blocking development and test benches is an urgent network issue under IT002.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves vlan routing misconfiguration isolating engineering testing subnet. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Inspect core switch routing tables, restore the missing access control lists (ACLs) and routes, and verify ping connectivity.',
         0.98
     ),
@@ -2900,7 +2909,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Switch port status, cable connection, and physical interface flap debugging falls under IT002.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves network switch port flap causing intermittent wired drops in room 4a. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Check the switch interface logs for port flaps, test the patch panel connection, or move the room connection to a different switch port.',
         0.94
     ),
@@ -2911,7 +2920,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Mail application sync and local profile troubleshooting is routed to IT002 software support.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves outlook mailbox synchronization failure on macos client. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Clear the local Outlook cache, delete and rebuild the offline ost/database file, or re-add the Exchange account.',
         0.93
     ),
@@ -2922,7 +2931,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Desktop application rendering and GPU hardware acceleration conflicts are handled by IT002 software support.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves figma desktop client showing blank screen after loading web assets. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Clear the Figma local app data cache directory and disable GPU acceleration in the app configuration settings.',
         0.91
     ),
@@ -2933,7 +2942,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Web server SSL cert installation and host configuration falls under IT002 systems software.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves internal server ssl certificate mismatch warning for database admin tool. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Generate a new internal CA certificate containing the correct Subject Alternative Name (SAN) and install it on the web server.',
         0.95
     ),
@@ -2944,7 +2953,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Network-attached storage (NAS) folder level permissions and ACL debugging is managed by IT002.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves file permission denied error on corporate shared nas volume. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Verify group permissions in Active Directory for the marketing share, and reset the inherited NTFS permissions on the target directory.',
         0.96
     ),
@@ -2955,7 +2964,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Antivirus client policy exceptions and endpoint agent settings are managed under IT002 system software.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves antivirus software quarantining legitimate python compile artifacts. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Inspect the security agent logs, add the developer local build directory to the scan exclusion path, and restore the quarantined files.',
         0.94
     ),
@@ -2966,7 +2975,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Print spooler jams and network printing pipeline issues are serviced by IT002.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves stuck network print job blocking marketing brochure prints on floor 18. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Log in to the print server, stop the spooler service, manually delete the stuck spl files, and restart the service.',
         0.95
     ),
@@ -2977,7 +2986,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'medium',
-        'Internal license server connectivity and routing falls under IT002 software systems.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves intellij license server connection timeout on developer subnet. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Verify license server process status, check firewall routing tables for port 27017, and restart the license server service.',
         0.96
     ),
@@ -2988,7 +2997,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'SSH gateway access and port block issues belong in the IT002 network queue.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves git ssh connection timeout when pushing to internal server. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Check the core network firewall rules for SSH port 22 to the Git server, and verify route tables for the subnet.',
         0.93
     ),
@@ -2999,7 +3008,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Infrastructure-as-code state management and state lock resolution is handled by IT002 DevOps support.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves terraform backend state lock error preventing deployment. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Look up the lock ID in DynamoDB, verify no active pipeline is running, and run the terraform force-unlock command.',
         0.92
     ),
@@ -3010,7 +3019,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Proxy SSL interception exceptions and domain bypass configurations are managed by IT002.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves corporate proxy blocking api requests to external test sandbox. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Configure the proxy server bypass list to allow direct outbound connections to the payment sandbox domain.',
         0.95
     ),
@@ -3021,7 +3030,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Wireless access point load, bandwidth metrics, and canteen VLAN tuning belongs to IT002.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves bandwidth throttling or high latency on employee wi-fi in canteen. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Check client counts on the canteen APs, inspect bandwidth usage logs for hogging processes, and adjust QoS bandwidth limiters.',
         0.92
     ),
@@ -3032,7 +3041,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Clock synchronization, NTP client drift, and local domain sync troubleshooting is an IT002 software issue.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves ntp synchronization drift causing authentication failures. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Reset the Windows Time service configuration, force a sync with time.windows.com, and check domain NTP group policy.',
         0.94
     ),
@@ -3043,7 +3052,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Virtual desktop infrastructure (VDI) session management and stuck session termination falls under IT002.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves citrix virtual desktop session frozen and unresponsive. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Locate the user''s active session in the Citrix console, terminate it completely to clear the cache, and initiate a new login.',
         0.95
     ),
@@ -3054,7 +3063,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'medium',
-        'Monitoring stack failure, memory tuning, and log ingest pipelines are managed by IT002 systems software.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves log aggregation pipeline failure in elastic logstash node. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Increase the JVM heap allocation on the logstash cluster nodes, filter out debug events, and restart the service.',
         0.96
     ),
@@ -3065,7 +3074,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Metrics server timeouts and scraping configuration falls under IT002 systems software support.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves grafana dashboard metrics not updating due to prometheus timeout. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Verify the Prometheus scrap configuration, check the network route to the targets, and restart the scraping engine.',
         0.94
     ),
@@ -3076,7 +3085,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Office gateway performance and application route latency is diagnosed by IT002.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves jira server response time degradation on office connection. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Inspect the office gateway proxy cache hit rate, check traceroutes to the Jira server, and flush proxy dns tables.',
         0.93
     ),
@@ -3087,7 +3096,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'VPN client errors, macOS security framework changes, and driver compatibility belongs to IT002 software.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves corporate vpn client failing to establish tunnel on macos sonoma. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Allow the GlobalProtect system extension in macOS System Settings under Security, and reinstall the VPN client if needed.',
         0.95
     ),
@@ -3098,7 +3107,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Local database service issues and lockfile debugging for development environments is managed by IT002.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves local postgres service failing to start due to lockfile block. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Delete the postmaster.pid lockfile, verify log outputs, and start the PostgreSQL database cluster service.',
         0.88
     ),
@@ -3109,7 +3118,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'medium',
-        'Operating system boot failure and patch rollback is handled by IT002 software support.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves blue screen of death (bsod) loop on hr laptop after windows patch. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Boot into safe mode, uninstall the latest cumulative updates, rebuild the boot sector configuration, and check disk health.',
         0.97
     ),
@@ -3120,7 +3129,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Bootloader recovery and partition configuration falls under IT002 system software.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves linux grub bootloader menu missing after dual-boot installation. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Boot from an Ubuntu live USB, run boot-repair to reinstall the GRUB bootloader in EFI system partition, and update GRUB configurations.',
         0.92
     ),
@@ -3131,7 +3140,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Network drive mapping persistent settings and network reconnect scripts are managed by IT002.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves shared network drive folder disconnecting after sleep mode. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Update registry settings to delay network drive persistence checks, and verify NIC power management sleep settings.',
         0.94
     ),
@@ -3142,7 +3151,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Security agent scanning schedules and policy settings belong in IT002 system software.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves antivirus scanning engine causing 100% cpu spikes during meetings. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Modify the antivirus agent scan policy group policy to trigger full system scans outside core working hours (e.g., 9 PM to 6 AM).',
         0.93
     ),
@@ -3153,7 +3162,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'CI network gateways and container registry proxy settings are troubleshooting by IT002.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves developer subnet unable to pull node base images from docker hub. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Examine firewall logs for traffic from CI runners to Docker registry domains, and verify outbound NAT configs.',
         0.96
     ),
@@ -3164,7 +3173,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Desktop client app notification settings and helper daemon crashes fall under IT002 software.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves corporate slack client notification delays on macos sonoma client. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Restart the macOS Notification Center agent service, check Slack notification permission settings, and clear application cache.',
         0.92
     ),
@@ -3175,7 +3184,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Local web server configuration and rewrite rule debugging is routed to IT002 software support.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves local virtual host settings causing redirect loops in local apache. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Inspect the Apache virtual host config file and .htaccess rewrite rules, fix the loop condition, and restart Apache.',
         0.82
     ),
@@ -3186,7 +3195,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Bandwidth saturation and script execution schedules are managed by IT002.',
+        'The ticket is categorized under IT002 (Network Infrastructure & System Software Support) floor 18, as the issue involves network latency spikes during file transfers to cloud backup. The policy fit is appropriate since this team handles network configuration, operating system installation, internal software errors, and Wi-Fi or VPN connectivity (excluding physical hardware, account credentials, password resets, or security incidents).',
         'Reschedule the backup cron job to run at midnight, or apply bandwidth limits to the backup tool traffic on the gateway.',
         0.94
     ),
@@ -3197,7 +3206,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'high',
-        'Phishing campaign targeting VIP accounts represents a major security incident, mapping directly to IT003 cyber security.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves suspected phishing campaign targeting executive team accounts. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Block the sender domain on the email gateway, delete the email from all user mailboxes, and issue an alert to the staff.',
         0.99
     ),
@@ -3208,7 +3217,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'low',
-        'AD account lockouts preventing work require identity administration, placing this under IT003 account support.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves active directory account locked after multiple failed logins. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Verify employee identity, unlock the AD account, and prompt the user to trigger a self-service password reset if needed.',
         0.98
     ),
@@ -3219,7 +3228,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'medium',
-        'Okta MFA token resets and device reregistration requires security admin action under IT003.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves mfa reset request for okta after changing physical phone. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Verify user identity via secondary channel (e.g., manager confirmation), reset the Okta MFA status, and monitor enrollment.',
         0.97
     ),
@@ -3230,7 +3239,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'high',
-        'Endpoint protection alerts and malware investigations are managed by IT003 security operations.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves malware alert triggered on engineering sandbox test server. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Isolate the sandbox server from the network segment, collect file hashes, perform forensic scan, and clean the threat.',
         0.98
     ),
@@ -3241,7 +3250,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'New hire account creation and role-based access control (RBAC) setup is routed to IT003.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves provisioning system access permissions for incoming backend engineer. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Create the AD account, configure Okta dashboard tiles, invite the user to GitHub organization, and grant AWS roles.',
         0.96
     ),
@@ -3252,7 +3261,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'high',
-        'Emergency credential and access revocation for offboarded employees falls under IT003 account security.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves revoking access credentials for offboarded contractor immediately. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Disable the AD account, invalidate all active sessions in Okta, disable the user in Google Workspace, and remove from GitHub.',
         0.99
     ),
@@ -3263,7 +3272,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Privileged access management and IAM modifications are handled by IT003 security.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves requesting aws administrative console privilege elevation. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Check the manager approval log, configure a temporary IAM policy with a 4-hour automatic expiration, and audit access.',
         0.95
     ),
@@ -3274,7 +3283,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Exchange shared mailbox delegation and delegation security falls under IT003 user accounts.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves requesting access to shared company mailbox for finance support team. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Add the 3 requested users to the Outlook shared mailbox access group in Exchange Admin Center.',
         0.94
     ),
@@ -3285,7 +3294,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'API secret rotation and cryptographic checks are managed by IT003 security operations.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves api token rotation verification for third-party shipping gateway. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Generate the new API key, configure it in the secret vault, and audit key access logs during transition.',
         0.93
     ),
@@ -3296,7 +3305,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Security group modifications and ingress control policies are handled by IT003 security admin.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves ip allowlisting request for client staging database access. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Add the client''s IP address to the AWS SG staging rule for database access on port 5432 and verify security approval.',
         0.94
     ),
@@ -3307,7 +3316,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Geographic access rules and VPN travel exceptions are managed under IT003 access controls.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves requesting vpn connection geobypass exception for business trip. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Verify travel approval, add a temporary geo-blocking policy exception in Okta for the user''s account, and set an expiration date.',
         0.95
     ),
@@ -3318,7 +3327,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'DLP USB exceptions and hardware storage authorization falls under IT003 security policy enforcement.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves encrypted corporate usb drive policy exception request. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Review the justification, assign a hardware-encrypted USB drive, and whitelist the device ID in the MDM security policy.',
         0.92
     ),
@@ -3329,7 +3338,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'BYOD MDM profiles and device security posture checks are handled by IT003 security team.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves registering personal smartphone in corporate byod mdm program. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Send the MDM enrollment invitation link to the user and monitor device compliance status in Microsoft Intune.',
         0.93
     ),
@@ -3340,7 +3349,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Vendor security assessments and SaaS security compliance reviews are managed by IT003 GRC.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves security compliance review for third-party feedback software. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Obtain the SaaS vendor SOC2 report, review their data privacy policy, and complete the security risk assessment form.',
         0.94
     ),
@@ -3351,7 +3360,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Security answers reset and portal authentication recovery is managed by IT003 identity support.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves resetting security answers for corporate portal account. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Verify identity over a voice call, clear the security question hashes in the portal user DB, and notify the employee.',
         0.89
     ),
@@ -3362,7 +3371,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Compliance audits and database log extraction is a GRC task under IT003.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves pci-dss database audit log export request for annual certification. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Extract the administrative database audit logs from AWS CloudWatch, verify cryptographic signatures, and export them safely.',
         0.95
     ),
@@ -3373,7 +3382,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'high',
-        'Potential account compromise and unauthorized access represents a critical security incident under IT003.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves investigating unauthorized logins from outside office hours. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Immediately disable the compromised user account, terminate all active web sessions, and check login IP addresses in audit logs.',
         0.98
     ),
@@ -3384,7 +3393,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Code signing certificates and HSM key operations are managed under IT003 security engineering.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves renewing code signing certificate for desktop application release. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Generate a new key pair on the HSM, submit the CSR to the CA provider, sign the new release, and verify validity.',
         0.96
     ),
@@ -3395,7 +3404,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Group policy objects (GPO) configuration and endpoint lockdown falls under IT003 security administration.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves active directory group policy modification for desktop lock screen timeout. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Update the GPO configuration for screen lock timeout in Active Directory and verify propagation to test laptops.',
         0.93
     ),
@@ -3406,7 +3415,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'medium',
-        'BitLocker key retrieval and decryption block remediation is handled by IT003 security keys.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves retrieving bitlocker recovery key for locked laptop after bios update. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Look up the computer''s active directory object ID in Active Directory Users and Computers, retrieve the BitLocker key, and dictate it.',
         0.97
     ),
@@ -3417,7 +3426,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Security drills, playbook exercises, and risk management is coordinated by IT003 security team.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves coordination support for annual ransomware response dry-run simulation. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Draft the ransomware scenario timeline, prepare simulated communications, and coordinate roles with department leads.',
         0.92
     ),
@@ -3428,7 +3437,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'User access audits, IAM reviews, and compliance documentation fall under IT003.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves user access review audit for jira database compliance. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Generate a list of active users in Jira, cross-reference with active employees in HRIS, and highlight differences.',
         0.94
     ),
@@ -3439,7 +3448,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Google Workspace file-sharing settings and whitelisting is handled by IT003 Workspace admin.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves unlocking corporate google drive folder access for external auditor. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Add the external domain to the approved Google Workspace sharing list and authorize the folder share.',
         0.93
     ),
@@ -3450,7 +3459,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Scheduled offboarding and access revocation belongs in the IT003 accounts workflow.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves offboarding request: revoking corporate g suite and slack access. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Schedule the AD and Google Workspace account disabling commands to execute at 5 PM on the departure date.',
         0.96
     ),
@@ -3461,7 +3470,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Okta SSO integration and application configuration is routed to IT003 security identity.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves single sign-on (sso) integration request for new internal wiki platform. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Configure a new application in Okta, define access claims, and share the OIDC credentials securely with the developers.',
         0.95
     ),
@@ -3472,7 +3481,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'Phishing simulation management and employee metrics belong to IT003 security GRC.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves phishing simulation campaign setup request for q3 awareness training. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Select the phishing template, upload the employee distribution list, and schedule the campaign execution.',
         0.93
     ),
@@ -3483,7 +3492,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'high',
-        'Impossible travel alerts and session hijacking detection are high priority incident response tasks under IT003.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves investigating suspicious login locations flagged by okta risk engine. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Immediately terminate all active sessions for the flagged account, force password reset, and verify the traveler''s location.',
         0.98
     ),
@@ -3494,7 +3503,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'medium',
-        'Sensitive data leak investigation and access log analysis falls under IT003 incident response.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves requesting access log review for shared file containing server secrets. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Inspect the file server access audit logs, list all user accounts that accessed the file, and recommend password rotations.',
         0.96
     ),
@@ -3505,7 +3514,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'External partner security assessments and GRC validation is handled by IT003 GRC.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves third-party developer security assessment review request. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Check the signed NDA records, verify the background check status, and approve the partner onboarding status.',
         0.94
     ),
@@ -3516,7 +3525,7 @@ INSERT INTO sample_tickets (
         'IT',
         'medium',
         'low',
-        'Email security protocols (DKIM/SPF) and DNS security modifications are managed by IT003.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves dkim / spf record mismatch causing corporate emails to bounce. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Update the TXT DNS record for corporate SPF to include SendGrid, and check DKIM selector validation.',
         0.95
     ),
@@ -3527,7 +3536,7 @@ INSERT INTO sample_tickets (
         'IT',
         'low',
         'low',
-        'AD group membership changes and RBAC updates fall under IT003 user accounts.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves requesting user permission group change in active directory. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Verify manager approval, add the user account to the marketing-leads security group in Active Directory.',
         0.94
     ),
@@ -3538,7 +3547,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'high',
-        'SSO certificate lifecycle management is a critical identity access item handled by IT003.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves sso certificate renewal deadline warning in okta admin console. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Generate a new SAML signing certificate in Okta, upload it to the billing portal SAML metadata settings, and test authentication.',
         0.98
     ),
@@ -3549,7 +3558,7 @@ INSERT INTO sample_tickets (
         'IT',
         'high',
         'high',
-        'DLP alerts and data exfiltration investigation is a high priority task managed by IT003 cyber security.',
+        'The ticket is categorized under IT003 (Account & Cyber Security) floor 19, as the issue involves dlp alert triggered by mass file download from accounting database. The policy fit is appropriate since this team handles employee login accounts, information security, password resets, and account provisioning (excluding network connectivity problems or software installation).',
         'Temporarily suspend the analyst''s login account, verify the business reason for the download, and check file transfers.',
         0.97
     );

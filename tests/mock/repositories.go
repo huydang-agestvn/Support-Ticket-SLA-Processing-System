@@ -218,3 +218,8 @@ func (m *MockTriageAdapter) Model() string {
 	args := m.Called()
 	return args.String(0)
 }
+
+func (m *MockTriageAdapter) DetermineNextAction(ctx context.Context, data ai.NextActionPromptData) (string, error) {
+	args := m.Called(ctx, data)
+	return args.String(0), args.Error(1)
+}

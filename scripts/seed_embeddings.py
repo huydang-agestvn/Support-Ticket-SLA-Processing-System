@@ -13,7 +13,7 @@ load_dotenv(dotenv_path=os.path.join(script_dir, "../.env"))
 
 # Database configuration
 DB_HOST     = os.getenv("DB_HOST", "localhost")
-DB_PORT     = os.getenv("DB_PORT", "5432")
+DB_PORT     = os.getenv("DB_PORT", "5433")
 DB_USER     = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "123456")
 DB_NAME     = os.getenv("DB_NAME", "ticket_sla")
