@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	_ "support-ticket.com/internal/ai"
 	"support-ticket.com/internal/model"
 )
 
@@ -267,3 +268,105 @@ func TestTicket_ValidateStatusTransition(t *testing.T) {
 		})
 	}
 }
+
+func TestTicket_ValidateRoomAndFloor(t *testing.T) {
+	now := time.Now()
+	later := now.Add(2 * time.Hour)
+
+	validTicket := func(title, desc string) *model.Ticket {
+		return &model.Ticket{
+			Title:       title,
+			Description: desc,
+			RequestorID: "req-1",
+			Priority:    model.PriorityHigh,
+			Category:    model.CategoryIT,
+			Status:      model.StatusNew,
+			AuditModel: model.AuditModel{
+				CreatedAt: now,
+			},
+			SLADueAt:    &later,
+		}
+	}
+
+	tests := []struct {
+		name        string
+		title       string
+		description string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "Bypass: No room or floor specified",
+			title:       "This is a general support ticket with no location info",
+			description: "Please help me install the latest software updates on my corporate laptop as soon as possible.",
+			expectError: false,
+		},
+		{
+			name:        "Bypass: Only floor specified",
+			title:       "Network issue reported on Floor 18",
+			description: "We are experiencing a network connection drop for multiple workstations near the East windows.",
+			expectError: false,
+		},
+		{
+			name:        "Bypass: Only room specified",
+			title:       "Printer not printing in office room 302",
+			description: "The main printer appears offline. Standard printing tasks are queued but not processing.",
+			expectError: false,
+		},
+		{
+			name:        "Valid: Numbered room on correct floor",
+			title:       "Broken monitor in Room 18A on Floor 18",
+			description: "Please replace the second monitor. The display panel is flickering continuously.",
+			expectError: false,
+		},
+		{
+			name:        "Valid: Numbered room with large digits",
+			title:       "Access point failure on Floor 18",
+			description: "Employees in Room 1805 are unable to connect to the Wi-Fi. Please check the switch.",
+			expectError: false,
+		},
+		{
+			name:        "Valid: Named room on correct floor",
+			title:       "Executive boardroom pantry needs coffee refilled",
+			description: "We have an upcoming meeting on Floor 12A and the boardroom pantry is low on coffee.",
+			expectError: false,
+		},
+		{
+			name:        "Invalid: Numbered room on mismatching floor",
+			title:       "Water leak in Room 19B on Floor 18",
+			description: "Water is dripping from the ceiling. We need urgent building maintenance to fix this.",
+			expectError: true,
+			errorMsg:    "room and floor mismatch: room '19b' is not compatible with floor '18'",
+		},
+		{
+			name:        "Invalid: Named room on mismatching floor",
+			title:       "Lobby carpet stain reported on Floor 19",
+			description: "There is a coffee spill in the reception lobby. Please coordinate cleaning.",
+			expectError: true,
+			errorMsg:    "room and floor mismatch: room 'lobby' is not compatible with floor '19'",
+		},
+		{
+			name:        "Invalid: Floor does not exist",
+			title:       "Network printer driver installation and mapping request for floor 20",
+			description: "I recently relocated my desk to Floor 19 and I need my laptop mapped to the main department printer (Model HP Laserjet 500) so I can print physical contracts.",
+			expectError: true,
+			errorMsg:    "invalid floor or room",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ticket := validTicket(tt.title, tt.description)
+			err := ticket.Validate()
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorMsg != "" {
+					assert.Contains(t, err.Error(), tt.errorMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
