@@ -165,16 +165,23 @@ func extractRooms(combined, combinedLower string) []string {
 		}
 	}
 
-	// Extract named rooms based on order of appearance
+	// Extract named rooms based on order of appearance, capturing any trailing floor numbers/indicators
 	type foundRoom struct {
 		name  string
 		index int
 	}
 	var foundRooms []foundRoom
+	suffixRegex := regexp.MustCompile(`^(?:[\s-]+)?([0-9]+[a-zA-Z]?)`)
 	for _, kw := range namedRoomKeywords {
 		idx := strings.Index(combinedLower, kw)
 		if idx != -1 {
-			foundRooms = append(foundRooms, foundRoom{name: kw, index: idx})
+			roomName := kw
+			textAfter := combinedLower[idx+len(kw):]
+			match := suffixRegex.FindString(textAfter)
+			if match != "" {
+				roomName = kw + match
+			}
+			foundRooms = append(foundRooms, foundRoom{name: roomName, index: idx})
 		}
 	}
 
@@ -220,6 +227,16 @@ func isCompatible(room, floor string) bool {
 		}
 	}
 
+	floorDigits := getFirstDigitSequence(fClean)
+	roomDigits := getFirstDigitSequence(rClean)
+
+	// If room digits do not start with '0', they represent a floor number and must be compatible with the floor digits
+	if floorDigits != "" && roomDigits != "" && !strings.HasPrefix(roomDigits, "0") {
+		if !strings.HasPrefix(roomDigits, floorDigits) {
+			return false
+		}
+	}
+
 	// First, check if the room matches any of the named rooms allowed on this floor
 	for fKey, allowed := range ValidNamedRooms {
 		if strings.ToLower(fKey) == fClean {
@@ -231,9 +248,6 @@ func isCompatible(room, floor string) bool {
 		}
 	}
 
-	floorDigits := getFirstDigitSequence(fClean)
-	roomDigits := getFirstDigitSequence(rClean)
-
 	if floorDigits != "" && roomDigits != "" {
 		return strings.HasPrefix(roomDigits, floorDigits)
 	}
@@ -243,24 +257,71 @@ func isCompatible(room, floor string) bool {
 
 // ValidateRoomAndFloor validates that rooms and floors are compatible if both are present in title/description
 func ValidateRoomAndFloor(title, description string) error {
-	combined := title + " " + description
-	combinedLower := strings.ToLower(combined)
-
-	floors, err := extractFloors(combined)
+	// 1. Validate Title scope
+	titleFloors, err := extractFloors(title)
 	if err != nil {
 		return err
 	}
+	titleRooms := extractRooms(title, strings.ToLower(title))
+	if len(titleFloors) > 0 && len(titleRooms) > 0 {
+		hasMatch := false
+		for _, r := range titleRooms {
+			for _, f := range titleFloors {
+				if isCompatible(r, f) {
+					hasMatch = true
+					break
+				}
+			}
+			if hasMatch {
+				break
+			}
+		}
+		if !hasMatch {
+			return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("room and floor mismatch: room '%s' is not compatible with floor '%s'", strings.ToLower(titleRooms[0]), strings.ToLower(titleFloors[0])))
+		}
+	}
 
-	rooms := extractRooms(combined, combinedLower)
+	// 2. Validate Description scope
+	descFloors, err := extractFloors(description)
+	if err != nil {
+		return err
+	}
+	descRooms := extractRooms(description, strings.ToLower(description))
+	if len(descFloors) > 0 && len(descRooms) > 0 {
+		hasMatch := false
+		for _, r := range descRooms {
+			for _, f := range descFloors {
+				if isCompatible(r, f) {
+					hasMatch = true
+					break
+				}
+			}
+			if hasMatch {
+				break
+			}
+		}
+		if !hasMatch {
+			return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("room and floor mismatch: room '%s' is not compatible with floor '%s'", strings.ToLower(descRooms[0]), strings.ToLower(descFloors[0])))
+		}
+	}
 
-	if len(floors) == 0 || len(rooms) == 0 {
+	// 3. Validate Combined scope
+	combined := title + " " + description
+	combinedLower := strings.ToLower(combined)
+
+	combinedFloors, err := extractFloors(combined)
+	if err != nil {
+		return err
+	}
+	combinedRooms := extractRooms(combined, combinedLower)
+
+	if len(combinedFloors) == 0 || len(combinedRooms) == 0 {
 		return nil
 	}
 
-	// Check if there is at least one compatible room-floor match among all extracted rooms/floors
 	hasCompatibleMatch := false
-	for _, room := range rooms {
-		for _, floor := range floors {
+	for _, room := range combinedRooms {
+		for _, floor := range combinedFloors {
 			if isCompatible(room, floor) {
 				hasCompatibleMatch = true
 				break
@@ -273,7 +334,7 @@ func ValidateRoomAndFloor(title, description string) error {
 
 	if !hasCompatibleMatch {
 		// Report the first mismatch for a better diagnostic error message
-		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("room and floor mismatch: room '%s' is not compatible with floor '%s'", strings.ToLower(rooms[0]), strings.ToLower(floors[0])))
+		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("room and floor mismatch: room '%s' is not compatible with floor '%s'", strings.ToLower(combinedRooms[0]), strings.ToLower(combinedFloors[0])))
 	}
 
 	return nil
