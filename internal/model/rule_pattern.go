@@ -1,6 +1,6 @@
 package model
 
-// RulePattern represents the rule_patterns table in DB
+
 type RulePattern struct {
 	ID                uint      `gorm:"primaryKey;autoIncrement" json:"id"`
 	SubDepartmentCode string    `gorm:"type:varchar(10);not null" json:"sub_department_code"`
@@ -13,7 +13,10 @@ type RulePattern struct {
 	SubDepartment *SubDepartment `gorm:"foreignKey:SubDepartmentCode" json:"sub_department,omitempty"`
 }
 
-// TableName overrides the GORM default table name mapping to match the schema
 func (RulePattern) TableName() string {
 	return "rule_patterns"
 }
+
+// RoomFloorValidator is registered by package ai to avoid circular dependency
+var RoomFloorValidator func(title, description string) error
+

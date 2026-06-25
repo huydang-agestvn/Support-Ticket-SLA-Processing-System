@@ -155,6 +155,11 @@ func (t *Ticket) Validate() error {
 			return err
 		}
 	}
+	if RoomFloorValidator != nil {
+		if err := RoomFloorValidator(t.Title, t.Description); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
