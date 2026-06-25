@@ -42,6 +42,11 @@ func (m *mockAIAdapter) AnalyzeTicketWithVersion(ctx context.Context, data ai.Tr
 func (m *mockAIAdapter) Model() string {
 	return "fake-model"
 }
+
+func (m *mockAIAdapter) DetermineNextAction(ctx context.Context, data ai.NextActionPromptData) (string, error) {
+	args := m.Called(ctx, data)
+	return args.String(0), args.Error(1)
+}
 func TestExecuteBatchTriage_Success(t *testing.T) {
 	mockTicketRepo := new(testmock.MockTicketRepository)
 	mockReportRepo := new(testmock.MockReportRepository)
