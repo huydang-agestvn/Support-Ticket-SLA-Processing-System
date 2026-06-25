@@ -35,3 +35,4 @@ ai-model/
 export_jsonl.go
 dataset.jsonl
 scripts/
+internal/migration/tickets_data

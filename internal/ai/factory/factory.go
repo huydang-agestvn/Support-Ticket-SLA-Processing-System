@@ -7,9 +7,7 @@ import (
 
 	"support-ticket.com/internal/ai"
 	"support-ticket.com/internal/ai/provider"
-	"support-ticket.com/internal/ai/provider/gemini"
 	"support-ticket.com/internal/ai/provider/groq"
-	"support-ticket.com/internal/ai/provider/openrouter"
 	"support-ticket.com/internal/config"
 )
 
@@ -60,10 +58,14 @@ func newProviderAdapter(providerCfg provider.Config) (ai.TriageAdapter, bool) {
 	switch normalizeProvider(providerCfg.ProviderName) {
 	case "groq":
 		return groq.NewAdapter(providerCfg), true
-	case "openrouter":
-		return openrouter.NewAdapter(providerCfg), true
-	case "gemini":
-		return gemini.NewAdapter(providerCfg), true
+	case "ollama":
+		return ai.NewOllamaAdapter(
+			providerCfg.BaseURL,
+			providerCfg.Model,
+			providerCfg.TimeoutSecs,
+			providerCfg.MaxRetries,
+			providerCfg.PromptVersion,
+		), true
 	default:
 		return nil, false
 	}
@@ -74,10 +76,6 @@ func fallbackTargets(cfg *config.Config) []fallbackTarget {
 		return nil
 	}
 
-	if strings.TrimSpace(cfg.AIFallbackChain) != "" {
-		return parseFallbackChain(cfg.AIFallbackChain)
-	}
-
 	provider := strings.ToLower(strings.TrimSpace(cfg.AIProvider))
 	if provider == "" {
 		provider = "groq"
@@ -86,9 +84,10 @@ func fallbackTargets(cfg *config.Config) []fallbackTarget {
 	targets := make([]fallbackTarget, 0, 1)
 	seen := make(map[string]struct{})
 
-	addModel := func(model string) {
+	addTarget := func(provider, model string) {
+		provider = normalizeProvider(provider)
 		model = strings.TrimSpace(model)
-		if model == "" {
+		if provider == "" || model == "" {
 			return
 		}
 		key := provider + ":" + model
@@ -102,7 +101,11 @@ func fallbackTargets(cfg *config.Config) []fallbackTarget {
 		})
 	}
 
-	addModel(cfg.AIModel)
+	addTarget(provider, cfg.AIModel)
+
+	for _, target := range parseFallbackChain(cfg.AIFallbackChain) {
+		addTarget(target.provider, target.model)
+	}
 
 	return targets
 }
@@ -170,27 +173,16 @@ func providerCredentials(cfg *config.Config, provider string) (string, string, b
 		baseURL := firstNonEmpty(cfg.AIGroqBaseURL, providerSpecificValue(cfg, provider, cfg.AIBaseURL), providerDefaultBaseURL(provider))
 		apiKey := firstNonEmpty(cfg.AIGroqAPIKey, providerSpecificValue(cfg, provider, cfg.AIAPIKey))
 		return baseURL, apiKey, baseURL != "" && apiKey != ""
-	case "openrouter":
-		baseURL := firstNonEmpty(cfg.AIOpenRouterBaseURL, providerSpecificValue(cfg, provider, cfg.AIBaseURL), providerDefaultBaseURL(provider))
-		apiKey := firstNonEmpty(cfg.AIOpenRouterAPIKey, providerSpecificValue(cfg, provider, cfg.AIAPIKey))
-		return baseURL, apiKey, baseURL != "" && apiKey != ""
-	case "gemini", "google", "google-studio":
-		baseURL := firstNonEmpty(cfg.AIGeminiBaseURL, providerSpecificValue(cfg, provider, cfg.AIBaseURL), providerDefaultBaseURL(provider))
-		apiKey := firstNonEmpty(cfg.AIGeminiAPIKey, providerSpecificValue(cfg, provider, cfg.AIAPIKey))
-		return baseURL, apiKey, baseURL != "" && apiKey != ""
+	case "ollama":
+		baseURL := firstNonEmpty(providerSpecificValue(cfg, provider, cfg.AIBaseURL), providerDefaultBaseURL(provider))
+		return baseURL, "", baseURL != ""
 	default:
 		return "", "", false
 	}
 }
 
 func normalizeProvider(provider string) string {
-	provider = strings.ToLower(strings.TrimSpace(provider))
-	switch provider {
-	case "google", "google-studio":
-		return "gemini"
-	default:
-		return provider
-	}
+	return strings.ToLower(strings.TrimSpace(provider))
 }
 
 func providerSpecificValue(cfg *config.Config, provider string, value string) string {
@@ -204,10 +196,8 @@ func providerDefaultBaseURL(provider string) string {
 	switch provider {
 	case "groq":
 		return "https://api.groq.com/openai/v1/chat/completions"
-	case "openrouter":
-		return "https://openrouter.ai/api/v1/chat/completions"
-	case "gemini", "google", "google-studio":
-		return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+	case "ollama":
+		return "http://localhost:11434/api/chat"
 	default:
 		return ""
 	}

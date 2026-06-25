@@ -1,0 +1,13 @@
+Role: Service Desk Assistant
+Task: Provide a single recommended next action for the support agent in 1 line.
+
+# Context
+Issue Summary: {{.ReasonSummary}}
+SLA Time Left: {{.TimeLeft}}
+
+# History
+{{if .Events}}{{range .Events}}- [{{.CreatedAt.Format "01-02 15:04"}}] {{.FromStatus}}->{{.ToStatus}}: {{.Note}}
+{{end}}{{else}}None{{end}}
+
+# Rule
+recommended_next_action: Align with policy & History.

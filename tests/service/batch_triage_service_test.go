@@ -41,7 +41,12 @@ func (m *mockAIAdapter) AnalyzeTicketWithVersion(ctx context.Context, data ai.Tr
 
 func (m *mockAIAdapter) Model() string {
 	return "fake-model"
-}	
+}
+
+func (m *mockAIAdapter) DetermineNextAction(ctx context.Context, data ai.NextActionPromptData) (string, error) {
+	args := m.Called(ctx, data)
+	return args.String(0), args.Error(1)
+}
 func TestExecuteBatchTriage_Success(t *testing.T) {
 	mockTicketRepo := new(testmock.MockTicketRepository)
 	mockReportRepo := new(testmock.MockReportRepository)
@@ -53,7 +58,7 @@ func TestExecuteBatchTriage_Success(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	ticket1 := model.Ticket{
 		ID:          1,
@@ -79,6 +84,9 @@ func TestExecuteBatchTriage_Success(t *testing.T) {
 
 	// Mock Report fetching
 	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
+
+	// Mock active rule patterns (empty so it goes to AI adapter)
+	mockTriageRepo.On("GetActiveRulePatterns", mock.Anything).Return([]response.RulePatternResponse{}, nil)
 
 	// Mock AI calls
 	mockAI.On("AnalyzeTicket", mock.Anything, mock.MatchedBy(func(data ai.TriagePromptData) bool {
@@ -158,7 +166,7 @@ func TestExecuteBatchTriage_EmptyBatch(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	res, err := svc.ExecuteBatchTriage(context.Background(), []uint{})
 
@@ -178,7 +186,7 @@ func TestExecuteBatchTriage_BatchTooLarge(t *testing.T) {
 		AIWorkerPoolSize: 1,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	res, err := svc.ExecuteBatchTriage(context.Background(), []uint{1, 2, 3})
 
@@ -198,7 +206,7 @@ func TestExecuteBatchTriage_TicketNotFound(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	ticketIDs := []uint{1, 2}
 
@@ -215,6 +223,7 @@ func TestExecuteBatchTriage_TicketNotFound(t *testing.T) {
 
 	mockTicketRepo.On("FindByIds", mock.Anything, ticketIDs).Return(tickets, nil)
 	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
+	mockTriageRepo.On("GetActiveRulePatterns", mock.Anything).Return([]response.RulePatternResponse{}, nil)
 	mockTriageRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
 
 	mockAI.On("AnalyzeTicket", mock.Anything, mock.Anything).Return(&ai.TriageResult{
@@ -251,7 +260,7 @@ func TestExecuteBatchTriage_TerminalState(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	ticketIDs := []uint{1, 2}
 
@@ -274,6 +283,7 @@ func TestExecuteBatchTriage_TerminalState(t *testing.T) {
 
 	mockTicketRepo.On("FindByIds", mock.Anything, ticketIDs).Return(tickets, nil)
 	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
+	mockTriageRepo.On("GetActiveRulePatterns", mock.Anything).Return([]response.RulePatternResponse{}, nil)
 	mockTriageRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
 
 	mockAI.On("AnalyzeTicket", mock.Anything, mock.Anything).Return(&ai.TriageResult{
@@ -310,7 +320,7 @@ func TestExecuteBatchTriage_Fallback(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	ticket1 := model.Ticket{
 		ID:          1,
@@ -325,6 +335,7 @@ func TestExecuteBatchTriage_Fallback(t *testing.T) {
 
 	mockTicketRepo.On("FindByIds", mock.Anything, ticketIDs).Return(tickets, nil)
 	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
+	mockTriageRepo.On("GetActiveRulePatterns", mock.Anything).Return([]response.RulePatternResponse{}, nil)
 
 	// Mock AI fails (returns error) to trigger fallback
 	mockAI.On("AnalyzeTicket", mock.Anything, mock.Anything).Return(nil, errors.New("rate limit exceeded"))
@@ -361,7 +372,7 @@ func TestExecuteBatchTriage_TicketOverdue(t *testing.T) {
 		AIWorkerPoolSize: 2,
 	}
 
-	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, mockAI, cfg)
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
 
 	ticketIDs := []uint{1, 2}
 
@@ -386,6 +397,7 @@ func TestExecuteBatchTriage_TicketOverdue(t *testing.T) {
 
 	mockTicketRepo.On("FindByIds", mock.Anything, ticketIDs).Return(tickets, nil)
 	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
+	mockTriageRepo.On("GetActiveRulePatterns", mock.Anything).Return([]response.RulePatternResponse{}, nil)
 	mockTriageRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
 
 	mockAI.On("AnalyzeTicket", mock.Anything, mock.Anything).Return(&ai.TriageResult{
@@ -404,6 +416,165 @@ func TestExecuteBatchTriage_TicketOverdue(t *testing.T) {
 	assert.Equal(t, uint(1), res.Processed[0].TicketID)
 	assert.Equal(t, uint(2), res.Failed[0].TicketID)
 	assert.Equal(t, errmsgs.ErrTicketOverdue.Message, res.Failed[0].Reason)
+
+	mockTicketRepo.AssertExpectations(t)
+	mockReportRepo.AssertExpectations(t)
+	mockTriageRepo.AssertExpectations(t)
+	mockAI.AssertExpectations(t)
+}
+
+func TestExecuteBatchTriage_RuleEngine_ShortCircuit_Success(t *testing.T) {
+	mockTicketRepo := new(testmock.MockTicketRepository)
+	mockReportRepo := new(testmock.MockReportRepository)
+	mockTriageRepo := new(testmock.MockTriageRepository)
+	mockAI := new(mockAIAdapter)
+
+	cfg := &config.Config{
+		AIMaxBatchSize:   5,
+		AIWorkerPoolSize: 2,
+	}
+
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
+
+	// Mock active rule patterns
+	mockTriageRepo.On("GetActiveRulePatterns", mock.Anything).Return([]response.RulePatternResponse{
+		{
+			ID:                1,
+			SubDepartmentCode: "IT001",
+			Pattern:           `(?i)fatal database error|server crash`,
+			PatternType:       "regex",
+			Priority:          "high",
+			IsActive:          true,
+			Name:              "Hardware Inventory & Equipment Provisioning",
+			Floor:             "Floor 18",
+			Description:       "Handles physical hardware equipment for employees...",
+		},
+	}, nil)
+
+	futureTime := time.Now().Add(4 * time.Hour)
+	ticket := model.Ticket{
+		ID:          101,
+		Title:       "Fatal database error detected",
+		Description: "The production server crash occurred just now.",
+		Status:      model.StatusNew,
+		Priority:    model.PriorityHigh,
+		Category:    model.CategoryIT,
+		SLADueAt:    &futureTime,
+		AuditModel: model.AuditModel{
+			CreatedAt: time.Now(),
+		},
+	}
+
+	ticketIDs := []uint{101}
+
+	mockTicketRepo.On("FindByIds", mock.Anything, ticketIDs).Return([]model.Ticket{ticket}, nil)
+	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
+
+	mockTriageRepo.On("Create", mock.Anything, mock.MatchedBy(func(res *model.AITicketTriageResult) bool {
+		return res.TicketID == 101 &&
+			res.Category == "IT" &&
+			res.UrgencyLevel == "high" &&
+			res.ConfidenceScore == 1.0 &&
+			!res.FallbackUsed &&
+			res.PromptVersion == ai.RuleEnginePromptVersion
+	})).Return(nil)
+
+	// Notice: we do NOT mock any calls on mockAI, because the AI adapter should be short-circuited!
+
+	res, err := svc.ExecuteBatchTriage(context.Background(), ticketIDs)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res.Processed, 1)
+	assert.Len(t, res.Failed, 0)
+
+	assert.Equal(t, uint(101), res.Processed[0].TicketID)
+	assert.Equal(t, "IT", res.Processed[0].Category)
+	assert.Equal(t, "high", res.Processed[0].UrgencyLevel)
+	assert.Equal(t, 1.0, res.Processed[0].ConfidenceScore)
+	assert.False(t, res.Processed[0].FallbackUsed)
+	assert.Contains(t, res.Processed[0].ReasonSummary, "automatically escalated to high urgency by the System Rule Engine")
+
+	mockTicketRepo.AssertExpectations(t)
+	mockReportRepo.AssertExpectations(t)
+	mockTriageRepo.AssertExpectations(t)
+	mockAI.AssertExpectations(t)
+}
+
+func TestExecuteBatchTriage_RuleEngine_CategoryMismatch_Override(t *testing.T) {
+	mockTicketRepo := new(testmock.MockTicketRepository)
+	mockReportRepo := new(testmock.MockReportRepository)
+	mockTriageRepo := new(testmock.MockTriageRepository)
+	mockAI := new(mockAIAdapter)
+
+	cfg := &config.Config{
+		AIMaxBatchSize:   5,
+		AIWorkerPoolSize: 2,
+	}
+
+	svc := service.NewTriageService(mockTicketRepo, mockReportRepo, mockTriageRepo, nil, mockAI, nil, cfg)
+
+	// Mock active rule patterns
+	mockTriageRepo.On("GetActiveRulePatterns", mock.Anything).Return([]response.RulePatternResponse{
+		{
+			ID:                1,
+			SubDepartmentCode: "FC001",
+			Pattern:           `(?i)electrical fire|flooding`,
+			PatternType:       "regex",
+			Priority:          "high",
+			IsActive:          true,
+			Name:              "Workplace & Utilities",
+			Floor:             "Floor 2",
+			Description:       "Handles facility repairs, electrical issues, etc.",
+		},
+	}, nil)
+
+	futureTime := time.Now().Add(4 * time.Hour)
+	ticket := model.Ticket{
+		ID:          103,
+		Title:       "Facilities Emergency!",
+		Description: "There is an electrical fire in the hallway.",
+		Status:      model.StatusNew,
+		Priority:    model.PriorityHigh,
+		Category:    model.CategoryIT, // Wrong input category
+		SLADueAt:    &futureTime,
+		AuditModel: model.AuditModel{
+			CreatedAt: time.Now(),
+		},
+	}
+
+	ticketIDs := []uint{103}
+
+	mockTicketRepo.On("FindByIds", mock.Anything, ticketIDs).Return([]model.Ticket{ticket}, nil)
+	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
+
+	// Mock ticket repository UpdateCategory
+	mockTicketRepo.On("UpdateCategory", mock.Anything, uint(103), model.CategoryFacilities).Return(nil)
+
+	mockTriageRepo.On("Create", mock.Anything, mock.MatchedBy(func(res *model.AITicketTriageResult) bool {
+		return res.TicketID == 103 &&
+			res.Category == "Facilities" &&
+			res.UrgencyLevel == "high" &&
+			res.ConfidenceScore == 1.0 &&
+			!res.FallbackUsed &&
+			res.PromptVersion == ai.RuleEnginePromptVersion
+	})).Return(nil)
+
+	res, err := svc.ExecuteBatchTriage(context.Background(), ticketIDs)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res.Processed, 1)
+	assert.Len(t, res.Failed, 0)
+
+	assert.Equal(t, uint(103), res.Processed[0].TicketID)
+	assert.Equal(t, "Facilities", res.Processed[0].Category)
+	assert.Equal(t, "high", res.Processed[0].UrgencyLevel)
+	assert.Contains(t, res.Processed[0].ReasonSummary, "detected a critical input mismatch")
+	assert.Contains(t, res.Processed[0].ReasonSummary, "User selected 'IT', but content matched 'Facilities'")
+
+	// Wait briefly for asynchronous goroutine to trigger mock call
+	time.Sleep(100 * time.Millisecond)
 
 	mockTicketRepo.AssertExpectations(t)
 	mockReportRepo.AssertExpectations(t)

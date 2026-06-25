@@ -26,14 +26,16 @@ func TestTicketService_Create(t *testing.T) {
 		req           request.CreateTicketReq
 		mockRepo      func(*testmock.MockTicketRepository)
 		expectedError string
+		expectedTitle string
 	}{
 		{
 			name: "Success",
 			req: request.CreateTicketReq{
 				RequestorID: "user1",
-				Title:       "Test Ticket",
-				Description: "Description",
+				Title:       "This is a valid test ticket title",
+				Description: "This is a valid test ticket description that is long enough",
 				Priority:    model.PriorityHigh,
+				Category:    model.CategoryIT,
 				SlaDueAt:    &dueAt,
 			},
 			mockRepo: func(m *testmock.MockTicketRepository) {
@@ -41,12 +43,28 @@ func TestTicketService_Create(t *testing.T) {
 			},
 		},
 		{
+			name: "TrimsWhitespace",
+			req: request.CreateTicketReq{
+				RequestorID: "user1",
+				Title:       "VPN failed! This is a longer title string       ",
+				Description: "  Please help me check the VPN connection. It has been failing since yesterday.  ",
+				Priority:    model.PriorityHigh,
+				Category:    model.CategoryIT,
+				SlaDueAt:    &dueAt,
+			},
+			mockRepo: func(m *testmock.MockTicketRepository) {
+				m.On("Create", ctx, mock.AnythingOfType("*model.Ticket")).Return(nil)
+			},
+			expectedTitle: "VPN failed! This is a longer title string",
+		},
+		{
 			name: "DBError",
 			req: request.CreateTicketReq{
 				RequestorID: "user1",
-				Title:       "Test Ticket",
-				Description: "Description",
+				Title:       "This is a valid test ticket title",
+				Description: "This is a valid test ticket description that is long enough",
 				Priority:    model.PriorityHigh,
+				Category:    model.CategoryIT,
 				SlaDueAt:    &dueAt,
 			},
 			mockRepo: func(m *testmock.MockTicketRepository) {
@@ -58,12 +76,39 @@ func TestTicketService_Create(t *testing.T) {
 			name: "ValidationError",
 			req: request.CreateTicketReq{
 				RequestorID: "user1",
-				Description: "Description",
+				Description: "This is a valid test ticket description that is long enough",
 				Priority:    model.PriorityHigh,
+				Category:    model.CategoryIT,
 				SlaDueAt:    &dueAt,
 			},
 			mockRepo:      func(m *testmock.MockTicketRepository) {},
 			expectedError: "title is required",
+		},
+		{
+			name: "ContentSafetyBlocked",
+			req: request.CreateTicketReq{
+				RequestorID: "user1",
+				Title:       "You are stupid, this is a very long insult title",
+				Description: "Fix this internal support request now. It is really stupid and I hate it.",
+				Priority:    model.PriorityLow,
+				Category:    model.CategoryIT,
+				SlaDueAt:    &dueAt,
+			},
+			mockRepo:      func(m *testmock.MockTicketRepository) {},
+			expectedError: "ticket content blocked by safety filter: insult",
+		},
+		{
+			name: "ContentSafetyBlockedTitleGibberish",
+			req: request.CreateTicketReq{
+				RequestorID: "user1",
+				Title:       "zxqjkwvqzxqjkwvqzxqjkwvqzxqjkwvq",
+				Description: "zxqjkwvqzxqjkwvqzxqjkwvqzxqjkwvqzxqjkwvqzxqjkwvqzxqjkwvqzxqjkwvq",
+				Priority:    model.PriorityLow,
+				Category:    model.CategoryIT,
+				SlaDueAt:    &dueAt,
+			},
+			mockRepo:      func(m *testmock.MockTicketRepository) {},
+			expectedError: "ticket content blocked by safety filter: gibberish",
 		},
 	}
 
@@ -80,10 +125,20 @@ func TestTicketService_Create(t *testing.T) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError)
 				assert.Nil(t, res)
+				if tt.name == "ContentSafetyBlocked" {
+					var apiErr *common.Error
+					assert.ErrorAs(t, err, &apiErr)
+					assert.Equal(t, common.ErrCodeTicketContentBlocked, apiErr.Code)
+					mockRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
+				}
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, res)
-				assert.Equal(t, tt.req.Title, res.Title)
+				expectedTitle := tt.expectedTitle
+				if expectedTitle == "" {
+					expectedTitle = tt.req.Title
+				}
+				assert.Equal(t, expectedTitle, res.Title)
 				assert.Equal(t, model.StatusNew, res.Status)
 				assert.NotNil(t, res.SLADueAt)
 			}
@@ -93,7 +148,7 @@ func TestTicketService_Create(t *testing.T) {
 }
 
 func TestTicketService_FindById(t *testing.T) {
-	ticket := &model.Ticket{ID: 1, Title: "Test", RequestorID: "user-123"}
+	ticket := &model.Ticket{ID: 1, Title: "Test", RequestorID: "user-123", Category: model.CategoryIT}
 
 	tests := []struct {
 		name          string
@@ -229,6 +284,7 @@ func TestTicketService_UpdateTicketStatus(t *testing.T) {
 					ID:         1,
 					Status:     model.StatusAssigned,
 					AssigneeID: "agent1",
+					Category:   model.CategoryIT,
 				}
 				m.On("FindById", ctx, uint(1)).Return(ticket, nil)
 				m.On("UpdateStatusWithEvent", ctx, mock.Anything, mock.Anything).Return(nil)
@@ -247,6 +303,7 @@ func TestTicketService_UpdateTicketStatus(t *testing.T) {
 					ID:         1,
 					Status:     model.StatusNew,
 					AssigneeID: "agent1",
+					Category:   model.CategoryIT,
 				}
 				m.On("FindById", ctx, uint(1)).Return(ticket, nil)
 			},

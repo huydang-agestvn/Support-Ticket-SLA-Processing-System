@@ -19,17 +19,25 @@ type TriageResult struct {
 }
 
 type TriagePromptData struct {
-	Ticket      model.Ticket
-	Events      []model.TicketEvent
-	SLAPolicy   string
-	DailyReport *model.TicketReport
-	TimeLeft    string
+	Ticket           model.Ticket
+	Events           []model.TicketEvent
+	SLAPolicy        string
+	DailyReport      *model.TicketReport
+	TimeLeft         string
+	KnowledgeContext string // RAG: retrieved from Vector DB, empty if unavailable
+}
+
+type NextActionPromptData struct {
+	ReasonSummary string
+	TimeLeft      string
+	Events        []model.TicketEvent
 }
 
 // TriageAdapter is the interface for the AI provider
 type TriageAdapter interface {
 	AnalyzeTicket(ctx context.Context, data TriagePromptData) (*TriageResult, error)
 	AnalyzeTicketWithVersion(ctx context.Context, data TriagePromptData, promptVersion string) (*TriageResult, error)
+	DetermineNextAction(ctx context.Context, data NextActionPromptData) (string, error)
 	Model() string
 }
 

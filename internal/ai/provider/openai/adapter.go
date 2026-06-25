@@ -204,6 +204,113 @@ func (a *Adapter) AnalyzeTicketWithVersion(ctx context.Context, data ai.TriagePr
 	return nil, fmt.Errorf("max retries exceeded, last error: %w", lastErr)
 }
 
+func (a *Adapter) DetermineNextAction(ctx context.Context, data ai.NextActionPromptData) (string, error) {
+	templatePath := "internal/ai/prompts/next_action_v1.0.tmpl"
+	tmpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to load prompt template %s: %w", templatePath, err)
+	}
+
+	var promptBuffer bytes.Buffer
+	if err := tmpl.Execute(&promptBuffer, data); err != nil {
+		return "", fmt.Errorf("failed to render prompt template: %w", err)
+	}
+	prompt := promptBuffer.String()
+
+	schema := map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"recommended_next_action": map[string]any{
+				"type":        "string",
+				"description": "Recommended action for the operator",
+			},
+		},
+		"required": []string{"recommended_next_action"},
+		"additionalProperties": false,
+	}
+
+	reqBody := request.GroqRequest{
+		Model: a.model,
+		Messages: []request.GroqMessage{
+			{
+				Role:    "user",
+				Content: prompt,
+			},
+		},
+		Temperature: 0.2, // Low temp for more deterministic output
+		ResponseFormat: request.ResponseFormat{
+			Type: "json_schema",
+			JSONSchema: &request.JSONSchema{
+				Name:   "next_action_schema",
+				Schema: schema,
+				Strict: true,
+			},
+		},
+	}
+
+	reqBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	var lastErr error
+	for attempt := 1; attempt <= a.maxRetries; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, "POST", normalizeChatCompletionsURL(a.baseURL), bytes.NewBuffer(reqBytes))
+		if err != nil {
+			return "", fmt.Errorf("failed to create http request: %w", err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+a.apiKey)
+
+		resp, err := a.httpClient.Do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("http request failed: %w", err)
+			_ = sleepBeforeRetry(ctx, attempt)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+			_ = sleepBeforeRetry(ctx, attempt)
+			continue
+		}
+
+		var providerResp response.GroqResponse
+		if err := json.NewDecoder(resp.Body).Decode(&providerResp); err != nil {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("failed to decode response: %w", err)
+			_ = sleepBeforeRetry(ctx, attempt)
+			continue
+		}
+		resp.Body.Close()
+
+		if len(providerResp.Choices) == 0 {
+			lastErr = fmt.Errorf("empty choices in response")
+			_ = sleepBeforeRetry(ctx, attempt)
+			continue
+		}
+
+		content := providerResp.Choices[0].Message.Content
+		if content == "" {
+			lastErr = fmt.Errorf("returned empty content")
+			_ = sleepBeforeRetry(ctx, attempt)
+			continue
+		}
+
+		var result map[string]string
+		if err := json.Unmarshal([]byte(content), &result); err != nil {
+			lastErr = fmt.Errorf("failed to parse structured json response: %w", err)
+			_ = sleepBeforeRetry(ctx, attempt)
+			continue
+		}
+
+		return result["recommended_next_action"], nil
+	}
+
+	return "", fmt.Errorf("max retries exceeded, last error: %w", lastErr)
+}
+
 func normalizeChatCompletionsURL(baseURL string) string {
 	baseURL = strings.TrimSpace(baseURL)
 	if baseURL == "" || strings.HasSuffix(baseURL, "/chat/completions") {

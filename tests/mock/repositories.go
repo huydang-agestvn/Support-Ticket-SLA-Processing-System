@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"support-ticket.com/internal/ai"
 	"support-ticket.com/internal/dto/request"
+	"support-ticket.com/internal/dto/response"
 	"support-ticket.com/internal/model"
 )
 
@@ -57,8 +58,6 @@ func (m *MockTicketRepository) GetTicketStatusAndCreatedAt(ctx context.Context, 
 	return args.Get(0).(map[uint]model.TicketStatus), args.Get(1).(map[uint]time.Time), args.Get(2).(map[uint]string), args.Error(3)
 }
 
-
-
 func (m *MockTicketRepository) Transaction(ctx context.Context, fn func(ctx context.Context) error) error {
 	args := m.Called(ctx, fn)
 	if err := args.Error(0); err != nil {
@@ -80,6 +79,10 @@ func (m *MockTicketRepository) FindByIds(ctx context.Context, ids []uint) ([]mod
 	return args.Get(0).([]model.Ticket), args.Error(1)
 }
 
+func (m *MockTicketRepository) UpdateCategory(ctx context.Context, id uint, category model.TicketCategory) error {
+	args := m.Called(ctx, id, category)
+	return args.Error(0)
+}
 
 // MockTicketEventRepository
 type MockTicketEventRepository struct {
@@ -164,6 +167,14 @@ func (m *MockTriageRepository) FindLatestByTicketID(ctx context.Context, ticketI
 	return args.Get(0).(*model.AITicketTriageResult), args.Error(1)
 }
 
+func (m *MockTriageRepository) GetActiveRulePatterns(ctx context.Context) ([]response.RulePatternResponse, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]response.RulePatternResponse), args.Error(1)
+}
+
 // MockEvaluationRepository
 type MockEvaluationRepository struct {
 	mock.Mock
@@ -208,4 +219,7 @@ func (m *MockTriageAdapter) Model() string {
 	return args.String(0)
 }
 
-
+func (m *MockTriageAdapter) DetermineNextAction(ctx context.Context, data ai.NextActionPromptData) (string, error) {
+	args := m.Called(ctx, data)
+	return args.String(0), args.Error(1)
+}

@@ -31,6 +31,14 @@ func (s *stubTriageAdapter) Model() string {
 	return "stub-model"
 }
 
+func (s *stubTriageAdapter) DetermineNextAction(ctx context.Context, data ai.NextActionPromptData) (string, error) {
+	s.calls++
+	if s.err != nil {
+		return "", s.err
+	}
+	return "stub-action", nil
+}
+
 func TestFallbackChainAdapter_PrimarySuccessSkipsBackup(t *testing.T) {
 	primary := &stubTriageAdapter{
 		result: &ai.TriageResult{

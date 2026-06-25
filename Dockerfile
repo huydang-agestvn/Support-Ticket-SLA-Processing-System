@@ -35,6 +35,8 @@ WORKDIR /app
 
 COPY --from=builder /app/ticket-sla-api .
 COPY --from=builder /app/docs ./docs
+COPY --from=builder /app/internal/ai/prompts ./internal/ai/prompts
+COPY --from=builder /app/internal/templates ./internal/templates
 
 EXPOSE 8080
 

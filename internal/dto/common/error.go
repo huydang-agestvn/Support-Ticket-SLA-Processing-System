@@ -21,6 +21,7 @@ const (
 	ErrCodeBatchTooLarge         = "BATCH_TOO_LARGE"
 	ErrCodeUnsupportedFileFormat = "UNSUPPORTED_FILE_FORMAT"
 	ErrCodeInternal              = "INTERNAL_SERVER_ERROR"
+	ErrCodeTicketContentBlocked  = "TICKET_CONTENT_BLOCKED"
 )
 
 type Error struct {
@@ -102,7 +103,7 @@ func HTTPStatusFromCode(code string) int {
 		return http.StatusForbidden
 	case ErrCodeConflict:
 		return http.StatusConflict
-	case ErrCodeValidation, ErrCodeBadRequest, ErrCodeInvalidInput, ErrCodeInvalidBody, ErrCodeInvalidQuery, ErrCodeEmptyBody, ErrCodeEmptyBatch, ErrCodeBatchTooLarge, ErrCodeUnsupportedFileFormat:
+	case ErrCodeValidation, ErrCodeTicketContentBlocked, ErrCodeBadRequest, ErrCodeInvalidInput, ErrCodeInvalidBody, ErrCodeInvalidQuery, ErrCodeEmptyBody, ErrCodeEmptyBatch, ErrCodeBatchTooLarge, ErrCodeUnsupportedFileFormat:
 		return http.StatusBadRequest
 	default:
 		return http.StatusBadRequest

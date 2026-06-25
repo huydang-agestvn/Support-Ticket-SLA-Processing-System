@@ -28,3 +28,7 @@ func (a *Adapter) AnalyzeTicket(ctx context.Context, data ai.TriagePromptData) (
 func (a *Adapter) AnalyzeTicketWithVersion(ctx context.Context, data ai.TriagePromptData, promptVersion string) (*ai.TriageResult, error) {
 	return a.client.AnalyzeTicketWithVersion(ctx, data, promptVersion)
 }
+
+func (a *Adapter) DetermineNextAction(ctx context.Context, data ai.NextActionPromptData) (string, error) {
+	return a.client.DetermineNextAction(ctx, data)
+}

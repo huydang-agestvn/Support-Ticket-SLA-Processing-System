@@ -31,7 +31,7 @@ func TestTicketHandler_HandleGetTicket(t *testing.T) {
 			name:     "Success",
 			ticketID: "1",
 			mockSetup: func(m *testmock.MockTicketService) {
-				m.On("FindById", mock.Anything, uint(1)).Return(&model.Ticket{ID: 1, Title: "Test"}, nil)
+				m.On("FindById", mock.Anything, uint(1)).Return(&model.Ticket{ID: 1, Title: "Test", Category: model.CategoryIT}, nil)
 			},
 			expectedCode: http.StatusOK,
 		},
@@ -89,9 +89,9 @@ func TestTicketHandler_HandleCreateTicket(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			body: request.CreateTicketReq{Title: "Test", Description: "Test desc"},
+			body: request.CreateTicketReq{Title: "Test", Description: "Test desc", Category: model.CategoryIT},
 			mockSetup: func(m *testmock.MockTicketService) {
-				m.On("Create", mock.Anything, mock.AnythingOfType("request.CreateTicketReq")).Return(&model.Ticket{ID: 1}, nil)
+				m.On("Create", mock.Anything, mock.AnythingOfType("request.CreateTicketReq")).Return(&model.Ticket{ID: 1, Category: model.CategoryIT}, nil)
 			},
 			expectedCode: http.StatusCreated,
 		},
