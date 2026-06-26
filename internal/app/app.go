@@ -55,7 +55,7 @@ func (a *App) Run() error {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	// 5. Setup Dependency Injection
+	// 4. Setup Dependency Injection
 	a.setupDependencies()
 
 	// 5. Start Cron Scheduler
