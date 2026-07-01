@@ -180,23 +180,7 @@ func (s *triageServiceImpl) triageSingleTicket(ctx context.Context, t model.Tick
 				slog.String("sla_breach_risk", ruleResult.SLABreachRisk),
 			)
 
-			// Asynchronously update ticket category in database
-			go func(tID uint, cat string) {
-				bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-				if err := s.ticketRepo.UpdateCategory(bgCtx, tID, model.TicketCategory(cat)); err != nil {
-					slog.Error("failed to asynchronously update ticket category in DB",
-						slog.Uint64("ticket_id", uint64(tID)),
-						slog.String("category", cat),
-						slog.Any("error", err),
-					)
-				} else {
-					slog.Info("asynchronously updated ticket category in DB successfully",
-						slog.Uint64("ticket_id", uint64(tID)),
-						slog.String("category", cat),
-					)
-				}
-			}(t.ID, correctedCategory)
+			s.asyncUpdateTicketCategory(t.ID, correctedCategory)
 		} else {
 			slog.InfoContext(ctx, "Urgency Level Rule Engine short-circuit triggered",
 				slog.Uint64("ticket_id", uint64(t.ID)),
@@ -206,36 +190,14 @@ func (s *triageServiceImpl) triageSingleTicket(ctx context.Context, t model.Tick
 			)
 		}
 
-		dbResult := &model.AITicketTriageResult{
-			TicketID:              t.ID,
-			Category:              ruleResult.Category,
-			UrgencyLevel:          ruleResult.UrgencyLevel,
-			SLABreachRisk:         ruleResult.SLABreachRisk,
-			ReasonSummary:         ruleResult.ReasonSummary,
-			RecommendedNextAction: ruleResult.RecommendedNextAction,
-			ConfidenceScore:       ruleResult.ConfidenceScore,
-			FallbackUsed:          ruleResult.FallbackUsed,
-			PromptVersion:         ruleResult.PromptVersion,
-		}
-
+		dbResult := triageResultFromResponse(t.ID, ruleResult)
 		if err := s.triageRepo.Create(ctx, dbResult); err != nil {
 			slog.ErrorContext(ctx, "failed to save triage result from rule engine",
 				slog.Uint64("ticket_id", uint64(t.ID)),
 				slog.Any("db_error", err),
 			)
 		}
-
-		return &response.BatchTriageResponseItem{
-			TicketID:              t.ID,
-			Category:              ruleResult.Category,
-			UrgencyLevel:          ruleResult.UrgencyLevel,
-			SLABreachRisk:         ruleResult.SLABreachRisk,
-			ReasonSummary:         ruleResult.ReasonSummary,
-			RecommendedNextAction: ruleResult.RecommendedNextAction,
-			ConfidenceScore:       ruleResult.ConfidenceScore,
-			FallbackUsed:          ruleResult.FallbackUsed,
-			PromptVersion:         ruleResult.PromptVersion,
-		}
+		return toBatchTriageResponseItem(dbResult)
 	}
 
 	slaEvidence := "SLA not set."
@@ -278,17 +240,7 @@ func (s *triageServiceImpl) triageSingleTicket(ctx context.Context, t model.Tick
 
 	finalResult := ai.ApplyFallbackIfNeeded(aiResult, aiErr, &t)
 
-	dbResult := &model.AITicketTriageResult{
-		TicketID:              t.ID,
-		Category:              finalResult.Category,
-		UrgencyLevel:          finalResult.UrgencyLevel,
-		SLABreachRisk:         finalResult.SLABreachRisk,
-		ReasonSummary:         finalResult.ReasonSummary,
-		RecommendedNextAction: finalResult.RecommendedNextAction,
-		ConfidenceScore:       finalResult.ConfidenceScore,
-		FallbackUsed:          finalResult.FallbackUsed,
-		PromptVersion:         finalResult.PromptVersion,
-	}
+	dbResult := triageResultFromAI(t.ID, finalResult)
 
 	// Save to Database
 	if err := s.triageRepo.Create(ctx, dbResult); err != nil {
@@ -303,15 +255,20 @@ func (s *triageServiceImpl) triageSingleTicket(ctx context.Context, t model.Tick
 		slog.Bool("fallback_used", finalResult.FallbackUsed),
 	)
 
+	return toBatchTriageResponseItem(dbResult)
+}
+
+// toBatchTriageResponseItem maps an AITicketTriageResult to BatchTriageResponseItem DTO.
+func toBatchTriageResponseItem(r *model.AITicketTriageResult) *response.BatchTriageResponseItem {
 	return &response.BatchTriageResponseItem{
-		TicketID:              t.ID,
-		Category:              finalResult.Category,
-		UrgencyLevel:          finalResult.UrgencyLevel,
-		SLABreachRisk:         finalResult.SLABreachRisk,
-		ReasonSummary:         finalResult.ReasonSummary,
-		RecommendedNextAction: finalResult.RecommendedNextAction,
-		ConfidenceScore:       finalResult.ConfidenceScore,
-		FallbackUsed:          finalResult.FallbackUsed,
-		PromptVersion:         finalResult.PromptVersion,
+		TicketID:              r.TicketID,
+		Category:              r.Category,
+		UrgencyLevel:          r.UrgencyLevel,
+		SLABreachRisk:         r.SLABreachRisk,
+		ReasonSummary:         r.ReasonSummary,
+		RecommendedNextAction: r.RecommendedNextAction,
+		ConfidenceScore:       r.ConfidenceScore,
+		FallbackUsed:          r.FallbackUsed,
+		PromptVersion:         r.PromptVersion,
 	}
 }

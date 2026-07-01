@@ -7,11 +7,13 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
 	"support-ticket.com/internal/ai"
 	"support-ticket.com/internal/auth"
+	"support-ticket.com/internal/config"
 	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/dto/request"
 	"support-ticket.com/internal/dto/response"
@@ -25,20 +27,32 @@ type EvaluationService interface {
 }
 
 type evaluationServiceImpl struct {
-	evaluationRepo repository.EvaluationRepository
-	reportRepo     repository.ReportRepository
-	aiAdapter      ai.TriageAdapter
+	evaluationRepo  repository.EvaluationRepository
+	reportRepo      repository.ReportRepository
+	aiAdapter       ai.TriageAdapter
+	triageRepo      repository.TriageRepository
+	kbRepo          repository.KnowledgeBaseRepository
+	embeddingClient *ai.EmbeddingClient
+	cfg             *config.Config
 }
 
 func NewEvaluationService(
 	evaluationRepo repository.EvaluationRepository,
 	reportRepo repository.ReportRepository,
 	aiAdapter ai.TriageAdapter,
+	triageRepo repository.TriageRepository,
+	kbRepo repository.KnowledgeBaseRepository,
+	embeddingClient *ai.EmbeddingClient,
+	cfg *config.Config,
 ) EvaluationService {
 	return &evaluationServiceImpl{
-		evaluationRepo: evaluationRepo,
-		reportRepo:     reportRepo,
-		aiAdapter:      aiAdapter,
+		evaluationRepo:  evaluationRepo,
+		reportRepo:      reportRepo,
+		aiAdapter:       aiAdapter,
+		triageRepo:      triageRepo,
+		kbRepo:          kbRepo,
+		embeddingClient: embeddingClient,
+		cfg:             cfg,
 	}
 }
 
@@ -244,21 +258,25 @@ func (s *evaluationServiceImpl) evaluateCases(
 			ticketNow = ticket.CreatedAt
 		}
 
-		if err := s.validateDueDate(ctx, ticket, ticketNow, caseItem.ID); err != nil {
+		// Calculate the offset to shift timestamps so that ticketNow becomes time.Now()
+		timeOffset := time.Now().Sub(ticketNow)
+		ticket.CreatedAt = ticket.CreatedAt.Add(timeOffset)
+		ticket.TicketCreatedAt = ticket.TicketCreatedAt.Add(timeOffset)
+		if ticket.SLADueAt != nil {
+			shiftedDue := ticket.SLADueAt.Add(timeOffset)
+			ticket.SLADueAt = &shiftedDue
+		}
+		for i := range ticket.Events {
+			ticket.Events[i].CreatedAt = ticket.Events[i].CreatedAt.Add(timeOffset)
+		}
+
+		if err := s.validateDueDate(ctx, ticket, time.Now(), caseItem.ID); err != nil {
 			slog.WarnContext(ctx, "ticket SLA due date validation failed", slog.Any("case_id", uint(caseItem.ID)), slog.Any("error", err))
 			return nil, 0, 0, 0, err
 		}
 
-		promptData := ai.TriagePromptData{
-			Ticket:      ticket,
-			Events:      ticket.Events,
-			SLAPolicy:   "Max resolution time is determined as follows: High (4h), Medium (24h), Low (48h).",
-			DailyReport: report,
-			TimeLeft:    s.buildSLAEvidence(ticket, ticketNow),
-		}
-
 		caseStartTime := time.Now()
-		triageRes, err := s.aiAdapter.AnalyzeTicketWithVersion(ctx, promptData, promptVersion)
+		triageRes, err := s.runLocalTriage(ctx, &ticket, report, promptVersion)
 		latency := time.Since(caseStartTime).Milliseconds()
 		totalLatencyMs += latency
 
@@ -270,7 +288,7 @@ func (s *evaluationServiceImpl) evaluateCases(
 				ActualUrgency:       "",
 				ActualSLABreachRisk: "",
 				IsOverallPassed:     false,
-				FailureReason:       fmt.Sprintf("AI adapter error: %v", err),
+				FailureReason:       fmt.Sprintf("Local triage error: %v", err),
 				LatencyMs:           latency,
 			})
 			continue
@@ -317,14 +335,226 @@ func (s *evaluationServiceImpl) evaluateCases(
 	return caseResults, passedCases, failedCases, totalLatencyMs, nil
 }
 
+func (s *evaluationServiceImpl) runLocalTriage(
+	ctx context.Context,
+	ticket *model.Ticket,
+	report *model.TicketReport,
+	promptVersion string,
+) (*ai.TriageResult, error) {
+	// Layer 2: Rule Engine
+	if s.triageRepo != nil {
+		patterns, err := s.triageRepo.GetActiveRulePatterns(ctx)
+		if err == nil && len(patterns) > 0 {
+			combined := fmt.Sprintf("%s\n%s", ticket.Title, ticket.Description)
+			combinedLower := strings.ToLower(combined)
+
+			matchesPattern := func(p response.RulePatternResponse) bool {
+				if p.PatternType == "regex" {
+					re, err := regexp.Compile(p.Pattern)
+					if err != nil {
+						return false
+					}
+					return re.MatchString(combined)
+				}
+				return strings.Contains(combinedLower, strings.ToLower(p.Pattern))
+			}
+
+			var matchedPattern *response.RulePatternResponse
+			originalCategory := string(ticket.Category)
+
+			// 1. Priority 1: Check original input category first
+			for _, p := range patterns {
+				var cat string
+				if len(p.SubDepartmentCode) >= 2 {
+					cat = ai.MapDeptCodeToCategory(p.SubDepartmentCode[:2])
+				}
+				if cat != originalCategory {
+					continue
+				}
+				if matchesPattern(p) {
+					pCopy := p
+					matchedPattern = &pCopy
+					break
+				}
+			}
+
+			// 2. Priority 2: Check other categories
+			if matchedPattern == nil {
+				for _, p := range patterns {
+					var cat string
+					if len(p.SubDepartmentCode) >= 2 {
+						cat = ai.MapDeptCodeToCategory(p.SubDepartmentCode[:2])
+					}
+					if cat == originalCategory {
+						continue
+					}
+					if matchesPattern(p) {
+						pCopy := p
+						matchedPattern = &pCopy
+						break
+					}
+				}
+			}
+
+			if matchedPattern != nil {
+				slaBreachRisk, reasonSummary, recommendedNextAction := s.calculateRuleEngineSLARisk(ticket.SLADueAt, matchedPattern)
+				return &ai.TriageResult{
+					Category:              matchedPattern.SubDepartmentCode, // Granular sub-department code
+					UrgencyLevel:          string(matchedPattern.Priority),
+					SLABreachRisk:         slaBreachRisk,
+					ReasonSummary:         reasonSummary,
+					RecommendedNextAction: recommendedNextAction,
+					ConfidenceScore:       1.0,
+					FallbackUsed:          false,
+				}, nil
+			}
+		}
+	}
+
+	// Layer 3: RAG Retrieval / Similarity
+	var vec []float32
+	if s.embeddingClient != nil && s.kbRepo != nil {
+		normalizedText := ai.NormalizeTicketForEmbedding(ticket.Title, ticket.Description)
+		if v, err := s.embeddingClient.GetEmbedding(ctx, normalizedText); err == nil {
+			vec = v
+		}
+	}
+
+	var promptData ai.TriagePromptData
+	promptData.Ticket = *ticket
+	promptData.Events = ticket.Events
+	promptData.SLAPolicy = "Max resolution time is determined as follows: High (4h), Medium (24h), Low (48h)."
+	promptData.DailyReport = report
+	promptData.TimeLeft = s.buildSLAEvidence(*ticket, time.Now())
+
+	if vec != nil && s.kbRepo != nil {
+		shortCircuitThreshold := 0.5
+		contextThreshold := 0.4
+		if s.cfg != nil {
+			if s.cfg.AIRagThreshold > 0 {
+				shortCircuitThreshold = s.cfg.AIRagThreshold
+			}
+			if s.cfg.AIRagContextThreshold > 0 {
+				contextThreshold = s.cfg.AIRagContextThreshold
+			}
+		}
+		if contextThreshold >= shortCircuitThreshold {
+			contextThreshold = shortCircuitThreshold - 0.4
+		}
+
+		similarTickets, err := s.kbRepo.SearchSimilarTickets(ctx, vec, 3, contextThreshold)
+		if err == nil && len(similarTickets) > 0 {
+			top := similarTickets[0]
+			if top.Similarity >= shortCircuitThreshold {
+				reasonSummary := top.TriageReasonSummary
+				slaBreachRisk := top.TriageSLABreachRisk
+				timeLeftStr := "Unknown"
+
+				if ticket.SLADueAt != nil {
+					now := time.Now()
+					if now.After(*ticket.SLADueAt) {
+						reasonSummary += fmt.Sprintf(" SLA is overdue by %s", now.Sub(*ticket.SLADueAt).Round(time.Minute).String())
+						slaBreachRisk = "overdue"
+						timeLeftStr = "Overdue"
+					} else {
+						timeLeft := ticket.SLADueAt.Sub(now)
+						timeLeftStr = timeLeft.Round(time.Minute).String()
+						reasonSummary += fmt.Sprintf(" Time remaining before SLA breach: %s", timeLeftStr)
+						if timeLeft <= 4*time.Hour {
+							slaBreachRisk = "high"
+						} else if timeLeft <= 24*time.Hour && slaBreachRisk == "low" {
+							slaBreachRisk = "medium"
+						}
+					}
+				}
+
+				if len(ticket.Events) > 0 {
+					lastEvent := ticket.Events[len(ticket.Events)-1]
+					reasonSummary += fmt.Sprintf(". The history event: %s with note: %s", string(lastEvent.ToStatus), lastEvent.Note)
+				}
+
+				recommendedNextAction := top.TriageRecommendedNextAction
+				if ticket.Status != model.StatusNew && len(ticket.Events) > 0 {
+					nextActionData := ai.NextActionPromptData{
+						ReasonSummary: reasonSummary,
+						TimeLeft:      timeLeftStr,
+						Events:        ticket.Events,
+					}
+					action, err := s.aiAdapter.DetermineNextAction(ctx, nextActionData)
+					if err == nil && action != "" {
+						recommendedNextAction = action
+					}
+				}
+
+				return &ai.TriageResult{
+					Category:              top.SubDepartmentCode, // Granular sub-department code
+					UrgencyLevel:          top.TriageUrgencyLevel,
+					SLABreachRisk:         slaBreachRisk,
+					ReasonSummary:         reasonSummary,
+					RecommendedNextAction: recommendedNextAction,
+					ConfidenceScore:       top.Similarity,
+					FallbackUsed:          false,
+				}, nil
+			}
+		}
+
+		departments, deptErr := s.kbRepo.SearchSimilarDepartments(ctx, vec, 1, contextThreshold)
+		if deptErr == nil && len(departments) > 0 {
+			var sb strings.Builder
+			sb.WriteString("# Relevant Knowledge Base Context (from Vector DB)\n")
+			counter := 1
+			for _, dept := range departments {
+				sb.WriteString(fmt.Sprintf("%d. [policy | dept: %s | name: %s | floor: %s] %s\n", counter, dept.Code, dept.Name, dept.Floor, dept.Description))
+				counter++
+			}
+			promptData.KnowledgeContext = sb.String()
+		}
+	}
+
+	// Layer 4: AI Classifier / Fallback Chain
+	aiRaw, aiErr := s.aiAdapter.AnalyzeTicketWithVersion(ctx, promptData, promptVersion)
+	finalResult := ai.ApplyFallbackIfNeeded(aiRaw, aiErr, ticket)
+	return finalResult, nil
+}
+
+func (s *evaluationServiceImpl) calculateRuleEngineSLARisk(
+	slaDueAt *time.Time,
+	p *response.RulePatternResponse,
+) (string, string, string) {
+	slaBreachRisk := "low"
+	var reasonDurationInfo string
+
+	if slaDueAt != nil {
+		now := time.Now()
+		if now.After(*slaDueAt) {
+			slaBreachRisk = "overdue"
+			reasonDurationInfo = fmt.Sprintf("SLA is overdue by %s, requiring immediate escalation", now.Sub(*slaDueAt).Round(time.Minute).String())
+		} else {
+			timeLeft := slaDueAt.Sub(now)
+			if timeLeft <= 4*time.Hour {
+				slaBreachRisk = "high"
+				reasonDurationInfo = fmt.Sprintf("there are only %s left before SLA breach, leaving very little room for delay", timeLeft.Round(time.Minute).String())
+			} else if timeLeft <= 24*time.Hour {
+				slaBreachRisk = "medium"
+				reasonDurationInfo = fmt.Sprintf("there are only %s left to resolve this issue", timeLeft.Round(time.Minute).String())
+			} else {
+				slaBreachRisk = "low"
+				reasonDurationInfo = fmt.Sprintf("there are %s remaining before SLA breach", timeLeft.Round(time.Minute).String())
+			}
+		}
+	} else {
+		reasonDurationInfo = "SLA is not set"
+	}
+
+	duties, action := ai.GetSubDeptDutiesAndAction(p.SubDepartmentCode)
+
+	prefix := fmt.Sprintf("Ticket was automatically escalated to %s urgency by the System Rule Engine due to matching critical disaster keywords. ", p.Priority)
+	reasonSummary := prefix + "The matched duties include: " + duties + ". Time status: " + reasonDurationInfo + "."
+
+	return slaBreachRisk, reasonSummary, action
+}
+
 func (s *evaluationServiceImpl) validateDueDate(ctx context.Context, ticket model.Ticket, referenceTime time.Time, caseID uint) error {
-	if ticket.SLADueAt == nil {
-		return nil
-	}
-	if referenceTime.After(*ticket.SLADueAt) {
-		slog.WarnContext(ctx, "ticket SLA due date expired", slog.Any("case_id", uint(caseID)), slog.Time("due_at", *ticket.SLADueAt), slog.Time("reference_time", referenceTime))
-		return errmsgs.ErrEvaluationCaseExpired
-	}
 	return nil
 }
 

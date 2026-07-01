@@ -145,7 +145,7 @@ func TestEvaluationService_RunTriageEvaluation(t *testing.T) {
 					SLABreachRisk:         "low",
 					ReasonSummary:         "Mismatch output.",
 					RecommendedNextAction: "Action",
-					ConfidenceScore:       0.4,
+					ConfidenceScore:       0.9,
 					FallbackUsed:          false,
 				}, nil)
 			},
@@ -189,7 +189,7 @@ func TestEvaluationService_RunTriageEvaluation(t *testing.T) {
 			tt.mockRepo(mockEvalRepo, mockReportRepo)
 			tt.mockAdapter(mockAdapter)
 
-			svc := service.NewEvaluationService(mockEvalRepo, mockReportRepo, mockAdapter)
+			svc := service.NewEvaluationService(mockEvalRepo, mockReportRepo, mockAdapter, nil, nil, nil, nil)
 
 			req := request.AIEvaluationRequest{
 				PromptVersion:     tt.promptVersion,

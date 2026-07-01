@@ -130,7 +130,8 @@ func (s *triageServiceImpl) buildTriageContext(ctx context.Context, ticketID uin
 }
 
 // into a plain-text context string to inject into the AI prompt.
-func (s *triageServiceImpl) buildRAGContext(departments []repository.DepartmentMatch, tickets []repository.TicketMatch) string {
+// ponytail: tickets parameter was unused, removed.
+func (s *triageServiceImpl) buildRAGContext(departments []repository.DepartmentMatch) string {
 	if len(departments) == 0 {
 		return ""
 	}
@@ -282,16 +283,8 @@ func (s *triageServiceImpl) GetLatestTriageResult(ctx context.Context, ticketID 
 
 	slog.InfoContext(ctx, "latest triage result fetched successfully", slog.Uint64("ticket_id", uint64(ticketID)))
 
-	return &response.TriageResponse{
-		Category:              dbResult.Category,
-		UrgencyLevel:          dbResult.UrgencyLevel,
-		SLABreachRisk:         dbResult.SLABreachRisk,
-		ReasonSummary:         dbResult.ReasonSummary,
-		RecommendedNextAction: dbResult.RecommendedNextAction,
-		ConfidenceScore:       dbResult.ConfidenceScore,
-		FallbackUsed:          dbResult.FallbackUsed,
-		PromptVersion:         dbResult.PromptVersion,
-	}, nil
+	// ponytail: simplified using helper
+	return toTriageResponse(dbResult), nil
 }
 
 func (s *triageServiceImpl) evaluateUrgencyRuleEngine(ctx context.Context, title, description string, originalCategory string, slaDueAt *time.Time) (*response.TriageResponse, bool, string) {
@@ -635,7 +628,7 @@ func (s *triageServiceImpl) executeRAGLayer(ctx context.Context, ticketID uint, 
 		slog.WarnContext(ctx, "RAG: search departments failed", slog.Any("error", deptErr))
 	}
 
-	ragContext := s.buildRAGContext(departments, similarTickets)
+	ragContext := s.buildRAGContext(departments)
 	slog.InfoContext(ctx, "RAG context built, proceeding to AI",
 		slog.Uint64("ticket_id", uint64(ticketID)),
 		slog.Int("matched_tickets", len(similarTickets)),

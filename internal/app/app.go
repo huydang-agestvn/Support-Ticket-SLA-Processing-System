@@ -107,7 +107,7 @@ func (a *App) setupDependencies() {
 	eventService := service.NewTicketEventService(eventRepo, ticketRepo, auditLogger)
 	reportService := service.NewReportService(reportRepo)
 	triageService := service.NewTriageService(ticketRepo, reportRepo, triageRepo, kbRepo, aiAdapter, embeddingClient, a.cfg)
-	evaluationService := service.NewEvaluationService(evaluationRepo, reportRepo, aiAdapter)
+	evaluationService := service.NewEvaluationService(evaluationRepo, reportRepo, aiAdapter, triageRepo, kbRepo, embeddingClient, a.cfg)
 
 	ticketHandler := handler.NewTicketHandler(ticketService)
 	eventHandler := handler.NewTicketEventHandler(eventService)
