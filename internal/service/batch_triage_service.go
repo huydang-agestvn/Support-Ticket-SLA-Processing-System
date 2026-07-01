@@ -256,6 +256,28 @@ func (s *triageServiceImpl) triageSingleTicket(ctx context.Context, t model.Tick
 		TimeLeft:    slaEvidence,
 	}
 
+	// Layer 3: Field Selector + RAG Retrieval
+	vec, _ := s.generateEmbedding(ctx, t.Title, t.Description)
+	ragContext, shortCircuitResp, ragErr := s.executeRAGLayer(ctx, t.ID, &t, vec, promptData)
+	if ragErr != nil {
+		slog.ErrorContext(ctx, "RAG layer failed for batch ticket", slog.Uint64("ticket_id", uint64(t.ID)), slog.Any("error", ragErr))
+		// Proceeding without RAG context
+	} else if shortCircuitResp != nil {
+		return &response.BatchTriageResponseItem{
+			TicketID:              t.ID,
+			Category:              shortCircuitResp.Category,
+			UrgencyLevel:          shortCircuitResp.UrgencyLevel,
+			SLABreachRisk:         shortCircuitResp.SLABreachRisk,
+			ReasonSummary:         shortCircuitResp.ReasonSummary,
+			RecommendedNextAction: shortCircuitResp.RecommendedNextAction,
+			ConfidenceScore:       shortCircuitResp.ConfidenceScore,
+			FallbackUsed:          shortCircuitResp.FallbackUsed,
+			PromptVersion:         shortCircuitResp.PromptVersion,
+		}
+	} else {
+		promptData.KnowledgeContext = ragContext
+	}
+
 	timeoutSecs := 15
 	if s.cfg != nil && s.cfg.AITimeoutSecs > 0 {
 		timeoutSecs = s.cfg.AITimeoutSecs

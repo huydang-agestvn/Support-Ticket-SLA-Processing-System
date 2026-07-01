@@ -3,7 +3,9 @@ package ai
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
+
 	"support-ticket.com/internal/dto/common"
 	"support-ticket.com/internal/errmsgs"
 	"support-ticket.com/internal/model"
@@ -85,28 +87,35 @@ var ValidNamedRooms = map[string][]string{
 		"qa001",
 		"ds001",
 		"fin001", "mkt001", "sls001",
-		"mt001", "mt002", "meeting room", "meeting rooms", "boardroom", "conference room",
-		"rd12a", "reception", "lounge", "lobby",
-		"pantry 12a", "pantry",
-		"toilet 12a", "toilet", "wc", "restroom",
+		"mt001", "mt002", "meeting room 12a", "meeting room 12a", "boardroom 12a", "conference room 12a",
+		"rd12a", "reception 12a", "lounge 12a", "lobby 12a",
+		"pantry 12a","pantry",
+		"toilet 12a", "wc 12a", "restroom 12a",
 	},
 	"18": {
 		"dev003", "dev004",
 		"qa002", "qa003",
-		"rd18", "reception", "lounge", "lobby",
-		"pantry 18", "pantry",
-		"toilet 18", "toilet", "wc", "restroom",
+		"rd18", "reception 18", "lounge 18", "lobby 18",
+		"pantry 18","pantry",
+		"toilet 18", "wc 18", "restroom 18",
 	},
 	"19": {
 		"pmo001",
-		"toilet 19", "toilet", "wc", "restroom",
+		"toilet 19", "wc 19", "restroom 19","pantry",
 	},
 }
 
 var (
-	floorRegex = regexp.MustCompile(`(?i)(?:floor|tầng)\s*([0-9]+[a-zA-Z]?)`)
-	roomRegex  = regexp.MustCompile(`(?i)(?:room|phòng|meeting\s+room|phòng\s+họp|conference\s+room|phòng\s+hội\s+nghị)\s*([0-9]+[a-zA-Z]?)`)
+	floorRegex        = regexp.MustCompile(`(?i)(?:floor|tầng)\s*([0-9]+[a-zA-Z]?)`)
+	roomRegex         = regexp.MustCompile(`(?i)(?:room|phòng|meeting\s+room|phòng\s+họp|conference\s+room|phòng\s+hội\s+nghị)\s*([0-9]+[a-zA-Z]?)`)
+	suffixRegex       = regexp.MustCompile(`^(?:[\s-]+)?([0-9]+[a-zA-Z]?)`)
+	numberedRoomRegex = regexp.MustCompile(`^[0-9]+[a-zA-Z]?$`)
+	dynamicRoomRegex  = regexp.MustCompile(`(?i)\b(dev|qa|pmo|ds|fin|mkt|sls|mt|rd)[0-9]+[a-zA-Z]?\b`)
 )
+
+func isNumberedRoom(room string) bool {
+	return numberedRoomRegex.MatchString(room)
+}
 
 func getFirstDigitSequence(s string) string {
 	var digits []rune
@@ -120,12 +129,6 @@ func getFirstDigitSequence(s string) string {
 	return string(digits)
 }
 
-var ValidFloors = map[string]bool{
-	"12a": true,
-	"18":  true,
-	"19":  true,
-}
-
 var namedRoomKeywords = []string{
 	"dev001", "dev002", "dev003", "dev004",
 	"qa001", "qa002", "qa003",
@@ -133,7 +136,7 @@ var namedRoomKeywords = []string{
 	"fin001", "mkt001", "sls001",
 	"mt001", "mt002", "meeting room", "meeting rooms", "boardroom", "conference room",
 	"rd12a", "rd18", "reception", "lounge", "lobby",
-	"pantry 12a", "pantry 18", "pantry",
+	"pantry 12a", "pantry 18",
 	"toilet 12a", "toilet 18", "toilet 19", "toilet", "wc", "restroom",
 }
 
@@ -144,7 +147,7 @@ func extractFloors(combined string) ([]string, error) {
 	for _, m := range floorMatches {
 		if len(m) > 1 {
 			fClean := strings.ToLower(strings.TrimSpace(m[1]))
-			if !ValidFloors[fClean] {
+			if _, ok := ValidNamedRooms[strings.ToUpper(fClean)]; !ok {
 				return nil, errmsgs.ErrInvalidFloorOrRoom
 			}
 			floors = append(floors, fClean)
@@ -156,12 +159,21 @@ func extractFloors(combined string) ([]string, error) {
 // extractRooms extracts both numbered and named rooms from combined text
 func extractRooms(combined, combinedLower string) []string {
 	var rooms []string
+	seen := make(map[string]bool)
+
+	addRoom := func(r string) {
+		r = strings.ToLower(strings.TrimSpace(r))
+		if r != "" && !seen[r] {
+			seen[r] = true
+			rooms = append(rooms, r)
+		}
+	}
 
 	// Extract numbered rooms
 	roomMatches := roomRegex.FindAllStringSubmatch(combined, -1)
 	for _, m := range roomMatches {
 		if len(m) > 1 {
-			rooms = append(rooms, strings.ToLower(strings.TrimSpace(m[1])))
+			addRoom(m[1])
 		}
 	}
 
@@ -171,7 +183,6 @@ func extractRooms(combined, combinedLower string) []string {
 		index int
 	}
 	var foundRooms []foundRoom
-	suffixRegex := regexp.MustCompile(`^(?:[\s-]+)?([0-9]+[a-zA-Z]?)`)
 	for _, kw := range namedRoomKeywords {
 		idx := strings.Index(combinedLower, kw)
 		if idx != -1 {
@@ -186,15 +197,17 @@ func extractRooms(combined, combinedLower string) []string {
 	}
 
 	// Sort named rooms by index of occurrence
-	for i := 0; i < len(foundRooms); i++ {
-		for j := i + 1; j < len(foundRooms); j++ {
-			if foundRooms[i].index > foundRooms[j].index {
-				foundRooms[i], foundRooms[j] = foundRooms[j], foundRooms[i]
-			}
-		}
-	}
+	sort.Slice(foundRooms, func(i, j int) bool {
+		return foundRooms[i].index < foundRooms[j].index
+	})
 	for _, fr := range foundRooms {
-		rooms = append(rooms, fr.name)
+		addRoom(fr.name)
+	}
+
+	// Extract dynamic named rooms matching <prefix><digits><suffix> (e.g. dev009)
+	dynamicMatches := dynamicRoomRegex.FindAllString(combinedLower, -1)
+	for _, dm := range dynamicMatches {
+		addRoom(dm)
 	}
 
 	// Filter out generic room names that are substrings of other specific rooms
@@ -215,14 +228,24 @@ func extractRooms(combined, combinedLower string) []string {
 	return specificRooms
 }
 
+func containsWord(s, word string) bool {
+	pattern := `(?i)\b` + regexp.QuoteMeta(word) + `\b`
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return false
+	}
+	return re.MatchString(s)
+}
+
 // isCompatible checks if a room is compatible with a floor
 func isCompatible(room, floor string) bool {
 	rClean := strings.ToLower(room)
 	fClean := strings.ToLower(floor)
 
 	// If the room name explicitly contains another floor name, it is incompatible with this floor
-	for otherFloor := range ValidFloors {
-		if otherFloor != fClean && strings.Contains(rClean, otherFloor) {
+	for otherFloor := range ValidNamedRooms {
+		otherFloorClean := strings.ToLower(otherFloor)
+		if otherFloorClean != fClean && strings.Contains(rClean, otherFloorClean) {
 			return false
 		}
 	}
@@ -238,10 +261,10 @@ func isCompatible(room, floor string) bool {
 	}
 
 	// First, check if the room matches any of the named rooms allowed on this floor
-	for fKey, allowed := range ValidNamedRooms {
-		if strings.ToLower(fKey) == fClean {
+	if !isNumberedRoom(rClean) {
+		if allowed, ok := ValidNamedRooms[strings.ToUpper(fClean)]; ok {
 			for _, allowedRoom := range allowed {
-				if strings.Contains(rClean, allowedRoom) || strings.Contains(allowedRoom, rClean) {
+				if containsWord(rClean, allowedRoom) || containsWord(allowedRoom, rClean) {
 					return true
 				}
 			}
@@ -255,88 +278,41 @@ func isCompatible(room, floor string) bool {
 	return false
 }
 
-// ValidateRoomAndFloor validates that rooms and floors are compatible if both are present in title/description
-func ValidateRoomAndFloor(title, description string) error {
-	// 1. Validate Title scope
-	titleFloors, err := extractFloors(title)
-	if err != nil {
-		return err
-	}
-	titleRooms := extractRooms(title, strings.ToLower(title))
-	if len(titleFloors) > 0 && len(titleRooms) > 0 {
-		hasMatch := false
-		for _, r := range titleRooms {
-			for _, f := range titleFloors {
-				if isCompatible(r, f) {
-					hasMatch = true
-					break
-				}
-			}
-			if hasMatch {
-				break
-			}
-		}
-		if !hasMatch {
-			return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("room and floor mismatch: room '%s' is not compatible with floor '%s'", strings.ToLower(titleRooms[0]), strings.ToLower(titleFloors[0])))
-		}
-	}
-
-	// 2. Validate Description scope
-	descFloors, err := extractFloors(description)
-	if err != nil {
-		return err
-	}
-	descRooms := extractRooms(description, strings.ToLower(description))
-	if len(descFloors) > 0 && len(descRooms) > 0 {
-		hasMatch := false
-		for _, r := range descRooms {
-			for _, f := range descFloors {
-				if isCompatible(r, f) {
-					hasMatch = true
-					break
-				}
-			}
-			if hasMatch {
-				break
-			}
-		}
-		if !hasMatch {
-			return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("room and floor mismatch: room '%s' is not compatible with floor '%s'", strings.ToLower(descRooms[0]), strings.ToLower(descFloors[0])))
-		}
-	}
-
-	// 3. Validate Combined scope
-	combined := title + " " + description
-	combinedLower := strings.ToLower(combined)
-
-	combinedFloors, err := extractFloors(combined)
-	if err != nil {
-		return err
-	}
-	combinedRooms := extractRooms(combined, combinedLower)
-
-	if len(combinedFloors) == 0 || len(combinedRooms) == 0 {
+// checkScopeCompatibility checks if any room is compatible with any floor in a given slice.
+// If both slices are populated and no compatible pair is found, it returns an error.
+func checkScopeCompatibility(floors, rooms []string) error {
+	if len(floors) == 0 || len(rooms) == 0 {
 		return nil
 	}
-
-	hasCompatibleMatch := false
-	for _, room := range combinedRooms {
-		for _, floor := range combinedFloors {
-			if isCompatible(room, floor) {
-				hasCompatibleMatch = true
-				break
+	for _, r := range rooms {
+		for _, f := range floors {
+			if isCompatible(r, f) {
+				return nil
 			}
 		}
-		if hasCompatibleMatch {
-			break
-		}
 	}
-
-	if !hasCompatibleMatch {
-		// Report the first mismatch for a better diagnostic error message
-		return common.NewBadRequest(common.ErrCodeInvalidInput, fmt.Sprintf("room and floor mismatch: room '%s' is not compatible with floor '%s'", strings.ToLower(combinedRooms[0]), strings.ToLower(combinedFloors[0])))
-	}
-
-	return nil
+	return common.NewBadRequest(
+		common.ErrCodeInvalidInput,
+		fmt.Sprintf("room and floor mismatch: room '%s' is not compatible with floor '%s'", strings.ToLower(rooms[0]), strings.ToLower(floors[0])),
+	)
 }
- 
+
+// validateText extracts floors and rooms from text and checks compatibility
+func validateText(text string) error {
+	floors, err := extractFloors(text)
+	if err != nil {
+		return err
+	}
+	return checkScopeCompatibility(floors, extractRooms(text, strings.ToLower(text)))
+}
+
+// ValidateRoomAndFloor validates that rooms and floors are compatible if both are present in title/description
+func ValidateRoomAndFloor(title, description string) error {
+	if err := validateText(title); err != nil {
+		return err
+	}
+	if err := validateText(description); err != nil {
+		return err
+	}
+	return validateText(title + " " + description)
+}

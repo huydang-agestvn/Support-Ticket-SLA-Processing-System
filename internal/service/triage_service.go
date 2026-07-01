@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 	"regexp"
 	"strings"
 	"time"
@@ -331,9 +332,9 @@ func (s *triageServiceImpl) evaluateUrgencyRuleEngine(ctx context.Context, title
 		}
 
 		if matchesPattern(p) {
-			slaBreachRisk, reasonSummary, recommendedNextAction := s.calculateRuleEngineSLARisk(slaDueAt, false, originalCategory, originalCategory, p)
+			slaBreachRisk, reasonSummary, recommendedNextAction := s.calculateRuleEngineSLARisk(slaDueAt, false, originalCategory, p.SubDepartmentCode, p)
 			return &response.TriageResponse{
-				Category:              originalCategory,
+				Category:              p.SubDepartmentCode,
 				UrgencyLevel:          string(p.Priority),
 				SLABreachRisk:         slaBreachRisk,
 				ReasonSummary:         reasonSummary,
@@ -341,7 +342,7 @@ func (s *triageServiceImpl) evaluateUrgencyRuleEngine(ctx context.Context, title
 				ConfidenceScore:       1.0,
 				FallbackUsed:          false,
 				PromptVersion:         ai.RuleEnginePromptVersion,
-			}, true, originalCategory
+			}, true, p.SubDepartmentCode
 		}
 	}
 
@@ -357,7 +358,7 @@ func (s *triageServiceImpl) evaluateUrgencyRuleEngine(ctx context.Context, title
 		}
 
 		if matchesPattern(p) {
-			correctedCategory := cat
+			correctedCategory := p.SubDepartmentCode
 			slaBreachRisk, reasonSummary, recommendedNextAction := s.calculateRuleEngineSLARisk(slaDueAt, true, originalCategory, correctedCategory, p)
 			return &response.TriageResponse{
 				Category:              correctedCategory,
@@ -615,12 +616,12 @@ func (s *triageServiceImpl) executeRAGLayer(ctx context.Context, ticketID uint, 
 
 			dbResult := &model.AITicketTriageResult{
 				TicketID:              ticket.ID,
-				Category:              top.TriageCategory,
+				Category:              top.SubDepartmentCode,
 				UrgencyLevel:          top.TriageUrgencyLevel,
 				SLABreachRisk:         slaBreachRisk,
 				ReasonSummary:         reasonSummary,
 				RecommendedNextAction: recommendedNextAction,
-				ConfidenceScore:       top.Similarity,
+				ConfidenceScore:       math.Round(top.Similarity*10000) / 10000,
 				FallbackUsed:          false,
 			}
 			if err := s.saveTriageResult(ctx, ticketID, dbResult); err != nil {
