@@ -469,10 +469,11 @@ func TestExecuteBatchTriage_RuleEngine_ShortCircuit_Success(t *testing.T) {
 
 	mockTicketRepo.On("FindByIds", mock.Anything, ticketIDs).Return([]model.Ticket{ticket}, nil)
 	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
+	mockTicketRepo.On("UpdateCategory", mock.Anything, uint(101), model.TicketCategory("IT001")).Return(nil)
 
 	mockTriageRepo.On("Create", mock.Anything, mock.MatchedBy(func(res *model.AITicketTriageResult) bool {
 		return res.TicketID == 101 &&
-			res.Category == "IT" &&
+			res.Category == "IT001" &&
 			res.UrgencyLevel == "high" &&
 			res.ConfidenceScore == 1.0 &&
 			!res.FallbackUsed &&
@@ -489,11 +490,14 @@ func TestExecuteBatchTriage_RuleEngine_ShortCircuit_Success(t *testing.T) {
 	assert.Len(t, res.Failed, 0)
 
 	assert.Equal(t, uint(101), res.Processed[0].TicketID)
-	assert.Equal(t, "IT", res.Processed[0].Category)
+	assert.Equal(t, "IT001", res.Processed[0].Category)
 	assert.Equal(t, "high", res.Processed[0].UrgencyLevel)
 	assert.Equal(t, 1.0, res.Processed[0].ConfidenceScore)
 	assert.False(t, res.Processed[0].FallbackUsed)
 	assert.Contains(t, res.Processed[0].ReasonSummary, "automatically escalated to high urgency by the System Rule Engine")
+
+	// Wait briefly for asynchronous goroutine to trigger mock call
+	time.Sleep(100 * time.Millisecond)
 
 	mockTicketRepo.AssertExpectations(t)
 	mockReportRepo.AssertExpectations(t)
@@ -549,11 +553,11 @@ func TestExecuteBatchTriage_RuleEngine_CategoryMismatch_Override(t *testing.T) {
 	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
 
 	// Mock ticket repository UpdateCategory
-	mockTicketRepo.On("UpdateCategory", mock.Anything, uint(103), model.CategoryFacilities).Return(nil)
+	mockTicketRepo.On("UpdateCategory", mock.Anything, uint(103), model.TicketCategory("FC001")).Return(nil)
 
 	mockTriageRepo.On("Create", mock.Anything, mock.MatchedBy(func(res *model.AITicketTriageResult) bool {
 		return res.TicketID == 103 &&
-			res.Category == "Facilities" &&
+			res.Category == "FC001" &&
 			res.UrgencyLevel == "high" &&
 			res.ConfidenceScore == 1.0 &&
 			!res.FallbackUsed &&
@@ -568,10 +572,10 @@ func TestExecuteBatchTriage_RuleEngine_CategoryMismatch_Override(t *testing.T) {
 	assert.Len(t, res.Failed, 0)
 
 	assert.Equal(t, uint(103), res.Processed[0].TicketID)
-	assert.Equal(t, "Facilities", res.Processed[0].Category)
+	assert.Equal(t, "FC001", res.Processed[0].Category)
 	assert.Equal(t, "high", res.Processed[0].UrgencyLevel)
 	assert.Contains(t, res.Processed[0].ReasonSummary, "detected a critical input mismatch")
-	assert.Contains(t, res.Processed[0].ReasonSummary, "User selected 'IT', but content matched 'Facilities'")
+	assert.Contains(t, res.Processed[0].ReasonSummary, "User selected 'IT', but content matched 'FC001'")
 
 	// Wait briefly for asynchronous goroutine to trigger mock call
 	time.Sleep(100 * time.Millisecond)

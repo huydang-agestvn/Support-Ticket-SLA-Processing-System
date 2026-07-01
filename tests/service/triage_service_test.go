@@ -59,10 +59,13 @@ func TestExecuteTriage_RuleEngine_ShortCircuit_Success(t *testing.T) {
 	// 2. Mock Report fetching
 	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
 
+	// Mock ticket repository UpdateCategory
+	mockTicketRepo.On("UpdateCategory", mock.Anything, uint(101), model.TicketCategory("IT001")).Return(nil)
+
 	// 3. Mock Triage Repository Create to check it saves the AITicketTriageResult
 	mockTriageRepo.On("Create", mock.Anything, mock.MatchedBy(func(res *model.AITicketTriageResult) bool {
 		return res.TicketID == 101 &&
-			res.Category == "IT" &&
+			res.Category == "IT001" &&
 			res.UrgencyLevel == "high" &&
 			res.ConfidenceScore == 1.0 &&
 			!res.FallbackUsed &&
@@ -75,11 +78,14 @@ func TestExecuteTriage_RuleEngine_ShortCircuit_Success(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.Equal(t, "IT", res.Category)
+	assert.Equal(t, "IT001", res.Category)
 	assert.Equal(t, "high", res.UrgencyLevel)
 	assert.Equal(t, 1.0, res.ConfidenceScore)
 	assert.False(t, res.FallbackUsed)
 	assert.Contains(t, res.ReasonSummary, "automatically escalated to high urgency by the System Rule Engine")
+
+	// Wait briefly for asynchronous goroutine to trigger mock call
+	time.Sleep(100 * time.Millisecond)
 
 	mockTicketRepo.AssertExpectations(t)
 	mockReportRepo.AssertExpectations(t)
@@ -203,12 +209,12 @@ func TestExecuteTriage_RuleEngine_CategoryMismatch_Override(t *testing.T) {
 	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
 
 	// 3. Mock ticket repository UpdateCategory
-	mockTicketRepo.On("UpdateCategory", mock.Anything, uint(103), model.CategoryFacilities).Return(nil)
+	mockTicketRepo.On("UpdateCategory", mock.Anything, uint(103), model.TicketCategory("FC001")).Return(nil)
 
 	// 4. Mock Triage Repository Create to check it saves the overridden result
 	mockTriageRepo.On("Create", mock.Anything, mock.MatchedBy(func(res *model.AITicketTriageResult) bool {
 		return res.TicketID == 103 &&
-			res.Category == "Facilities" &&
+			res.Category == "FC001" &&
 			res.UrgencyLevel == "high" &&
 			res.ConfidenceScore == 1.0 &&
 			!res.FallbackUsed &&
@@ -219,10 +225,10 @@ func TestExecuteTriage_RuleEngine_CategoryMismatch_Override(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.Equal(t, "Facilities", res.Category)
+	assert.Equal(t, "FC001", res.Category)
 	assert.Equal(t, "high", res.UrgencyLevel)
 	assert.Contains(t, res.ReasonSummary, "detected a critical input mismatch")
-	assert.Contains(t, res.ReasonSummary, "User selected 'IT', but content matched 'Facilities'")
+	assert.Contains(t, res.ReasonSummary, "User selected 'IT', but content matched 'FC001'")
 
 	// Wait briefly for asynchronous goroutine to trigger mock call
 	time.Sleep(100 * time.Millisecond)
@@ -276,10 +282,13 @@ func TestExecuteTriage_RuleEngine_ShortCircuit_MediumPriority(t *testing.T) {
 	// 2. Mock Report fetching
 	mockReportRepo.On("GetByDate", mock.Anything).Return(&model.TicketReport{}, nil)
 
+	// Mock ticket repository UpdateCategory
+	mockTicketRepo.On("UpdateCategory", mock.Anything, uint(104), model.TicketCategory("IT001")).Return(nil)
+
 	// 3. Mock Triage Repository Create to check it saves the AITicketTriageResult with "medium" urgency
 	mockTriageRepo.On("Create", mock.Anything, mock.MatchedBy(func(res *model.AITicketTriageResult) bool {
 		return res.TicketID == 104 &&
-			res.Category == "IT" &&
+			res.Category == "IT001" &&
 			res.UrgencyLevel == "medium" &&
 			res.ConfidenceScore == 1.0 &&
 			!res.FallbackUsed &&
@@ -290,10 +299,13 @@ func TestExecuteTriage_RuleEngine_ShortCircuit_MediumPriority(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.Equal(t, "IT", res.Category)
+	assert.Equal(t, "IT001", res.Category)
 	assert.Equal(t, "medium", res.UrgencyLevel)
 	assert.Equal(t, 1.0, res.ConfidenceScore)
 	assert.False(t, res.FallbackUsed)
+
+	// Wait briefly for asynchronous goroutine to trigger mock call
+	time.Sleep(100 * time.Millisecond)
 
 	mockTicketRepo.AssertExpectations(t)
 	mockReportRepo.AssertExpectations(t)
